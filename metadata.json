@@ -1,0 +1,6 @@
+{
+  "name": "Noor Fiqh Academy",
+  "description": "Noor Fiqh Academy (নূর ফিকহ একাডেমি) - Online Islamic Jurisprudence, Fiqh Courses, Fatwa & Mas'ala Consultations, Digital Books, and Certification Platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

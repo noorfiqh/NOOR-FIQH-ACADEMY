@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Registered student or admin user profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "name": { "type": "string", "description": "Display name of user" },
+        "email": { "type": "string", "format": "email", "description": "Email address" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "avatar": { "type": "string", "description": "Avatar image URL" },
+        "role": { "type": "string", "enum": ["student", "admin", "scholar"], "description": "User access role" },
+        "joinedAt": { "type": "string", "description": "ISO creation timestamp" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Enrollment or book purchase order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Order unique ID" },
+        "orderNumber": { "type": "string", "description": "Human readable order tracking number" },
+        "userId": { "type": "string", "description": "Purchaser UID" },
+        "userEmail": { "type": "string", "format": "email", "description": "Purchaser email" },
+        "userName": { "type": "string", "description": "Purchaser name" },
+        "userPhone": { "type": "string", "description": "Purchaser phone" },
+        "itemId": { "type": "string", "description": "Course or Book ID" },
+        "itemTitle": { "type": "string", "description": "Item title in Bengali" },
+        "itemType": { "type": "string", "enum": ["course", "book"], "description": "Type of purchased item" },
+        "purchaseType": { "type": "string", "enum": ["online_course", "pdf", "hardcover", "full_access"], "description": "Format purchased" },
+        "amount": { "type": "number", "description": "Total amount paid in BDT" },
+        "paymentMethod": { "type": "string", "enum": ["bkash", "nagad", "rocket", "bank", "free"], "description": "Payment gateway" },
+        "trxId": { "type": "string", "description": "Transaction ID" },
+        "senderNumber": { "type": "string", "description": "Sender mobile number" },
+        "deliveryAddress": { "type": "string", "description": "Delivery address for hardcovers" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Order verification status" },
+        "createdAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["userId", "itemId", "itemTitle", "amount", "status"]
+    },
+    "FatwaQuestion": {
+      "title": "FatwaQuestion",
+      "description": "Public or private Islamic legal queries submitted by users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Fatwa ID" },
+        "trackingCode": { "type": "string", "description": "Tracking code" },
+        "userId": { "type": "string", "description": "Submitter UID" },
+        "questionTitle": { "type": "string", "description": "Subject of the question" },
+        "questionBody": { "type": "string", "description": "Detailed question" },
+        "category": { "type": "string", "description": "Category slug" },
+        "categoryBn": { "type": "string", "description": "Category Bengali label" },
+        "askedByName": { "type": "string", "description": "Name or pseudonym" },
+        "isPrivate": { "type": "boolean", "description": "Whether hidden from public view" },
+        "status": { "type": "string", "enum": ["pending", "answered", "rejected"], "description": "Answer status" },
+        "answerText": { "type": "string", "description": "Fatwa answer text" },
+        "createdAt": { "type": "string", "description": "Date submitted" }
+      },
+      "required": ["questionTitle", "questionBody", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile documents keyed by Firebase Auth UID"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Purchases and order verification queue"
+    },
+    "/fatwas/{fatwaId}": {
+      "schema": { "$ref": "#/entities/FatwaQuestion" },
+      "description": "Fatwa queries and scholarly responses"
+    }
+  }
+}

@@ -1,0 +1,175 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-natural: #fdfcf9;
+    --color-primary: #112734;
+    --color-secondary: #23626F;
+    --color-accent: #17A2B8;
+    --color-primary-light: #23626F;
+    --color-primary-dark: #0b1b24;
+    --color-gold: #17A2B8;
+    --color-gold-bright: #20c9d9;
+    --color-gold-dark: #0f8293;
+    --color-text-main: #2c3e50;
+    --color-text-muted: #5a524d;
+    --color-text-subtle: #8a817c;
+    --border-natural: #ece8e0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* সাধারণ টেক্সটে Noto Serif Bengali */
+  body {
+    font-family: 'Noto Serif Bengali', serif;
+    background-color: var(--bg-natural);
+    color: var(--color-text-main);
+    overflow-x: hidden;
+  }
+
+  p, li, label, input, textarea, select, table, th, td, footer {
+    font-family: 'Noto Serif Bengali', serif;
+  }
+
+  /* সবধরনের হেডিংয়ে অনিক বাংলা (Anek Bangla) */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Anek Bangla', 'Plus Jakarta Sans', sans-serif !important;
+    letter-spacing: -0.01em;
+  }
+
+  /* সবধরনের বাটনে ও বাটন সদৃশ লিঙ্কে Tiro Bangla */
+  button, 
+  [role="button"], 
+  input[type="button"], 
+  input[type="submit"], 
+  input[type="reset"],
+  .btn,
+  .button-font,
+  .font-tiro,
+  .font-button {
+    font-family: 'Tiro Bangla', serif !important;
+  }
+
+}
+
+/* Explicit Utility Classes */
+.font-anek, .font-heading {
+  font-family: 'Anek Bangla', 'Plus Jakarta Sans', sans-serif !important;
+}
+
+.font-noto, .font-body {
+  font-family: 'Noto Serif Bengali', serif !important;
+}
+
+.font-tiro, .font-button {
+  font-family: 'Tiro Bangla', serif !important;
+}
+
+/* Natural Tones Custom Utilities */
+.academy-gradient {
+  background: linear-gradient(135deg, #112734 0%, #23626F 50%, #17A2B8 100%);
+}
+
+.gold-gradient {
+  background: linear-gradient(135deg, #17A2B8 0%, #20c9d9 100%);
+}
+
+.card-natural-shadow {
+  box-shadow: 0 4px 20px rgba(17, 39, 52, 0.08);
+}
+
+.card-natural-shadow-hover:hover {
+  box-shadow: 0 12px 30px rgba(17, 39, 52, 0.12);
+}
+
+.islamic-pattern {
+  background-color: #112734;
+  background-image: radial-gradient(rgba(23, 162, 184, 0.18) 1.5px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.islamic-arch {
+  border-top-left-radius: 9999px;
+  border-top-right-radius: 9999px;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.text-arabic {
+  font-family: 'Amiri', 'Traditional Arabic', serif !important;
+}
+
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-scroll {
+  display: flex;
+  width: max-content;
+  animation: scroll 35s linear infinite;
+}
+
+.animate-scroll:hover {
+  animation-play-state: paused;
+}
+
+/* Print Styles for Certificate Only */
+@media print {
+  @page {
+    size: landscape;
+    margin: 0;
+  }
+
+  header,
+  footer,
+  nav,
+  button,
+  .print\:hidden,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #certificate-print-area,
+  #certificate-print-area * {
+    visibility: visible !important;
+  }
+
+  #certificate-print-area {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background-color: transparent !important;
+    page-break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
