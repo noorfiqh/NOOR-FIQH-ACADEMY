@@ -122,8 +122,13 @@ export function CertificateView({
     if (rawImageUrl) {
       if (rawImageUrl.startsWith('data:') || rawImageUrl.startsWith('blob:')) {
         setProxiedImageUrl(rawImageUrl);
+      } else if (rawImageUrl.includes('lh3.googleusercontent.com') || rawImageUrl.includes('drive.google.com')) {
+        // Direct safe image URL for Google CDN or fallback proxy for static hosting
+        setProxiedImageUrl(rawImageUrl);
       } else {
-        setProxiedImageUrl(`/api/proxy-image?url=${encodeURIComponent(rawImageUrl)}`);
+        // Use direct or client-safe CORS image service (works 100% on Firebase Static Hosting)
+        const encoded = encodeURIComponent(rawImageUrl);
+        setProxiedImageUrl(`https://images.weserv.nl/?url=${encoded}&default=${encoded}`);
       }
     }
   }, [rawImageUrl]);
