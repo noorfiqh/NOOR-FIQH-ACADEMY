@@ -60,7 +60,7 @@ export function formatOrderForFormSubmit(order: Order, originUrl: string = ''): 
 }
 
 /**
- * Sends order notification email to admin using FormSubmit / API route
+ * Sends order notification email to admin directly via client-side FormSubmit.co
  */
 export async function sendOrderNotificationEmail(
   order: Order,
@@ -78,43 +78,13 @@ export async function sendOrderNotificationEmail(
     const originUrl = typeof window !== 'undefined' ? window.location.origin : '';
     const payload = formatOrderForFormSubmit(order, originUrl);
 
-    const endpoint = settings.formSubmitEndpoint?.trim() || `/api/notify-order`;
+    // Direct FormSubmit.co endpoint (or custom client endpoint if configured)
+    const customEndpoint = settings.formSubmitEndpoint?.trim();
+    const endpoint = (customEndpoint && customEndpoint.startsWith('http')) 
+      ? customEndpoint 
+      : `https://formsubmit.co/ajax/${encodeURIComponent(targetEmail)}`;
 
-    // 1. Send via internal Next.js API route
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          targetEmail,
-          payload,
-          orderNumber: order.orderNumber,
-        }),
-      });
-
-      const resData = await response.json().catch(() => null);
-
-      if (resData?.needsActivation) {
-        return { 
-          success: false, 
-          needsActivation: true, 
-          message: resData.message || `FormSubmit সক্রিয় করার জন্য ${targetEmail} এ কনফার্মেশন লিঙ্ক পাঠানো হয়েছে।` 
-        };
-      }
-
-      if (resData?.success) {
-        return { success: true, message: resData.message || 'অর্ডার নোটিফিকেশন ইমেইল সফলভাবে পাঠানো হয়েছে।' };
-      }
-    } catch (apiErr) {
-      console.warn('API route notify-order call failed:', apiErr);
-    }
-
-    // 2. Direct FormSubmit.co Fallback
-    const directUrl = `https://formsubmit.co/ajax/${encodeURIComponent(targetEmail)}`;
-    const directResponse = await fetch(directUrl, {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -123,17 +93,18 @@ export async function sendOrderNotificationEmail(
       body: JSON.stringify(payload),
     });
 
-    const directData = await directResponse.json().catch(() => null);
-    if (directData?.success === 'true' || directData?.success === true) {
-      return { success: true, message: 'FormSubmit এর মাধ্যমে নোটিফিকেশন পাঠানো হয়েছে।' };
-    } else if (directData?.message?.includes('Activation')) {
+    const data = await response.json().catch(() => null);
+
+    if (data?.success === 'true' || data?.success === true || (response.ok && !data?.message?.toLowerCase().includes('activation'))) {
+      return { success: true, message: 'অর্ডার নোটিফিকেশন ইমেইল সফলভাবে পাঠানো হয়েছে।' };
+    } else if (data?.message?.toLowerCase().includes('activation') || data?.message?.toLowerCase().includes('activate form')) {
       return { 
         success: false, 
         needsActivation: true, 
-        message: `FormSubmit থেকে ${targetEmail} এ অ্যাক্টিভেশন লিঙ্ক পাঠানো হয়েছে। জিমেইল চেক করে 'Activate Form' এ ক্লিক করুন।` 
+        message: `FormSubmit সক্রিয় করার জন্য ${targetEmail} ঠিকানায় কনফার্মেশন লিঙ্ক পাঠানো হয়েছে। জিমেইল চেক করে 'Activate Form' এ ক্লিক করুন।` 
       };
     } else {
-      return { success: false, message: directData?.message || 'ইমেইল প্রেরণ সম্পন্ন হতে পারেনি।' };
+      return { success: false, message: data?.message || 'ইমেইল প্রেরণ সম্পন্ন হতে পারেনি।' };
     }
   } catch (error: any) {
     console.error('Failed to send order notification email:', error);
@@ -142,7 +113,7 @@ export async function sendOrderNotificationEmail(
 }
 
 /**
- * Sends a test notification to verify admin's email configuration
+ * Sends a test notification directly to FormSubmit from client
  */
 export async function sendTestNotificationEmail(
   targetEmail: string,
@@ -159,56 +130,18 @@ export async function sendTestNotificationEmail(
       _replyto: 'no-reply@noorfiqh.com',
       'টেস্ট স্ট্যাটাস': 'সফল (Success)',
       'বার্তার বিষয়': 'নূর ফিকহ একাডেমি অর্ডার ইমেইল নোটিফিকেশন টেস্ট',
-      'প্রেরক সিস্টেম': 'Form Submit Automated System',
+      'প্রেরক সিস্টেম': 'Form Submit Automated System (Client-side Direct)',
       'প্রাপ্তির ইমেইল': email,
       'পরীক্ষার সময় (Dhaka Time)': new Date().toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }),
       'বিবরণ': 'আপনার ওয়েবসাইট থেকে কোনো শিক্ষার্থী নতুন কোর্স বা বই কিনলে এভাবেই স্বয়ংক্রিয়ভাবে সকল তথ্যসহ আপনার ইমেইলে নোটিফিকেশন পৌঁছে যাবে।',
       'অ্যাডমিন লিংক': originUrl ? `${originUrl}/admin` : 'https://noorfiqh.com/admin',
     };
 
-    const endpoint = customEndpoint?.trim() || `/api/notify-order`;
+    const endpoint = (customEndpoint && customEndpoint.startsWith('http')) 
+      ? customEndpoint.trim() 
+      : `https://formsubmit.co/ajax/${encodeURIComponent(email)}`;
 
-    // Attempt via API
     const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        targetEmail: email,
-        payload: testPayload,
-        orderNumber: 'TEST-' + Math.floor(1000 + Math.random() * 9000),
-      }),
-    });
-
-    const resData = await response.json().catch(() => null);
-
-    if (resData?.needsActivation) {
-      return {
-        success: false,
-        needsActivation: true,
-        message: resData.message || `FormSubmit থেকে ${email} ঠিকানায় 'Activate Form' লিঙ্ক পাঠানো হয়েছে।`,
-      };
-    }
-
-    if (resData?.success) {
-      return {
-        success: true,
-        message: resData.message || `টেস্ট ইমেইলটি সফলভাবে ${email} এ পাঠানো হয়েছে! ইনবক্স অথবা স্প্যাম ফোল্ডার চেক করুন।`,
-      };
-    }
-
-    if (resData?.error) {
-      return {
-        success: false,
-        message: resData.error,
-      };
-    }
-
-    // Direct FormSubmit fallback
-    const directUrl = `https://formsubmit.co/ajax/${encodeURIComponent(email)}`;
-    const directResponse = await fetch(directUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -217,17 +150,24 @@ export async function sendTestNotificationEmail(
       body: JSON.stringify(testPayload),
     });
 
-    const directData = await directResponse.json().catch(() => null);
-    if (directData?.success === 'true' || directData?.success === true) {
-      return { success: true, message: `টেস্ট ইমেইলটি সফলভাবে ${email} এ পৌঁছেছে!` };
-    } else if (directData?.message?.includes('Activation')) {
+    const data = await response.json().catch(() => null);
+
+    if (data?.success === 'true' || data?.success === true || (response.ok && !data?.message?.toLowerCase().includes('activation'))) {
+      return { 
+        success: true, 
+        message: `টেস্ট ইমেইলটি সফলভাবে ${email} এ পাঠানো হয়েছে! ইনবক্স অথবা স্প্যাম ফোল্ডার চেক করুন।` 
+      };
+    } else if (data?.message?.toLowerCase().includes('activation') || data?.message?.toLowerCase().includes('activate form')) {
       return {
         success: false,
         needsActivation: true,
-        message: `FormSubmit সক্রিয় করতে ${email} এর জিমেইল ইনবক্স/স্প্যাম ফোল্ডারে পাঠানো 'Activate Form' লিংকে একবার ক্লিক করুন।`,
+        message: `FormSubmit থেকে ${email} ঠিকানায় 'Activate Form' লিঙ্ক পাঠানো হয়েছে। ইনবক্স বা স্প্যাম ফোল্ডার থেকে লিংকে ক্লিক করুন।`,
       };
     } else {
-      return { success: false, message: directData?.message || 'ইমেইল পাঠাতে ব্যর্থ হয়েছে।' };
+      return {
+        success: false,
+        message: data?.message || 'টেস্ট ইমেইল পাঠাতে ব্যর্থ হয়েছে।',
+      };
     }
   } catch (error: any) {
     return { success: false, message: error?.message || 'টেস্ট ইমেইল পাঠাতে ব্যর্থ হয়েছে।' };

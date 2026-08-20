@@ -3734,7 +3734,7 @@ export default function AdminDashboardPage() {
                       </label>
                       <input
                         type="text"
-                        placeholder="যেমন: /api/notify-order (ডিফল্ট) অথবা https://formsubmit.co/ajax/..."
+                        placeholder="যেমন: https://formsubmit.co/ajax/your-email@gmail.com অথবা কাস্টম ওয়েবহুক"
                         value={siteSettings.formSubmitEndpoint || ''}
                         onChange={(e) =>
                           setSiteSettings({ ...siteSettings, formSubmitEndpoint: e.target.value })
@@ -3817,7 +3817,7 @@ export default function AdminDashboardPage() {
                             <ol className="list-decimal list-inside space-y-1 text-slate-700 font-medium">
                               <li>আপনার জিমেইল <strong className="text-slate-900">{siteSettings.orderNotificationEmail || 'noorfiqhaca@gmail.com'}</strong> ইনবক্স অথবা <strong>স্প্যাম (Spam)</strong> ফোল্ডারে যান।</li>
                               <li><strong>FormSubmit</strong> থেকে আসা <code className="bg-amber-100 px-1.5 py-0.5 rounded text-amber-900 font-mono text-[11px]">Action Required: Activate FormSubmit</code> ইমেইলটি খুলুন।</li>
-                              <li>ইমেইলের ভেতরে থাকা নীল রঙের <strong>"Activate Form"</strong> বাটনে একবার ক্লিক করুন।</li>
+                              <li>ইমেইলের ভেতরে থাকা নীল রঙের <strong>&quot;Activate Form&quot;</strong> বাটনে একবার ক্লিক করুন।</li>
                             </ol>
                             <div className="pt-2 flex items-center gap-3">
                               <a

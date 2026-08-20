@@ -150,21 +150,45 @@ export function CertificateView({
     }
   };
 
-  // Helper to load image securely into an HTMLImageElement
-  const loadHtmlImage = (src: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = () => {
-        // Fallback without crossOrigin if local or already loaded
-        const fallback = new Image();
-        fallback.onload = () => resolve(fallback);
-        fallback.onerror = (err) => reject(err);
-        fallback.src = src;
-      };
-      img.src = src;
-    });
+  // Helper to load image securely into an HTMLImageElement (100% client-side CORS safe)
+  const loadHtmlImage = async (src: string): Promise<HTMLImageElement> => {
+    // 1. Direct canvas-safe loader
+    const tryLoadImage = (imgSrc: string, crossOrigin?: string): Promise<HTMLImageElement> => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        if (crossOrigin) img.crossOrigin = crossOrigin;
+        img.onload = () => resolve(img);
+        img.onerror = (err) => reject(err);
+        img.src = imgSrc;
+      });
+    };
+
+    // If data URL or Blob URL, load directly
+    if (src.startsWith('data:') || src.startsWith('blob:')) {
+      return tryLoadImage(src);
+    }
+
+    // Try standard anonymous CORS first
+    try {
+      return await tryLoadImage(src, 'anonymous');
+    } catch {
+      // If direct anonymous load failed, fetch as Blob using client-side proxy to bypass CORS
+      try {
+        const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(src)}`;
+        const res = await fetch(proxyUrl, { mode: 'cors' });
+        if (res.ok) {
+          const blob = await res.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          const blobImg = await tryLoadImage(blobUrl);
+          return blobImg;
+        }
+      } catch (blobErr) {
+        console.warn('Client-side proxy image fetch failed:', blobErr);
+      }
+
+      // Final fallback
+      return tryLoadImage(src);
+    }
   };
 
   /**
