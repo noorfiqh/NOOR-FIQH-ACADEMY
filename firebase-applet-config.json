@@ -1,12 +1,12 @@
 {
-  "projectId": "gen-lang-client-0326185229",
-  "appId": "1:1089737427039:web:ba40f4fb5668d009deb3ea",
-  "apiKey": "AIzaSyB5EwCAO6IEQEsrAOX1IPjXQnkQ9BF9uHI",
-  "authDomain": "gen-lang-client-0326185229.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-83c88e13-6643-4386-a81c-b9d72d160946",
-  "storageBucket": "gen-lang-client-0326185229.firebasestorage.app",
-  "messagingSenderId": "1089737427039",
-  "measurementId": "",
-  "oAuthClientId": "1089737427039-msoa8gpi5jrj05s4nlao53phshrs545d.apps.googleusercontent.com",
+  "projectId": "noor-fiqh-academy",
+  "appId": "1:607409129946:web:03bb8f1f71dbb8ee9ad8e3",
+  "apiKey": "AIzaSyChcZMCobqW_5zINw1pRkI9QJUk7895jNE",
+  "authDomain": "noor-fiqh-academy.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "noor-fiqh-academy.firebasestorage.app",
+  "messagingSenderId": "607409129946",
+  "measurementId": "G-L14M0HQP0R",
+  "oAuthClientId": "607409129946-2904p8b8a746m7b330s20qb730jrgae1.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

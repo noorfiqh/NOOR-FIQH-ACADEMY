@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import { CertificateView } from '@/components/CertificateView';
 import { sendTestNotificationEmail } from '@/lib/email-service';
+import { db, collection, onSnapshot, handleFirestoreError, OperationType } from '@/lib/firebase';
 
 type AdminTab = 'overview' | 'courses' | 'orders' | 'fatwas' | 'books' | 'live_classes' | 'certificates' | 'reviews' | 'users' | 'faculty' | 'settings';
 
@@ -154,6 +155,125 @@ export default function AdminDashboardPage() {
     setSiteSettings(AppStore.getSettings());
     setUsersList(AppStore.getUsers());
     setFacultyList(AppStore.getFaculty());
+  };
+
+  // Sync real-time data from Cloud Firestore
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    // Listen to Firestore Orders
+    const unsubOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
+      if (!snapshot.empty) {
+        const firestoreOrders: Order[] = [];
+        snapshot.forEach((doc) => {
+          firestoreOrders.push({ id: doc.id, ...doc.data() } as Order);
+        });
+        if (firestoreOrders.length > 0) {
+          setOrders(prev => {
+            const merged = [...firestoreOrders];
+            prev.forEach(p => {
+              if (!merged.some(m => m.id === p.id)) merged.push(p);
+            });
+            return merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+          });
+        }
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'orders');
+    });
+
+    // Listen to Firestore Fatwas
+    const unsubFatwas = onSnapshot(collection(db, 'fatwas'), (snapshot) => {
+      if (!snapshot.empty) {
+        const firestoreFatwas: FatwaQuestion[] = [];
+        snapshot.forEach((doc) => {
+          firestoreFatwas.push({ id: doc.id, ...doc.data() } as FatwaQuestion);
+        });
+        if (firestoreFatwas.length > 0) {
+          setFatwas(prev => {
+            const merged = [...firestoreFatwas];
+            prev.forEach(p => {
+              if (!merged.some(m => m.id === p.id)) merged.push(p);
+            });
+            return merged;
+          });
+        }
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'fatwas');
+    });
+
+    // Listen to Firestore Courses
+    const unsubCourses = onSnapshot(collection(db, 'courses'), (snapshot) => {
+      if (!snapshot.empty) {
+        const firestoreCourses: Course[] = [];
+        snapshot.forEach((doc) => {
+          firestoreCourses.push({ id: doc.id, ...doc.data() } as Course);
+        });
+        if (firestoreCourses.length > 0) {
+          setCourses(prev => {
+            const merged = [...firestoreCourses];
+            prev.forEach(p => {
+              if (!merged.some(m => m.id === p.id)) merged.push(p);
+            });
+            return merged;
+          });
+        }
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'courses');
+    });
+
+    // Listen to Firestore Books
+    const unsubBooks = onSnapshot(collection(db, 'books'), (snapshot) => {
+      if (!snapshot.empty) {
+        const firestoreBooks: Book[] = [];
+        snapshot.forEach((doc) => {
+          firestoreBooks.push({ id: doc.id, ...doc.data() } as Book);
+        });
+        if (firestoreBooks.length > 0) {
+          setBooks(prev => {
+            const merged = [...firestoreBooks];
+            prev.forEach(p => {
+              if (!merged.some(m => m.id === p.id)) merged.push(p);
+            });
+            return merged;
+          });
+        }
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'books');
+    });
+
+    return () => {
+      unsubOrders();
+      unsubFatwas();
+      unsubCourses();
+      unsubBooks();
+    };
+  }, [isAdmin]);
+
+  // Firestore Sync All Handler
+  const [isSyncingFirestore, setIsSyncingFirestore] = useState(false);
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string | null>(null);
+
+  const handleSyncAllFirestore = async () => {
+    setIsSyncingFirestore(true);
+    setSyncStatusMsg('ফায়ারস্টোর ডাটাবেসে সিঙ্ক হচ্ছে...');
+    try {
+      const res = await AppStore.syncAllToFirestore();
+      if (res.success) {
+        setSyncStatusMsg(`সফলভাবে ${res.count}টি আইটেম ফায়ারস্টোরে আপলোড হয়েছে!`);
+        showNotification(`ফায়ারস্টোরে ${res.count}টি আইটেম সংরক্ষিত হয়েছে`);
+      } else {
+        setSyncStatusMsg(`সিঙ্কে সমস্যা: ${res.error || 'Unknown error'}`);
+      }
+    } catch (err: any) {
+      setSyncStatusMsg(`ব্যর্থ: ${err?.message || err}`);
+    } finally {
+      setIsSyncingFirestore(false);
+      setTimeout(() => setSyncStatusMsg(null), 8000);
+    }
   };
 
   // Faculty & Research Council Handlers
@@ -712,6 +832,42 @@ export default function AdminDashboardPage() {
                   <h3 className="text-2xl sm:text-3xl font-black text-[#2c3e50]">{courses.length} কোর্স</h3>
                   <p className="text-[11px] text-[#8a817c] font-semibold">{courses.reduce((acc, c) => acc + c.lessons.length, 0)}টি সম্পূর্ণ লেকচার</p>
                 </div>
+              </div>
+
+              {/* Firestore Cloud Sync Card */}
+              <div className="bg-gradient-to-br from-amber-500/10 via-amber-50 to-orange-50/50 border border-amber-300/70 p-6 sm:p-7 rounded-3xl space-y-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <h4 className="font-extrabold text-sm sm:text-base text-[#112734] flex items-center gap-2">
+                        <span>Google Cloud Firestore ডাটাবেস ইন্টিগ্রেশন</span>
+                        <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-black tracking-wide">
+                          (default) DATABASE
+                        </span>
+                      </h4>
+                    </div>
+                    <p className="text-xs text-[#5a524d] max-w-2xl leading-relaxed">
+                      ওয়েবসাইটের সকল নতুন কোর্স, অর্ডার, কিতাব এবং ফতোয়া স্বয়ংক্রিয়ভাবে ক্লাউড ফায়ারস্টোরে সেভ হয়। ফায়ারবেস কনসোলে ডাটা দেখতে উপরের ড্রপডাউনে <strong>(default)</strong> ডাটাবেস সিলেক্ট করুন।
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleSyncAllFirestore}
+                    disabled={isSyncingFirestore}
+                    className="px-5 py-3 bg-[#112734] hover:bg-[#23626F] text-white font-extrabold text-xs rounded-2xl flex items-center gap-2 shadow-md transition-all shrink-0 disabled:opacity-50 cursor-pointer"
+                  >
+                    <Save size={16} className={isSyncingFirestore ? 'animate-spin' : ''} />
+                    <span>{isSyncingFirestore ? 'ফায়ারস্টোরে সেভ হচ্ছে...' : '☁️ সকল ডাটা ফায়ারস্টোরে সিঙ্ক করুন'}</span>
+                  </button>
+                </div>
+
+                {syncStatusMsg && (
+                  <div className="p-3 bg-white border border-amber-200 rounded-xl text-xs font-bold text-amber-950 flex items-center gap-2">
+                    <CheckCircle size={15} className="text-emerald-600 shrink-0" />
+                    <span>{syncStatusMsg}</span>
+                  </div>
+                )}
               </div>
 
               {/* Recent Pending Orders Preview */}

@@ -11,6 +11,7 @@
         "phone": { "type": "string", "description": "Phone number" },
         "avatar": { "type": "string", "description": "Avatar image URL" },
         "role": { "type": "string", "enum": ["student", "admin", "scholar"], "description": "User access role" },
+        "isSuperAdmin": { "type": "boolean", "description": "Whether user is master super admin" },
         "joinedAt": { "type": "string", "description": "ISO creation timestamp" }
       },
       "required": ["uid", "email", "role"]
@@ -26,19 +27,75 @@
         "userEmail": { "type": "string", "format": "email", "description": "Purchaser email" },
         "userName": { "type": "string", "description": "Purchaser name" },
         "userPhone": { "type": "string", "description": "Purchaser phone" },
-        "itemId": { "type": "string", "description": "Course or Book ID" },
+        "itemType": { "type": "string", "enum": ["course", "book", "live_class"], "description": "Type of purchased item" },
+        "itemId": { "type": "string", "description": "Course, Book, or Live Class ID" },
         "itemTitle": { "type": "string", "description": "Item title in Bengali" },
-        "itemType": { "type": "string", "enum": ["course", "book"], "description": "Type of purchased item" },
-        "purchaseType": { "type": "string", "enum": ["online_course", "pdf", "hardcover", "full_access"], "description": "Format purchased" },
         "amount": { "type": "number", "description": "Total amount paid in BDT" },
-        "paymentMethod": { "type": "string", "enum": ["bkash", "nagad", "rocket", "bank", "free"], "description": "Payment gateway" },
+        "purchaseType": { "type": "string", "enum": ["pdf", "hardcover", "full_access"], "description": "Format purchased" },
+        "paymentMethod": { "type": "string", "enum": ["bkash", "nagad", "rocket", "card", "cod", "manual"], "description": "Payment gateway" },
         "trxId": { "type": "string", "description": "Transaction ID" },
-        "senderNumber": { "type": "string", "description": "Sender mobile number" },
-        "deliveryAddress": { "type": "string", "description": "Delivery address for hardcovers" },
+        "paymentPhone": { "type": "string", "description": "Sender mobile number" },
+        "shippingAddress": { "type": "string", "description": "Delivery address for hardcovers" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Order verification status" },
         "createdAt": { "type": "string", "description": "Timestamp" }
       },
       "required": ["userId", "itemId", "itemTitle", "amount", "status"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Academy fiqh course curriculum and lessons",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique course ID" },
+        "title": { "type": "string", "description": "English title" },
+        "titleBn": { "type": "string", "description": "Bengali title" },
+        "category": { "type": "string", "description": "Category slug" },
+        "categoryLabelBn": { "type": "string", "description": "Category Bengali label" },
+        "shortDescription": { "type": "string", "description": "Short synopsis" },
+        "description": { "type": "string", "description": "Full description" },
+        "price": { "type": "number", "description": "Course price in BDT" },
+        "originalPrice": { "type": "number", "description": "Original strike-through price" },
+        "thumbnail": { "type": "string", "description": "Thumbnail image URL" },
+        "previewVideoUrl": { "type": "string", "description": "Trailer video URL" },
+        "badge": { "type": "string", "description": "Badge text" },
+        "level": { "type": "string", "description": "Difficulty level" },
+        "levelBn": { "type": "string", "description": "Bengali level" },
+        "duration": { "type": "string", "description": "Total duration" },
+        "totalLessons": { "type": "number", "description": "Number of lessons" },
+        "rating": { "type": "number", "description": "Rating score" },
+        "totalStudents": { "type": "number", "description": "Total enrolled students" },
+        "hasCertificate": { "type": "boolean", "description": "Whether completion grants certificate" },
+        "certificateTemplateUrl": { "type": "string", "description": "Custom certificate background URL" },
+        "status": { "type": "string", "enum": ["published", "draft"], "description": "Publish status" }
+      },
+      "required": ["id", "titleBn", "price"]
+    },
+    "Book": {
+      "title": "Book",
+      "description": "Academy fiqh publications and books",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique book ID" },
+        "title": { "type": "string", "description": "English title" },
+        "titleBn": { "type": "string", "description": "Bengali title" },
+        "author": { "type": "string", "description": "Author name" },
+        "authorBn": { "type": "string", "description": "Author Bengali name" },
+        "category": { "type": "string", "description": "Category slug" },
+        "categoryBn": { "type": "string", "description": "Category Bengali" },
+        "description": { "type": "string", "description": "Book summary" },
+        "coverImage": { "type": "string", "description": "Cover image URL" },
+        "hasPdf": { "type": "boolean", "description": "PDF available" },
+        "pdfPrice": { "type": "number", "description": "PDF price in BDT" },
+        "pdfUrl": { "type": "string", "description": "PDF download URL" },
+        "previewPdfUrl": { "type": "string", "description": "Sample preview PDF URL" },
+        "hasHardcover": { "type": "boolean", "description": "Hardcover available" },
+        "hardcoverPrice": { "type": "number", "description": "Hardcover price in BDT" },
+        "inStock": { "type": "boolean", "description": "Stock status" },
+        "pages": { "type": "number", "description": "Page count" },
+        "publisher": { "type": "string", "description": "Publisher name" },
+        "rating": { "type": "number", "description": "Rating" }
+      },
+      "required": ["id", "titleBn"]
     },
     "FatwaQuestion": {
       "title": "FatwaQuestion",
@@ -52,13 +109,127 @@
         "questionBody": { "type": "string", "description": "Detailed question" },
         "category": { "type": "string", "description": "Category slug" },
         "categoryBn": { "type": "string", "description": "Category Bengali label" },
-        "askedByName": { "type": "string", "description": "Name or pseudonym" },
+        "askerName": { "type": "string", "description": "Name or pseudonym" },
+        "askerEmail": { "type": "string", "description": "Email address" },
+        "askerPhone": { "type": "string", "description": "Phone number" },
         "isPrivate": { "type": "boolean", "description": "Whether hidden from public view" },
         "status": { "type": "string", "enum": ["pending", "answered", "rejected"], "description": "Answer status" },
-        "answerText": { "type": "string", "description": "Fatwa answer text" },
+        "answer": { "type": "string", "description": "Fatwa answer text" },
+        "answeredBy": { "type": "string", "description": "Mufti / Scholar name" },
+        "references": { "type": "string", "description": "Fiqhi references" },
         "createdAt": { "type": "string", "description": "Date submitted" }
       },
-      "required": ["questionTitle", "questionBody", "status"]
+      "required": ["questionTitle", "status"]
+    },
+    "Certificate": {
+      "title": "Certificate",
+      "description": "Verified digital completion certificates",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Certificate ID" },
+        "certificateNumber": { "type": "string", "description": "Unique verification code" },
+        "userId": { "type": "string", "description": "Student UID" },
+        "userName": { "type": "string", "description": "Student name" },
+        "courseId": { "type": "string", "description": "Course ID" },
+        "courseTitle": { "type": "string", "description": "Course title" },
+        "batch": { "type": "string", "description": "Batch code" },
+        "grade": { "type": "string", "description": "Grade achieved" },
+        "issueDate": { "type": "string", "description": "Issuance date" },
+        "verificationUrl": { "type": "string", "description": "Verification URL" },
+        "certificateCopyUrl": { "type": "string", "description": "Background template URL" }
+      },
+      "required": ["certificateNumber", "userId", "userName", "courseId"]
+    },
+    "FacultyMember": {
+      "title": "FacultyMember",
+      "description": "Academic faculty and research council scholars",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Faculty ID" },
+        "name": { "type": "string", "description": "English name" },
+        "nameBn": { "type": "string", "description": "Bengali name" },
+        "designation": { "type": "string", "description": "Designation" },
+        "category": { "type": "string", "enum": ["council", "faculty", "advisor"], "description": "Category" },
+        "categoryLabelBn": { "type": "string", "description": "Category Bengali label" },
+        "qualifications": { "type": "string", "description": "Degrees and credentials" },
+        "bio": { "type": "string", "description": "Biography" },
+        "avatar": { "type": "string", "description": "Avatar URL" },
+        "email": { "type": "string", "description": "Contact email" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "order": { "type": "number", "description": "Display order" }
+      },
+      "required": ["id", "nameBn", "designation"]
+    },
+    "LiveClass": {
+      "title": "LiveClass",
+      "description": "Live interactive workshops and classes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Class ID" },
+        "title": { "type": "string", "description": "Title in English" },
+        "titleBn": { "type": "string", "description": "Title in Bengali" },
+        "description": { "type": "string", "description": "Description" },
+        "instructor": { "type": "string", "description": "Instructor name" },
+        "instructorAvatar": { "type": "string", "description": "Instructor avatar" },
+        "startTime": { "type": "string", "description": "Date & Time" },
+        "duration": { "type": "string", "description": "Duration" },
+        "price": { "type": "number", "description": "Fee in BDT" },
+        "thumbnail": { "type": "string", "description": "Thumbnail URL" },
+        "meetingLink": { "type": "string", "description": "Zoom or Meet link" },
+        "platform": { "type": "string", "description": "Platform" },
+        "status": { "type": "string", "enum": ["upcoming", "live", "completed"], "description": "Live status" },
+        "enrolledStudentsCount": { "type": "number", "description": "Enrolled count" }
+      },
+      "required": ["id", "titleBn"]
+    },
+    "SiteReview": {
+      "title": "SiteReview",
+      "description": "Student testimonials and site reviews",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Review ID" },
+        "name": { "type": "string", "description": "Student name" },
+        "nameBn": { "type": "string", "description": "Bengali name" },
+        "role": { "type": "string", "description": "Student designation" },
+        "avatar": { "type": "string", "description": "Avatar URL" },
+        "rating": { "type": "number", "description": "Stars rating" },
+        "content": { "type": "string", "description": "Review text" },
+        "courseTitle": { "type": "string", "description": "Related course" }
+      },
+      "required": ["id", "name", "content"]
+    },
+    "UserProgress": {
+      "title": "UserProgress",
+      "description": "Student course lesson completion status",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Student UID" },
+        "courseId": { "type": "string", "description": "Course ID" },
+        "completedLessons": { "type": "array", "description": "Array of completed lesson IDs" },
+        "progressPercentage": { "type": "number", "description": "Percentage 0-100" },
+        "isCompleted": { "type": "boolean", "description": "Course finished flag" },
+        "updatedAt": { "type": "string", "description": "Last update ISO" }
+      },
+      "required": ["userId", "courseId"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Master website configuration, branding, contacts, and texts",
+      "type": "object",
+      "properties": {
+        "siteName": { "type": "string", "description": "English site name" },
+        "siteNameBn": { "type": "string", "description": "Bengali site name" },
+        "tagline": { "type": "string", "description": "Tagline" },
+        "facebookUrl": { "type": "string", "description": "Facebook page URL" },
+        "whatsappNumber": { "type": "string", "description": "WhatsApp contact" },
+        "email": { "type": "string", "description": "Official email" },
+        "phone": { "type": "string", "description": "Official phone" },
+        "heroTitleBn": { "type": "string", "description": "Hero title" },
+        "heroSubtitleBn": { "type": "string", "description": "Hero subtitle" },
+        "privacyPolicyText": { "type": "string", "description": "Privacy policy text" },
+        "termsText": { "type": "string", "description": "Terms of service text" }
+      },
+      "required": ["siteNameBn"]
     }
   },
   "firestore": {
@@ -70,9 +241,41 @@
       "schema": { "$ref": "#/entities/Order" },
       "description": "Purchases and order verification queue"
     },
+    "/courses/{courseId}": {
+      "schema": { "$ref": "#/entities/Course" },
+      "description": "Course curriculum and materials"
+    },
+    "/books/{bookId}": {
+      "schema": { "$ref": "#/entities/Book" },
+      "description": "Book publications and download links"
+    },
     "/fatwas/{fatwaId}": {
       "schema": { "$ref": "#/entities/FatwaQuestion" },
       "description": "Fatwa queries and scholarly responses"
+    },
+    "/certificates/{certificateId}": {
+      "schema": { "$ref": "#/entities/Certificate" },
+      "description": "Issued digital verification certificates"
+    },
+    "/faculty/{facultyId}": {
+      "schema": { "$ref": "#/entities/FacultyMember" },
+      "description": "Faculty and scholars directory"
+    },
+    "/live_classes/{classId}": {
+      "schema": { "$ref": "#/entities/LiveClass" },
+      "description": "Live interactive class listings"
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/SiteReview" },
+      "description": "Testimonials and reviews"
+    },
+    "/progress/{progressId}": {
+      "schema": { "$ref": "#/entities/UserProgress" },
+      "description": "Student lesson progression logs"
+    },
+    "/settings/{settingsId}": {
+      "schema": { "$ref": "#/entities/SiteSettings" },
+      "description": "Academy site-wide configuration and settings"
     }
   }
 }

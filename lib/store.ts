@@ -3,6 +3,7 @@
 import { Course, Book, FatwaQuestion, LiveClass, Order, UserProgress, Certificate, SiteReview, HeroCardSettings, UserProfile, FacultyMember, SiteSettings } from './types';
 import { INITIAL_COURSES, INITIAL_BOOKS, INITIAL_FATWAS, INITIAL_LIVE_CLASSES, INITIAL_REVIEWS } from './seed-data';
 import { formatImageUrl } from './utils';
+import { db, doc, setDoc, updateDoc, deleteDoc, collection, getDocs, OperationType, handleFirestoreError } from './firebase';
 
 export { INITIAL_COURSES, INITIAL_BOOKS, INITIAL_FATWAS, INITIAL_LIVE_CLASSES, INITIAL_REVIEWS };
 
@@ -278,6 +279,17 @@ export const AppStore = {
       courses.unshift(formatted);
     }
     setLocal(STORAGE_KEYS.COURSES, courses);
+
+    // Save to Cloud Firestore
+    if (typeof window !== 'undefined') {
+      try {
+        setDoc(doc(db, 'courses', formatted.id), formatted, { merge: true }).catch(err => {
+          handleFirestoreError(err, OperationType.WRITE, `courses/${formatted.id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore course save skipped:', err);
+      }
+    }
   },
   createCourse: (courseData: Omit<Course, 'id' | 'rating' | 'totalStudents'> & { rating?: number; totalStudents?: number }): Course => {
     const courses = AppStore.getCourses();
@@ -291,11 +303,33 @@ export const AppStore = {
     };
     courses.unshift(newCourse);
     setLocal(STORAGE_KEYS.COURSES, courses);
+
+    // Save to Cloud Firestore
+    if (typeof window !== 'undefined') {
+      try {
+        setDoc(doc(db, 'courses', newCourse.id), newCourse).catch(err => {
+          handleFirestoreError(err, OperationType.CREATE, `courses/${newCourse.id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore course create skipped:', err);
+      }
+    }
+
     return newCourse;
   },
   deleteCourse: (id: string): void => {
     const courses = AppStore.getCourses().filter(c => c.id !== id);
     setLocal(STORAGE_KEYS.COURSES, courses);
+
+    if (typeof window !== 'undefined') {
+      try {
+        deleteDoc(doc(db, 'courses', id)).catch(err => {
+          handleFirestoreError(err, OperationType.DELETE, `courses/${id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore course delete skipped:', err);
+      }
+    }
   },
 
   // Books
@@ -324,10 +358,31 @@ export const AppStore = {
       books.unshift(formatted);
     }
     setLocal(STORAGE_KEYS.BOOKS, books);
+
+    // Save to Cloud Firestore
+    if (typeof window !== 'undefined') {
+      try {
+        setDoc(doc(db, 'books', formatted.id), formatted, { merge: true }).catch(err => {
+          handleFirestoreError(err, OperationType.WRITE, `books/${formatted.id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore book save skipped:', err);
+      }
+    }
   },
   deleteBook: (id: string): void => {
     const books = AppStore.getBooks().filter(b => b.id !== id);
     setLocal(STORAGE_KEYS.BOOKS, books);
+
+    if (typeof window !== 'undefined') {
+      try {
+        deleteDoc(doc(db, 'books', id)).catch(err => {
+          handleFirestoreError(err, OperationType.DELETE, `books/${id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore book delete skipped:', err);
+      }
+    }
   },
 
   // Fatwas & Fiqh Consultation
@@ -354,6 +409,18 @@ export const AppStore = {
     };
     fatwas.unshift(newFatwa);
     setLocal(STORAGE_KEYS.FATWAS, fatwas);
+
+    // Save to Firestore
+    if (typeof window !== 'undefined') {
+      try {
+        setDoc(doc(db, 'fatwas', newFatwa.id), newFatwa).catch(err => {
+          handleFirestoreError(err, OperationType.CREATE, `fatwas/${newFatwa.id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore fatwa save skipped:', err);
+      }
+    }
+
     return newFatwa;
   },
   addFatwaQuestion: (fatwa: Omit<FatwaQuestion, 'id' | 'trackingCode' | 'createdAt' | 'viewsCount' | 'helpfulCount' | 'status'>): FatwaQuestion => {
@@ -363,14 +430,31 @@ export const AppStore = {
     const fatwas = AppStore.getFatwas();
     const index = fatwas.findIndex(f => f.id === fatwaId);
     if (index >= 0) {
-      fatwas[index] = {
+      const updated = {
         ...fatwas[index],
-        status: 'answered',
+        status: 'answered' as const,
         answer: answerData.answer,
         references: answerData.references,
         answeredBy: answerData.answeredBy || 'মুফতী পরিষদ, নূর ফিকহ একাডেমি'
       };
+      fatwas[index] = updated;
       setLocal(STORAGE_KEYS.FATWAS, fatwas);
+
+      // Update in Firestore
+      if (typeof window !== 'undefined') {
+        try {
+          updateDoc(doc(db, 'fatwas', fatwaId), {
+            status: 'answered',
+            answer: answerData.answer,
+            references: answerData.references || '',
+            answeredBy: answerData.answeredBy || 'মুফতী পরিষদ, নূর ফিকহ একাডেমি'
+          }).catch(err => {
+            handleFirestoreError(err, OperationType.UPDATE, `fatwas/${fatwaId}`);
+          });
+        } catch (err) {
+          console.warn('Firestore fatwa update skipped:', err);
+        }
+      }
     }
   },
   updateFatwa: (fatwa: FatwaQuestion): void => {
@@ -379,11 +463,31 @@ export const AppStore = {
     if (index >= 0) {
       fatwas[index] = fatwa;
       setLocal(STORAGE_KEYS.FATWAS, fatwas);
+
+      if (typeof window !== 'undefined') {
+        try {
+          setDoc(doc(db, 'fatwas', fatwa.id), fatwa, { merge: true }).catch(err => {
+            handleFirestoreError(err, OperationType.WRITE, `fatwas/${fatwa.id}`);
+          });
+        } catch (err) {
+          console.warn('Firestore fatwa update skipped:', err);
+        }
+      }
     }
   },
   deleteFatwa: (id: string): void => {
     const fatwas = AppStore.getFatwas().filter(f => f.id !== id);
     setLocal(STORAGE_KEYS.FATWAS, fatwas);
+
+    if (typeof window !== 'undefined') {
+      try {
+        deleteDoc(doc(db, 'fatwas', id)).catch(err => {
+          handleFirestoreError(err, OperationType.DELETE, `fatwas/${id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore fatwa delete skipped:', err);
+      }
+    }
   },
 
   // Live Classes
@@ -406,10 +510,30 @@ export const AppStore = {
     if (idx >= 0) list[idx] = formatted;
     else list.unshift(formatted);
     setLocal(STORAGE_KEYS.LIVE_CLASSES, list);
+
+    if (typeof window !== 'undefined') {
+      try {
+        setDoc(doc(db, 'live_classes', formatted.id), formatted, { merge: true }).catch(err => {
+          handleFirestoreError(err, OperationType.WRITE, `live_classes/${formatted.id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore live class save skipped:', err);
+      }
+    }
   },
   deleteLiveClass: (id: string): void => {
     const list = AppStore.getLiveClasses().filter(c => c.id !== id);
     setLocal(STORAGE_KEYS.LIVE_CLASSES, list);
+
+    if (typeof window !== 'undefined') {
+      try {
+        deleteDoc(doc(db, 'live_classes', id)).catch(err => {
+          handleFirestoreError(err, OperationType.DELETE, `live_classes/${id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore live class delete skipped:', err);
+      }
+    }
   },
   registerForLiveClass: (classId: string, userId: string): boolean => {
     const list = AppStore.getLiveClasses();
@@ -444,6 +568,18 @@ export const AppStore = {
     };
     orders.unshift(newOrder);
     setLocal(STORAGE_KEYS.ORDERS, orders);
+
+    // Save to Firestore
+    if (typeof window !== 'undefined') {
+      try {
+        setDoc(doc(db, 'orders', newOrder.id), newOrder).catch(err => {
+          handleFirestoreError(err, OperationType.CREATE, `orders/${newOrder.id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore order save skipped:', err);
+      }
+    }
+
     return newOrder;
   },
   updateOrderStatus: (orderId: string, status: 'approved' | 'rejected' | 'pending'): void => {
@@ -461,6 +597,17 @@ export const AppStore = {
       // Auto-register live class if approved
       if (status === 'approved' && orders[index].itemType === 'live_class') {
         AppStore.registerForLiveClass(orders[index].itemId, orders[index].userId);
+      }
+
+      // Update in Firestore
+      if (typeof window !== 'undefined') {
+        try {
+          updateDoc(doc(db, 'orders', orderId), { status }).catch(err => {
+            handleFirestoreError(err, OperationType.UPDATE, `orders/${orderId}`);
+          });
+        } catch (err) {
+          console.warn('Firestore order status update skipped:', err);
+        }
       }
     }
   },
@@ -663,6 +810,17 @@ export const AppStore = {
     };
     certs.unshift(newCert);
     setLocal(STORAGE_KEYS.CERTIFICATES, certs);
+
+    if (typeof window !== 'undefined') {
+      try {
+        setDoc(doc(db, 'certificates', newCert.id), newCert).catch(err => {
+          handleFirestoreError(err, OperationType.CREATE, `certificates/${newCert.id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore certificate save skipped:', err);
+      }
+    }
+
     return newCert;
   },
   saveCertificate: (cert: Certificate): void => {
@@ -674,10 +832,30 @@ export const AppStore = {
       certs.unshift(cert);
     }
     setLocal(STORAGE_KEYS.CERTIFICATES, certs);
+
+    if (typeof window !== 'undefined') {
+      try {
+        setDoc(doc(db, 'certificates', cert.id), cert, { merge: true }).catch(err => {
+          handleFirestoreError(err, OperationType.WRITE, `certificates/${cert.id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore certificate save skipped:', err);
+      }
+    }
   },
   deleteCertificate: (id: string): void => {
     const certs = AppStore.getCertificates().filter(c => c.id !== id);
     setLocal(STORAGE_KEYS.CERTIFICATES, certs);
+
+    if (typeof window !== 'undefined') {
+      try {
+        deleteDoc(doc(db, 'certificates', id)).catch(err => {
+          handleFirestoreError(err, OperationType.DELETE, `certificates/${id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore certificate delete skipped:', err);
+      }
+    }
   },
 
   // Site Reviews
@@ -690,14 +868,44 @@ export const AppStore = {
     if (idx >= 0) reviews[idx] = review;
     else reviews.unshift(review);
     setLocal(STORAGE_KEYS.SETTINGS + '_reviews', reviews);
+
+    if (typeof window !== 'undefined') {
+      try {
+        setDoc(doc(db, 'reviews', review.id), review, { merge: true }).catch(err => {
+          handleFirestoreError(err, OperationType.WRITE, `reviews/${review.id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore review save skipped:', err);
+      }
+    }
   },
   deleteReview: (id: string): void => {
     const reviews = AppStore.getReviews().filter(r => r.id !== id);
     setLocal(STORAGE_KEYS.SETTINGS + '_reviews', reviews);
+
+    if (typeof window !== 'undefined') {
+      try {
+        deleteDoc(doc(db, 'reviews', id)).catch(err => {
+          handleFirestoreError(err, OperationType.DELETE, `reviews/${id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore review delete skipped:', err);
+      }
+    }
   },
   deleteOrder: (id: string): void => {
     const orders = AppStore.getOrders().filter(o => o.id !== id);
     setLocal(STORAGE_KEYS.ORDERS, orders);
+
+    if (typeof window !== 'undefined') {
+      try {
+        deleteDoc(doc(db, 'orders', id)).catch(err => {
+          handleFirestoreError(err, OperationType.DELETE, `orders/${id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore order delete skipped:', err);
+      }
+    }
   },
 
   // Users & Roles Management
@@ -719,6 +927,16 @@ export const AppStore = {
       users.unshift(user);
     }
     setLocal(STORAGE_KEYS.USERS, users);
+
+    if (typeof window !== 'undefined' && user.uid) {
+      try {
+        setDoc(doc(db, 'users', user.uid), user, { merge: true }).catch(err => {
+          handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+        });
+      } catch (err) {
+        console.warn('Firestore user save skipped:', err);
+      }
+    }
   },
   updateUserRole: (userIdOrEmail: string, newRole: 'student' | 'scholar' | 'admin'): UserProfile | null => {
     const users = AppStore.getUsers();
@@ -772,10 +990,30 @@ export const AppStore = {
       list.push(formatted);
     }
     setLocal(STORAGE_KEYS.FACULTY, list);
+
+    if (typeof window !== 'undefined') {
+      try {
+        setDoc(doc(db, 'faculty', formatted.id), formatted, { merge: true }).catch(err => {
+          handleFirestoreError(err, OperationType.WRITE, `faculty/${formatted.id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore faculty save skipped:', err);
+      }
+    }
   },
   deleteFacultyMember: (id: string): void => {
     const list = AppStore.getFaculty().filter(m => m.id !== id);
     setLocal(STORAGE_KEYS.FACULTY, list);
+
+    if (typeof window !== 'undefined') {
+      try {
+        deleteDoc(doc(db, 'faculty', id)).catch(err => {
+          handleFirestoreError(err, OperationType.DELETE, `faculty/${id}`);
+        });
+      } catch (err) {
+        console.warn('Firestore faculty delete skipped:', err);
+      }
+    }
   },
 
   // Site Settings
@@ -806,8 +1044,82 @@ export const AppStore = {
     };
     setLocal(STORAGE_KEYS.SETTINGS, formatted);
     if (typeof window !== 'undefined') {
+      try {
+        setDoc(doc(db, 'settings', 'general'), formatted, { merge: true }).catch(err => {
+          handleFirestoreError(err, OperationType.WRITE, 'settings/general');
+        });
+      } catch (err) {
+        console.warn('Firestore settings save skipped:', err);
+      }
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new CustomEvent('noorfiqh_settings_updated', { detail: formatted }));
+    }
+  },
+
+  // Batch Sync All Local Data to Firestore
+  syncAllToFirestore: async (): Promise<{ success: boolean; count: number; error?: string }> => {
+    if (typeof window === 'undefined') return { success: false, count: 0 };
+    try {
+      let count = 0;
+      
+      // Courses
+      const courses = AppStore.getCourses();
+      for (const course of courses) {
+        await setDoc(doc(db, 'courses', course.id), course, { merge: true });
+        count++;
+      }
+
+      // Books
+      const books = AppStore.getBooks();
+      for (const book of books) {
+        await setDoc(doc(db, 'books', book.id), book, { merge: true });
+        count++;
+      }
+
+      // Live Classes
+      const liveClasses = AppStore.getLiveClasses();
+      for (const cls of liveClasses) {
+        await setDoc(doc(db, 'live_classes', cls.id), cls, { merge: true });
+        count++;
+      }
+
+      // Fatwas
+      const fatwas = AppStore.getFatwas();
+      for (const fatwa of fatwas) {
+        await setDoc(doc(db, 'fatwas', fatwa.id), fatwa, { merge: true });
+        count++;
+      }
+
+      // Orders
+      const orders = AppStore.getOrders();
+      for (const order of orders) {
+        await setDoc(doc(db, 'orders', order.id), order, { merge: true });
+        count++;
+      }
+
+      // Reviews
+      const reviews = AppStore.getReviews();
+      for (const review of reviews) {
+        await setDoc(doc(db, 'reviews', review.id), review, { merge: true });
+        count++;
+      }
+
+      // Faculty
+      const faculty = AppStore.getFaculty();
+      for (const member of faculty) {
+        await setDoc(doc(db, 'faculty', member.id), member, { merge: true });
+        count++;
+      }
+
+      // Settings
+      const settings = AppStore.getSettings();
+      await setDoc(doc(db, 'settings', 'general'), settings, { merge: true });
+      count++;
+
+      return { success: true, count };
+    } catch (err: any) {
+      handleFirestoreError(err, OperationType.WRITE, 'batch_sync');
+      return { success: false, count: 0, error: err.message || String(err) };
     }
   }
 };

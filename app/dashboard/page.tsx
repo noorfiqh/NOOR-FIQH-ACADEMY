@@ -33,6 +33,7 @@ import {
 import { LiveClassCard } from '@/components/LiveClassCard';
 import { PaymentModal } from '@/components/PaymentModal';
 import { LiveClass } from '@/lib/types';
+import { db, collection, query, where, onSnapshot, handleFirestoreError, OperationType } from '@/lib/firebase';
 
 export default function DashboardPage() {
   const { user, logout, login, loginWithGoogle } = useAuth();
@@ -58,10 +59,43 @@ export default function DashboardPage() {
   const [loginError, setLoginError] = useState('');
 
   const courses = AppStore.getCourses();
-  const orders = React.useMemo(() => (user ? AppStore.getUserOrders(user.uid) : []), [user]);
+  const [orders, setOrders] = useState<Order[]>(() => (user ? AppStore.getUserOrders(user.uid) : []));
   const progressList = user ? AppStore.getUserProgress(user.uid) : [];
   const userCerts = user ? AppStore.getCertificates(user.uid) : [];
   const liveClasses = AppStore.getLiveClasses();
+
+  // Sync user orders from Firestore
+  React.useEffect(() => {
+    if (!user) {
+      setOrders([]);
+      return;
+    }
+
+    // Set initial local orders
+    setOrders(AppStore.getUserOrders(user.uid));
+
+    // Listen to user's orders in Firestore
+    const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const firestoreOrders: Order[] = [];
+        snapshot.forEach((doc) => {
+          firestoreOrders.push({ id: doc.id, ...doc.data() } as Order);
+        });
+        setOrders(prev => {
+          const merged = [...firestoreOrders];
+          prev.forEach(p => {
+            if (!merged.some(m => m.id === p.id)) merged.push(p);
+          });
+          return merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        });
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `orders (user: ${user.uid})`);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   React.useEffect(() => {
     if (user && orders.length > 0) {

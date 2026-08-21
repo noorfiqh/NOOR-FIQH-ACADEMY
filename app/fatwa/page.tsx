@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppStore, INITIAL_FATWAS } from '@/lib/store';
 import { FatwaQuestion } from '@/lib/types';
+import { db, collection, onSnapshot, handleFirestoreError, OperationType } from '@/lib/firebase';
 import { 
   HelpCircle, 
   Search, 
@@ -28,7 +29,30 @@ function FatwaContent() {
     setFatwas(AppStore.getFatwas());
     const handleUpdate = () => setFatwas(AppStore.getFatwas());
     window.addEventListener('storage', handleUpdate);
-    return () => window.removeEventListener('storage', handleUpdate);
+
+    // Sync fatwas live from Firestore
+    const unsubscribe = onSnapshot(collection(db, 'fatwas'), (snapshot) => {
+      if (!snapshot.empty) {
+        const firestoreFatwas: FatwaQuestion[] = [];
+        snapshot.forEach((doc) => {
+          firestoreFatwas.push({ id: doc.id, ...doc.data() } as FatwaQuestion);
+        });
+        setFatwas(prev => {
+          const merged = [...firestoreFatwas];
+          prev.forEach(p => {
+            if (!merged.some(m => m.id === p.id)) merged.push(p);
+          });
+          return merged;
+        });
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'fatwas');
+    });
+
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      unsubscribe();
+    };
   }, []);
 
   // Form State

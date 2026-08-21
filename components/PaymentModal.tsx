@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CheckCircle, Smartphone, CreditCard, Truck, ShieldCheck, Copy, Check, AlertCircle } from 'lucide-react';
+import { X, CheckCircle, Smartphone, CreditCard, Truck, ShieldCheck, Copy, Check, AlertCircle, LogIn } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { AppStore } from '@/lib/store';
 import { sendOrderNotificationEmail } from '@/lib/email-service';
@@ -22,10 +22,13 @@ interface PaymentModalProps {
 }
 
 export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalProps) {
-  const { user } = useAuth();
+  const { user, loginWithGoogle } = useAuth();
   const [method, setMethod] = useState<'bkash' | 'nagad' | 'rocket' | 'card' | 'cod'>('bkash');
   const [trxId, setTrxId] = useState('');
   const [senderPhone, setSenderPhone] = useState('');
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
   const [shippingName, setShippingName] = useState(user?.name || '');
   const [shippingPhone, setShippingPhone] = useState(user?.phone || '');
   const [shippingAddress, setShippingAddress] = useState('');
@@ -47,12 +50,32 @@ export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalP
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleGoogleQuickLogin = async () => {
+    try {
+      setLoading(true);
+      setErrorMessage('');
+      const res = await loginWithGoogle();
+      if (!res.success) {
+        setErrorMessage(res.error || 'গুগল লগইন সম্পন্ন করা যায়নি।');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'গুগল লগইন সমস্যা।');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
-    if (!user) {
-      setErrorMessage('অনুগ্রহ করে অর্ডার সম্পন্ন করতে লগইন করুন।');
+    const currentUserId = user?.uid || (guestEmail ? `guest_${guestEmail.replace(/[^a-zA-Z0-9]/g, '_')}` : `guest_${Date.now()}`);
+    const currentUserName = user?.name || guestName.trim() || 'শিক্ষার্থী';
+    const currentUserEmail = user?.email || guestEmail.trim() || 'student@noorfiqh.com';
+    const currentUserPhone = user?.phone || guestPhone.trim() || senderPhone.trim() || shippingPhone.trim();
+
+    if (!user && (!guestName.trim() || !guestEmail.trim())) {
+      setErrorMessage('অনুগ্রহ করে আপনার নাম ও ইমেইল লিখুন অথবা গুগল দিয়ে ১-ক্লিকে লগইন করুন।');
       return;
     }
 
@@ -70,10 +93,10 @@ export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalP
 
     try {
       const order = AppStore.createOrder({
-        userId: user.uid,
-        userName: shippingName || user.name,
-        userEmail: user.email,
-        userPhone: shippingPhone || senderPhone,
+        userId: currentUserId,
+        userName: shippingName || currentUserName,
+        userEmail: currentUserEmail,
+        userPhone: shippingPhone || currentUserPhone,
         itemType: item.type,
         itemId: item.id,
         itemTitle: item.titleBn || item.title,
@@ -81,8 +104,8 @@ export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalP
         purchaseType: item.purchaseType || 'full_access',
         paymentMethod: method,
         trxId: method === 'card' ? `CARD-${Date.now()}` : (method === 'cod' ? 'CASH-ON-DELIVERY' : trxId.trim()),
-        paymentPhone: senderPhone,
-        shippingAddress: item.purchaseType === 'hardcover' ? `${shippingName}, ${shippingPhone}, ${shippingAddress}` : undefined
+        paymentPhone: senderPhone || currentUserPhone,
+        shippingAddress: item.purchaseType === 'hardcover' ? `${shippingName || currentUserName}, ${shippingPhone || currentUserPhone}, ${shippingAddress}` : undefined
       });
 
       // If user paid via Card or it's free, auto approve
@@ -161,6 +184,65 @@ export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalP
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* User Identity / Quick Login Card */}
+              {user ? (
+                <div className="bg-[#17A2B8]/10 border border-[#17A2B8]/30 rounded-2xl p-3.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-[#112734] text-white flex items-center justify-center font-bold text-xs">
+                      {user.name?.charAt(0) || 'U'}
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-[#112734] flex items-center gap-1.5">
+                        <span>{user.name}</span>
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">লগইনকৃত</span>
+                      </div>
+                      <div className="text-[11px] text-[#5a524d]">{user.email}</div>
+                    </div>
+                  </div>
+                  <ShieldCheck size={20} className="text-[#23626F]" />
+                </div>
+              ) : (
+                <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-[#112734]">অর্ডারকারীর তথ্য (Firestore সংরক্ষিত)</span>
+                    <button
+                      type="button"
+                      onClick={handleGoogleQuickLogin}
+                      disabled={loading}
+                      className="px-3 py-1.5 bg-white border border-[#ece8e0] hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
+                    >
+                      <LogIn size={13} />
+                      <span>গুগল ১-ক্লিক লগইন</span>
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <input
+                      type="text"
+                      required
+                      placeholder="আপনার পূর্ণ নাম *"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      className="px-3.5 py-2 rounded-xl border border-[#ece8e0] text-xs bg-white focus:outline-none focus:border-[#112734]"
+                    />
+                    <input
+                      type="email"
+                      required
+                      placeholder="আপনার ইমেইল অ্যাড্রেস *"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      className="px-3.5 py-2 rounded-xl border border-[#ece8e0] text-xs bg-white focus:outline-none focus:border-[#112734]"
+                    />
+                    <input
+                      type="tel"
+                      placeholder="মোবাইল নম্বর"
+                      value={guestPhone}
+                      onChange={(e) => setGuestPhone(e.target.value)}
+                      className="px-3.5 py-2 rounded-xl border border-[#ece8e0] text-xs bg-white focus:outline-none focus:border-[#112734] sm:col-span-2"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Item Summary Card */}
               <div className="bg-[#fdfcf9] p-4 rounded-2xl border border-[#ece8e0] flex items-center justify-between">
                 <div>
