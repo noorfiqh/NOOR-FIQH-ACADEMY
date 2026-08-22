@@ -1,6 +1,8 @@
 import { MetadataRoute } from 'next';
 import { INITIAL_COURSES, INITIAL_BOOKS, INITIAL_FATWAS } from '@/lib/seed-data';
 
+export const dynamic = 'force-static';
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://noorfiqhacademy.com';
   const currentDate = new Date();

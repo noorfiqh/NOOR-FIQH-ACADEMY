@@ -19,26 +19,24 @@ service cloud.firestore {
 
     // User profiles
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isOwner(userId) || isAdmin();
+      allow read: if true;
+      allow create, update: if isAuthenticated();
       allow delete: if isAdmin();
     }
 
     // Orders
     match /orders/{orderId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated() ? (request.resource.data.userId == request.auth.uid || isAdmin()) : true;
-      allow update, delete: if isAdmin();
+      allow read, create: if true;
+      allow update, delete: if true;
     }
 
     // Fatwas
     match /fatwas/{fatwaId} {
-      allow read: if resource.data.isPrivate == false || (isAuthenticated() && resource.data.userId == request.auth.uid) || isAdmin();
-      allow create: if true; // Allows public anonymous or registered fatwa questions
-      allow update, delete: if isAdmin();
+      allow read, create: if true;
+      allow update, delete: if true;
     }
 
-    // Courses, Books, Live Classes, Certificates, Reviews, Settings
+    // Courses, Books, Live Classes, Certificates, Reviews, Settings, Faculty
     match /courses/{courseId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -64,9 +62,18 @@ service cloud.firestore {
       allow write: if isAuthenticated() || isAdmin();
     }
 
+    match /faculty/{facultyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /settings/{docId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /user_progress/{docId} {
+      allow read, write: if isAuthenticated() || isAdmin();
     }
 
     // Test connection doc
