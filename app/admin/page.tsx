@@ -163,41 +163,24 @@ export default function AdminDashboardPage() {
 
     // Listen to Firestore Orders
     const unsubOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
-      if (!snapshot.empty) {
-        const firestoreOrders: Order[] = [];
-        snapshot.forEach((doc) => {
-          firestoreOrders.push({ id: doc.id, ...doc.data() } as Order);
-        });
-        if (firestoreOrders.length > 0) {
-          setOrders(prev => {
-            const merged = [...firestoreOrders];
-            prev.forEach(p => {
-              if (!merged.some(m => m.id === p.id)) merged.push(p);
-            });
-            return merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-          });
-        }
-      }
+      const firestoreOrders: Order[] = [];
+      snapshot.forEach((doc) => {
+        firestoreOrders.push({ id: doc.id, ...doc.data() } as Order);
+      });
+      firestoreOrders.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      setOrders(firestoreOrders);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'orders');
     });
 
     // Listen to Firestore Fatwas
     const unsubFatwas = onSnapshot(collection(db, 'fatwas'), (snapshot) => {
-      if (!snapshot.empty) {
-        const firestoreFatwas: FatwaQuestion[] = [];
-        snapshot.forEach((doc) => {
-          firestoreFatwas.push({ id: doc.id, ...doc.data() } as FatwaQuestion);
-        });
-        if (firestoreFatwas.length > 0) {
-          setFatwas(prev => {
-            const merged = [...firestoreFatwas];
-            prev.forEach(p => {
-              if (!merged.some(m => m.id === p.id)) merged.push(p);
-            });
-            return merged;
-          });
-        }
+      const firestoreFatwas: FatwaQuestion[] = [];
+      snapshot.forEach((doc) => {
+        firestoreFatwas.push({ id: doc.id, ...doc.data() } as FatwaQuestion);
+      });
+      if (firestoreFatwas.length > 0) {
+        setFatwas(firestoreFatwas);
       }
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'fatwas');
@@ -205,20 +188,12 @@ export default function AdminDashboardPage() {
 
     // Listen to Firestore Courses
     const unsubCourses = onSnapshot(collection(db, 'courses'), (snapshot) => {
-      if (!snapshot.empty) {
-        const firestoreCourses: Course[] = [];
-        snapshot.forEach((doc) => {
-          firestoreCourses.push({ id: doc.id, ...doc.data() } as Course);
-        });
-        if (firestoreCourses.length > 0) {
-          setCourses(prev => {
-            const merged = [...firestoreCourses];
-            prev.forEach(p => {
-              if (!merged.some(m => m.id === p.id)) merged.push(p);
-            });
-            return merged;
-          });
-        }
+      const firestoreCourses: Course[] = [];
+      snapshot.forEach((doc) => {
+        firestoreCourses.push({ id: doc.id, ...doc.data() } as Course);
+      });
+      if (firestoreCourses.length > 0) {
+        setCourses(firestoreCourses);
       }
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'courses');
@@ -226,20 +201,12 @@ export default function AdminDashboardPage() {
 
     // Listen to Firestore Books
     const unsubBooks = onSnapshot(collection(db, 'books'), (snapshot) => {
-      if (!snapshot.empty) {
-        const firestoreBooks: Book[] = [];
-        snapshot.forEach((doc) => {
-          firestoreBooks.push({ id: doc.id, ...doc.data() } as Book);
-        });
-        if (firestoreBooks.length > 0) {
-          setBooks(prev => {
-            const merged = [...firestoreBooks];
-            prev.forEach(p => {
-              if (!merged.some(m => m.id === p.id)) merged.push(p);
-            });
-            return merged;
-          });
-        }
+      const firestoreBooks: Book[] = [];
+      snapshot.forEach((doc) => {
+        firestoreBooks.push({ id: doc.id, ...doc.data() } as Book);
+      });
+      if (firestoreBooks.length > 0) {
+        setBooks(firestoreBooks);
       }
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'books');

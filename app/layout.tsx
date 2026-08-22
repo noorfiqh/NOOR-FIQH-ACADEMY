@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
+import { StoreSyncProvider } from '@/components/StoreSyncProvider';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
@@ -85,10 +86,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen flex flex-col antialiased bg-[#fcfdfd] text-slate-900 selection:bg-[#17A2B8] selection:text-slate-950" suppressHydrationWarning>
         <AuthProvider>
-          <Navbar />
-          <main className="flex-grow">{children}</main>
-          <Footer />
-          <FloatingWhatsApp />
+          <StoreSyncProvider>
+            <Navbar />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+            <FloatingWhatsApp />
+          </StoreSyncProvider>
         </AuthProvider>
       </body>
     </html>

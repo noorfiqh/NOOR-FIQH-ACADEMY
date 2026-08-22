@@ -3,7 +3,7 @@
 import { Course, Book, FatwaQuestion, LiveClass, Order, UserProgress, Certificate, SiteReview, HeroCardSettings, UserProfile, FacultyMember, SiteSettings } from './types';
 import { INITIAL_COURSES, INITIAL_BOOKS, INITIAL_FATWAS, INITIAL_LIVE_CLASSES, INITIAL_REVIEWS } from './seed-data';
 import { formatImageUrl } from './utils';
-import { db, doc, setDoc, updateDoc, deleteDoc, collection, getDocs, OperationType, handleFirestoreError } from './firebase';
+import { db, doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot, OperationType, handleFirestoreError } from './firebase';
 
 export { INITIAL_COURSES, INITIAL_BOOKS, INITIAL_FATWAS, INITIAL_LIVE_CLASSES, INITIAL_REVIEWS };
 
@@ -1121,6 +1121,177 @@ export const AppStore = {
       handleFirestoreError(err, OperationType.WRITE, 'batch_sync');
       return { success: false, count: 0, error: err.message || String(err) };
     }
+  },
+
+  // Global Realtime Listeners for Cross-Browser Synchronous Updates
+  initGlobalSync: (): (() => void) => {
+    if (typeof window === 'undefined') return () => {};
+
+    const unsubs: (() => void)[] = [];
+
+    // Helper to notify all React components in browser
+    const triggerLocalUpdate = (eventCustomName?: string, detail?: any) => {
+      window.dispatchEvent(new Event('storage'));
+      if (eventCustomName) {
+        window.dispatchEvent(new CustomEvent(eventCustomName, { detail }));
+      }
+    };
+
+    try {
+      // 1. Courses Realtime Sync
+      const unsubCourses = onSnapshot(collection(db, 'courses'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: Course[] = [];
+          snapshot.forEach((d) => {
+            list.push({ id: d.id, ...d.data() } as Course);
+          });
+          if (list.length > 0) {
+            setLocal(STORAGE_KEYS.COURSES, list);
+            triggerLocalUpdate('noorfiqh_courses_updated', list);
+          }
+        }
+      }, (err) => console.warn('Firestore courses sync error:', err));
+      unsubs.push(unsubCourses);
+
+      // 2. Books Realtime Sync
+      const unsubBooks = onSnapshot(collection(db, 'books'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: Book[] = [];
+          snapshot.forEach((d) => {
+            list.push({ id: d.id, ...d.data() } as Book);
+          });
+          if (list.length > 0) {
+            setLocal(STORAGE_KEYS.BOOKS, list);
+            triggerLocalUpdate('noorfiqh_books_updated', list);
+          }
+        }
+      }, (err) => console.warn('Firestore books sync error:', err));
+      unsubs.push(unsubBooks);
+
+      // 3. Fatwas Realtime Sync
+      const unsubFatwas = onSnapshot(collection(db, 'fatwas'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: FatwaQuestion[] = [];
+          snapshot.forEach((d) => {
+            list.push({ id: d.id, ...d.data() } as FatwaQuestion);
+          });
+          if (list.length > 0) {
+            setLocal(STORAGE_KEYS.FATWAS, list);
+            triggerLocalUpdate('noorfiqh_fatwas_updated', list);
+          }
+        }
+      }, (err) => console.warn('Firestore fatwas sync error:', err));
+      unsubs.push(unsubFatwas);
+
+      // 4. Live Classes Realtime Sync
+      const unsubLive = onSnapshot(collection(db, 'live_classes'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: LiveClass[] = [];
+          snapshot.forEach((d) => {
+            list.push({ id: d.id, ...d.data() } as LiveClass);
+          });
+          if (list.length > 0) {
+            setLocal(STORAGE_KEYS.LIVE_CLASSES, list);
+            triggerLocalUpdate('noorfiqh_live_updated', list);
+          }
+        }
+      }, (err) => console.warn('Firestore live classes sync error:', err));
+      unsubs.push(unsubLive);
+
+      // 5. Orders Realtime Sync
+      const unsubOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: Order[] = [];
+          snapshot.forEach((d) => {
+            list.push({ id: d.id, ...d.data() } as Order);
+          });
+          if (list.length > 0) {
+            setLocal(STORAGE_KEYS.ORDERS, list);
+            triggerLocalUpdate('noorfiqh_orders_updated', list);
+          }
+        }
+      }, (err) => console.warn('Firestore orders sync error:', err));
+      unsubs.push(unsubOrders);
+
+      // 6. Faculty Realtime Sync
+      const unsubFaculty = onSnapshot(collection(db, 'faculty'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: FacultyMember[] = [];
+          snapshot.forEach((d) => {
+            list.push({ id: d.id, ...d.data() } as FacultyMember);
+          });
+          if (list.length > 0) {
+            setLocal(STORAGE_KEYS.FACULTY, list);
+            triggerLocalUpdate('noorfiqh_faculty_updated', list);
+          }
+        }
+      }, (err) => console.warn('Firestore faculty sync error:', err));
+      unsubs.push(unsubFaculty);
+
+      // 7. Reviews Realtime Sync
+      const unsubReviews = onSnapshot(collection(db, 'reviews'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: SiteReview[] = [];
+          snapshot.forEach((d) => {
+            list.push({ id: d.id, ...d.data() } as SiteReview);
+          });
+          if (list.length > 0) {
+            setLocal(STORAGE_KEYS.SETTINGS + '_reviews', list);
+            triggerLocalUpdate('noorfiqh_reviews_updated', list);
+          }
+        }
+      }, (err) => console.warn('Firestore reviews sync error:', err));
+      unsubs.push(unsubReviews);
+
+      // 8. Certificates Realtime Sync
+      const unsubCerts = onSnapshot(collection(db, 'certificates'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: Certificate[] = [];
+          snapshot.forEach((d) => {
+            list.push({ id: d.id, ...d.data() } as Certificate);
+          });
+          if (list.length > 0) {
+            setLocal(STORAGE_KEYS.CERTIFICATES, list);
+            triggerLocalUpdate('noorfiqh_certificates_updated', list);
+          }
+        }
+      }, (err) => console.warn('Firestore certificates sync error:', err));
+      unsubs.push(unsubCerts);
+
+      // 9. Site Settings Realtime Sync
+      const unsubSettings = onSnapshot(doc(db, 'settings', 'general'), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data() as SiteSettings;
+          setLocal(STORAGE_KEYS.SETTINGS, data);
+          triggerLocalUpdate('noorfiqh_settings_updated', data);
+        }
+      }, (err) => console.warn('Firestore settings sync error:', err));
+      unsubs.push(unsubSettings);
+
+      // 10. Users Realtime Sync
+      const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: UserProfile[] = [];
+          snapshot.forEach((d) => {
+            list.push({ uid: d.id, ...d.data() } as UserProfile);
+          });
+          if (list.length > 0) {
+            setLocal(STORAGE_KEYS.USERS, list);
+            triggerLocalUpdate('noorfiqh_users_updated', list);
+          }
+        }
+      }, (err) => console.warn('Firestore users sync error:', err));
+      unsubs.push(unsubUsers);
+
+    } catch (e) {
+      console.warn('initGlobalSync error:', e);
+    }
+
+    return () => {
+      unsubs.forEach(unsub => {
+        try { unsub(); } catch (_) {}
+      });
+    };
   }
 };
 
