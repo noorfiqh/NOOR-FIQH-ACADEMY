@@ -481,7 +481,7 @@ export default function DashboardPage() {
                 : 'bg-white text-[#5a524d] hover:bg-slate-50 border border-[#ece8e0]'
             }`}
           >
-            আমার কোর্সসমূহ
+            আমার কোর্সসমূহ ({courses.filter(c => orders.some(o => o.status === 'approved' && o.itemType === 'course' && o.itemId === c.id)).length})
           </button>
           <button
             onClick={() => setActiveTab('books')}
@@ -491,7 +491,7 @@ export default function DashboardPage() {
                 : 'bg-white text-[#5a524d] hover:bg-slate-50 border border-[#ece8e0]'
             }`}
           >
-            সংগৃহীত কিতাব (E-Books)
+            সংগৃহীত কিতাব ({AppStore.getBooks().filter(b => orders.some(o => o.status === 'approved' && o.itemType === 'book' && o.itemId === b.id && (o.purchaseType === 'pdf' || o.purchaseType === 'full_access'))).length})
           </button>
           <button
             onClick={() => setActiveTab('orders')}
@@ -530,107 +530,161 @@ export default function DashboardPage() {
         {/* Tab 1: Enrolled Courses */}
         {activeTab === 'courses' && (
           <div className="space-y-6">
-            <h3 className="font-extrabold text-lg text-[#112734]">ভর্তিকৃত পাঠ্যক্রম</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses.map((course) => {
-                const prog = progressList.find(p => p.courseId === course.id);
-                const totalL = course.lessons?.length || 1;
-                const doneL = prog?.completedLessons?.length || prog?.completedLessonIds?.length || 0;
-                const isFinished = Boolean(prog?.isCompleted || (prog && prog.progressPercentage >= 100) || doneL >= totalL);
-                const percent = isFinished ? 100 : (prog ? Math.min(100, Math.round((doneL / totalL) * 100)) : 0);
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-extrabold text-lg sm:text-xl text-[#112734]">ভর্তিকৃত পাঠ্যক্রম ও কোর্সসমূহ</h3>
+                <p className="text-xs text-[#8a817c]">আপনার অনুমোদিত ও সক্রিয় সকল কোর্সের ক্লাস লেকচার ও পাঠ্যসূচি</p>
+              </div>
+              <Link
+                href="/courses"
+                className="px-4 py-2 bg-[#17A2B8]/10 hover:bg-[#17A2B8]/15 text-[#112734] rounded-xl text-xs font-bold border border-[#17A2B8]/30 flex items-center gap-1.5 transition-colors"
+              >
+                <BookOpen size={15} />
+                <span>নতুন কোর্সে ভর্তি হোন</span>
+              </Link>
+            </div>
 
-                const handleCardComplete = () => {
-                  AppStore.completeCourseFully(user.uid, course.id, user.name);
-                  const cert = AppStore.getCertificates(user.uid).find(c => c.courseId === course.id);
-                  if (cert) {
-                    setViewingCertificate({
-                      userName: cert.userName,
-                      courseTitle: cert.courseTitle,
-                      issueDate: cert.issueDate,
-                      certificateNumber: cert.certificateNumber,
-                      grade: cert.grade,
-                      certificateCopyUrl: cert.certificateCopyUrl || cert.customPdfUrl
-                    });
-                  } else {
-                    setViewingCertificate({
-                      userName: user.name || 'শিক্ষার্থী',
-                      courseTitle: course.titleBn,
-                      issueDate: new Date().toLocaleDateString('bn-BD'),
-                      certificateNumber: `NFA-${course.id.substring(0, 4).toUpperCase()}-${Date.now().toString().slice(-4)}`,
-                      grade: 'Mumtaz (Distinction)'
-                    });
-                  }
-                };
+            {/* Pending Course Orders Notice */}
+            {orders.filter(o => o.status === 'pending' && o.itemType === 'course').length > 0 && (
+              <div className="bg-amber-50/90 border border-amber-200 p-4 rounded-2xl flex items-start gap-3 text-amber-900 text-xs">
+                <Clock size={18} className="shrink-0 text-amber-600 mt-0.5" />
+                <div>
+                  <p className="font-bold text-amber-950 mb-0.5">যাচাইাধীন কোর্সের এনরোলমেন্ট রয়েছে:</p>
+                  <p className="text-[11px] text-amber-800">
+                    আপনার {orders.filter(o => o.status === 'pending' && o.itemType === 'course').length}টি কোর্স ভর্তির পেমেন্ট তথ্য (TrxID) এডমিন কর্তৃক ভেরিফাই হচ্ছে। এডমিন অনুমোদন দেওয়া মাত্রই তা আপনার ড্যাশবোর্ডে ক্লাস করার জন্য উন্মুক্ত হয়ে যাবে।
+                  </p>
+                </div>
+              </div>
+            )}
 
+            {/* Approved Enrolled Courses */}
+            {(() => {
+              const enrolledCourses = courses.filter(course => 
+                orders.some(o => o.status === 'approved' && o.itemType === 'course' && o.itemId === course.id)
+              );
+
+              if (enrolledCourses.length === 0) {
                 return (
-                  <div
-                    key={course.id}
-                    className="bg-white p-5 rounded-3xl border border-[#ece8e0] card-natural-shadow flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="relative aspect-video rounded-2xl overflow-hidden mb-3">
-                        <img
-                          src={course.thumbnail}
-                          alt={course.titleBn}
-                          className="w-full h-full object-cover"
-                        />
-                        {isFinished && (
-                          <div className="absolute top-2 right-2 bg-emerald-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
-                            <CheckCircle size={12} />
-                            <span>১০০% সম্পন্ন</span>
-                          </div>
-                        )}
-                      </div>
-                      <h4 className="font-extrabold text-base text-[#2c3e50] mb-2">{course.titleBn}</h4>
-                      <p className="text-xs text-[#8a817c] mb-4">ইন্সট্রাক্টর: {course.instructor.nameBn}</p>
+                  <div className="col-span-full py-16 text-center bg-white rounded-3xl border border-dashed border-[#ece8e0] space-y-4">
+                    <BookOpen className="mx-auto text-slate-300" size={48} />
+                    <div className="space-y-1">
+                      <h4 className="font-extrabold text-base text-[#2c3e50]">আপনার কোনো সক্রিয় কোর্স নেই</h4>
+                      <p className="text-xs text-[#8a817c]">আপনি কোনো কোর্সে ভর্তি হয়ে পেমেন্ট সম্পন্ন করলে এবং এডমিন অনুমোদন দিলে তা এখানে যুক্ত হবে।</p>
                     </div>
-
-                    <div className="space-y-3 pt-3 border-t border-[#ece8e0]">
-                      <div className="flex items-center justify-between text-xs font-bold text-[#5a524d]">
-                        <span>অগ্রগতি</span>
-                        <span className={percent === 100 ? 'text-emerald-700 font-extrabold' : 'text-[#112734]'}>
-                          {percent}% সম্পন্ন {percent === 100 ? '✓' : ''}
-                        </span>
-                      </div>
-                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${percent === 100 ? 'bg-emerald-600' : 'bg-[#112734]'}`}
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-2">
-                        <button
-                          onClick={() => setSelectedCourse(course)}
-                          className="w-full py-2.5 bg-[#112734] hover:bg-[#23626F] text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
-                        >
-                          <PlayCircle size={15} />
-                          <span>{percent === 100 ? 'ক্লাস পুনরায় দেখুন' : 'ক্লাস শুরু করুন'}</span>
-                        </button>
-
-                        {percent === 100 ? (
-                          <button
-                            onClick={handleCardComplete}
-                            className="w-full py-2 bg-[#17A2B8] hover:bg-[#23626F] text-slate-950 hover:text-white font-extrabold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
-                          >
-                            <Award size={14} />
-                            <span>সনদপত্র দেখুন 🎓</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={handleCardComplete}
-                            className="w-full py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-xl text-[11px] transition-colors flex items-center justify-center gap-1"
-                          >
-                            <Award size={13} />
-                            <span>সম্পূর্ণ চিহ্নিত করে সনদ নিন 🎓</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                    <Link
+                      href="/courses"
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#112734] hover:bg-[#23626F] text-white font-bold rounded-xl text-xs shadow-md transition-colors"
+                    >
+                      <Sparkles size={14} className="text-[#17A2B8]" />
+                      <span>সকল কোর্স দেখুন ও ভর্তি হোন</span>
+                    </Link>
                   </div>
                 );
-              })}
-            </div>
+              }
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {enrolledCourses.map((course) => {
+                    const prog = progressList.find(p => p.courseId === course.id);
+                    const totalL = course.lessons?.length || 1;
+                    const doneL = prog?.completedLessons?.length || prog?.completedLessonIds?.length || 0;
+                    const isFinished = Boolean(prog?.isCompleted || (prog && prog.progressPercentage >= 100) || doneL >= totalL);
+                    const percent = isFinished ? 100 : (prog ? Math.min(100, Math.round((doneL / totalL) * 100)) : 0);
+
+                    const handleCardComplete = () => {
+                      AppStore.completeCourseFully(user.uid, course.id, user.name);
+                      const cert = AppStore.getCertificates(user.uid).find(c => c.courseId === course.id);
+                      if (cert) {
+                        setViewingCertificate({
+                          userName: cert.userName,
+                          courseTitle: cert.courseTitle,
+                          issueDate: cert.issueDate,
+                          certificateNumber: cert.certificateNumber,
+                          grade: cert.grade,
+                          certificateCopyUrl: cert.certificateCopyUrl || cert.customPdfUrl
+                        });
+                      } else {
+                        setViewingCertificate({
+                          userName: user.name || 'শিক্ষার্থী',
+                          courseTitle: course.titleBn,
+                          issueDate: new Date().toLocaleDateString('bn-BD'),
+                          certificateNumber: `NFA-${course.id.substring(0, 4).toUpperCase()}-${Date.now().toString().slice(-4)}`,
+                          grade: 'Mumtaz (Distinction)'
+                        });
+                      }
+                    };
+
+                    return (
+                      <div
+                        key={course.id}
+                        className="bg-white p-5 rounded-3xl border border-[#ece8e0] card-natural-shadow flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="relative aspect-video rounded-2xl overflow-hidden mb-3">
+                            <img
+                              src={course.thumbnail}
+                              alt={course.titleBn}
+                              className="w-full h-full object-cover"
+                            />
+                            {isFinished && (
+                              <div className="absolute top-2 right-2 bg-emerald-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                                <CheckCircle size={12} />
+                                <span>১০০% সম্পন্ন</span>
+                              </div>
+                            )}
+                          </div>
+                          <h4 className="font-extrabold text-base text-[#2c3e50] mb-2">{course.titleBn}</h4>
+                          <p className="text-xs text-[#8a817c] mb-4">ইন্সট্রাক্টর: {course.instructor.nameBn}</p>
+                        </div>
+
+                        <div className="space-y-3 pt-3 border-t border-[#ece8e0]">
+                          <div className="flex items-center justify-between text-xs font-bold text-[#5a524d]">
+                            <span>অগ্রগতি</span>
+                            <span className={percent === 100 ? 'text-emerald-700 font-extrabold' : 'text-[#112734]'}>
+                              {percent}% সম্পন্ন {percent === 100 ? '✓' : ''}
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${percent === 100 ? 'bg-emerald-600' : 'bg-[#112734]'}`}
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-2">
+                            <button
+                              onClick={() => setSelectedCourse(course)}
+                              className="w-full py-2.5 bg-[#112734] hover:bg-[#23626F] text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5"
+                            >
+                              <PlayCircle size={15} />
+                              <span>{percent === 100 ? 'ক্লাস পুনরায় দেখুন' : 'ক্লাস শুরু করুন'}</span>
+                            </button>
+
+                            {percent === 100 ? (
+                              <button
+                                onClick={handleCardComplete}
+                                className="w-full py-2 bg-[#17A2B8] hover:bg-[#23626F] text-slate-950 hover:text-white font-extrabold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                              >
+                                <Award size={14} />
+                                <span>সনদপত্র দেখুন 🎓</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={handleCardComplete}
+                                className="w-full py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-xl text-[11px] transition-colors flex items-center justify-center gap-1"
+                              >
+                                <Award size={13} />
+                                <span>সম্পূর্ণ চিহ্নিত করে সনদ নিন 🎓</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 

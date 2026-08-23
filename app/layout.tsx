@@ -6,6 +6,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { SeoSchema } from '@/components/SeoSchema';
+import { GoogleAnalytics } from '@/components/GoogleAnalytics';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -85,6 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SeoSchema />
       </head>
       <body className="min-h-screen flex flex-col antialiased bg-[#fcfdfd] text-slate-900 selection:bg-[#17A2B8] selection:text-slate-950" suppressHydrationWarning>
+        <GoogleAnalytics gaId="G-L14M0HQP0R" />
         <AuthProvider>
           <StoreSyncProvider>
             <Navbar />

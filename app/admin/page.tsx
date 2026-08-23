@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { AppStore } from '@/lib/store';
-import { Course, Book, FatwaQuestion, Order, Certificate, LiveClass, SiteReview, Lesson, QuizQuestion, UserProfile, FacultyMember, SiteSettings } from '@/lib/types';
+import { AppStore, DEFAULT_COURSE_CATEGORIES } from '@/lib/store';
+import { Course, Book, FatwaQuestion, Order, Certificate, LiveClass, SiteReview, Lesson, QuizQuestion, UserProfile, FacultyMember, SiteSettings, CourseCategory } from '@/lib/types';
 import { LoginModal } from '@/components/LoginModal';
 import { 
   ShieldCheck, 
   CheckCircle, 
+  CheckCircle2, 
   XCircle, 
   HelpCircle, 
   BookOpen, 
@@ -45,7 +46,12 @@ import {
   UserPlus, 
   GraduationCap, 
   Mail,
-  Printer
+  Printer,
+  Copy,
+  Check,
+  RefreshCw,
+  Library,
+  Truck
 } from 'lucide-react';
 import { CertificateView } from '@/components/CertificateView';
 import { sendTestNotificationEmail } from '@/lib/email-service';
@@ -93,6 +99,8 @@ export default function AdminDashboardPage() {
   const [orderFilter, setOrderFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [fatwaFilter, setFatwaFilter] = useState<'all' | 'pending' | 'answered'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedOrderForAction, setSelectedOrderForAction] = useState<Order | null>(null);
+  const [showManualOrderModal, setShowManualOrderModal] = useState(false);
 
   // Course Editor State
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -125,7 +133,7 @@ export default function AdminDashboardPage() {
   const [isNewReview, setIsNewReview] = useState(false);
 
   // Settings Sub-sidebar Navigation State
-  const [settingsSubTab, setSettingsSubTab] = useState<'general' | 'hero' | 'notice' | 'about' | 'terms' | 'faq' | 'contact' | 'marketing' | 'email_notify'>('general');
+  const [settingsSubTab, setSettingsSubTab] = useState<'general' | 'hero' | 'courses_page' | 'books_page' | 'fatwa_page' | 'categories' | 'notice' | 'about' | 'terms' | 'faq' | 'contact' | 'marketing' | 'email_notify'>('general');
   const [testEmailLoading, setTestEmailLoading] = useState(false);
   const [testEmailFeedback, setTestEmailFeedback] = useState<{ success: boolean; needsActivation?: boolean; message: string } | null>(null);
 
@@ -212,11 +220,22 @@ export default function AdminDashboardPage() {
       handleFirestoreError(error, OperationType.LIST, 'books');
     });
 
+    // Listen to local update events for immediate zero-latency UI updates
+    const handleOrderLocalUpdate = () => {
+      setOrders(AppStore.getOrders());
+    };
+    window.addEventListener('noorfiqh_orders_updated', handleOrderLocalUpdate);
+    window.addEventListener('noorfiqh_store_updated', handleOrderLocalUpdate);
+    window.addEventListener('storage', handleOrderLocalUpdate);
+
     return () => {
       unsubOrders();
       unsubFatwas();
       unsubCourses();
       unsubBooks();
+      window.removeEventListener('noorfiqh_orders_updated', handleOrderLocalUpdate);
+      window.removeEventListener('noorfiqh_store_updated', handleOrderLocalUpdate);
+      window.removeEventListener('storage', handleOrderLocalUpdate);
     };
   }, [isAdmin]);
 
@@ -335,10 +354,11 @@ export default function AdminDashboardPage() {
   const pendingFatwasCount = fatwas.filter(f => f.status === 'pending').length;
 
   // Order Handlers
-  const handleApproveOrder = (orderId: string) => {
+  const handleApproveOrder = async (orderId: string) => {
+    const ord = orders.find(o => o.id === orderId);
     AppStore.updateOrderStatus(orderId, 'approved');
     refreshAllData();
-    showNotification('অর্ডার ও কোর্স এক্সেস সফলভাবে অনুমোদন করা হয়েছে');
+    showNotification(`অর্ডার #${ord?.orderNumber || ''} অনুমোদিত হয়েছে ও ${ord?.userName || 'শিক্ষার্থী'}কে কোর্স এক্সেস প্রদান করা হয়েছে।`);
   };
 
   const handleRejectOrder = (orderId: string) => {
@@ -353,6 +373,32 @@ export default function AdminDashboardPage() {
       refreshAllData();
       showNotification('অর্ডার রেকর্ড মুছে ফেলা হয়েছে');
     }
+  };
+
+  const handleSaveManualOrder = async (orderData: Partial<Order>) => {
+    const newOrd: Order = {
+      id: `ord-manual-${Date.now()}`,
+      orderNumber: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
+      userId: orderData.userId || `user-${Date.now()}`,
+      userName: orderData.userName || 'শিক্ষার্থী',
+      userEmail: orderData.userEmail || '',
+      userPhone: orderData.userPhone || '',
+      itemType: orderData.itemType || 'course',
+      itemId: orderData.itemId || '',
+      itemTitle: orderData.itemTitle || '',
+      amount: Number(orderData.amount) || 0,
+      paymentMethod: orderData.paymentMethod || 'bkash',
+      trxId: orderData.trxId || `MANUAL-${Math.floor(1000 + Math.random() * 9000)}`,
+      status: orderData.status || 'approved',
+      createdAt: new Date().toISOString(),
+      shippingAddress: orderData.shippingAddress || '',
+      purchaseType: orderData.purchaseType || 'pdf'
+    };
+
+    await AppStore.createOrderAsync(newOrd);
+    refreshAllData();
+    setShowManualOrderModal(false);
+    showNotification(`ম্যানুয়াল ভর্তি সম্পন্ন হয়েছে এবং ${newOrd.userName}কে এক্সেস প্রদান করা হয়েছে!`);
   };
 
   // Fatwa Answering Handler
@@ -1036,68 +1082,205 @@ export default function AdminDashboardPage() {
           {/* TAB 3: ORDERS & ENROLLMENT VERIFICATION */}
           {activeTab === 'orders' && (
             <div className="space-y-6 animate-in fade-in">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              {/* Header & Quick Action Buttons */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-[#ece8e0] card-natural-shadow">
                 <div>
-                  <h2 className="text-2xl font-black text-[#112734]">ভর্তি ও পেমেন্ট ভেরিফিকেশন</h2>
-                  <p className="text-xs text-[#8a817c]">বিকাশ, নগদ, রকেটের TrxID যাচাই করে কোর্স ও কিতাব এক্সেস দিন</p>
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag className="text-[#17A2B8]" size={24} />
+                    <h2 className="text-2xl font-black text-[#112734] font-anek">ভর্তি ও অর্ডার অনুমোদন কেন্দ্র</h2>
+                  </div>
+                  <p className="text-xs text-[#8a817c] mt-1 font-tiro">
+                    শিক্ষার্থীদের পেমেন্ট (bKash/Nagad/Rocket/Card/COD) যাচাই করে ১-ক্লিকে কোর্স এক্সেস দিন এবং হোয়াটসঅ্যাপে কনফার্মেশন পাঠান।
+                  </p>
                 </div>
 
-                <div className="flex gap-2">
-                  {(['all', 'pending', 'approved', 'rejected'] as const).map((filter) => (
-                    <button
-                      key={filter}
-                      onClick={() => setOrderFilter(filter)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        orderFilter === filter
-                          ? 'bg-[#112734] text-white shadow'
-                          : 'bg-white text-[#5a524d] border border-[#ece8e0] hover:bg-slate-50'
-                      }`}
-                    >
-                      {filter === 'all' && `সকল (${orders.length})`}
-                      {filter === 'pending' && `পেন্ডিং (${orders.filter(o => o.status === 'pending').length})`}
-                      {filter === 'approved' && `অনুমোদিত (${orders.filter(o => o.status === 'approved').length})`}
-                      {filter === 'rejected' && `বাতিল (${orders.filter(o => o.status === 'rejected').length})`}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      refreshAllData();
+                      showNotification('ফায়ারস্টোর ও লোকাল ডাটাবেস থেকে রিফ্রেশ সম্পন্ন হয়েছে');
+                    }}
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold font-tiro bg-[#fdfcf9] hover:bg-slate-100 text-[#5a524d] border border-[#ece8e0] flex items-center gap-1.5 shadow-sm transition-all"
+                    title="রিয়েল-টাইম রিফ্রেশ"
+                  >
+                    <RefreshCw size={14} className="text-[#17A2B8]" />
+                    <span>রিফ্রেশ</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowManualOrderModal(true)}
+                    className="px-4 py-2 bg-[#112734] hover:bg-[#23626F] text-white rounded-xl text-xs font-bold font-tiro flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all"
+                  >
+                    <Plus size={15} />
+                    <span>+ ম্যানুয়াল ভর্তি / নতুন অর্ডার</span>
+                  </button>
                 </div>
               </div>
 
+              {/* Order Stats Overview */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <div className="bg-white p-4 rounded-2xl border border-[#ece8e0] card-natural-shadow">
+                  <p className="text-[11px] font-bold text-[#8a817c] uppercase">মোট আবেদন</p>
+                  <p className="text-2xl font-black text-[#112734] mt-1">{orders.length}</p>
+                </div>
+                <div className="bg-amber-50/70 p-4 rounded-2xl border border-amber-200/80 card-natural-shadow">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-bold text-amber-800 uppercase">পেন্ডিং যাচাই</p>
+                    {orders.filter(o => o.status === 'pending').length > 0 && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    )}
+                  </div>
+                  <p className="text-2xl font-black text-amber-900 mt-1">
+                    {orders.filter(o => o.status === 'pending').length}
+                  </p>
+                </div>
+                <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200/80 card-natural-shadow">
+                  <p className="text-[11px] font-bold text-emerald-800 uppercase">অনুমোদিত ভর্তি</p>
+                  <p className="text-2xl font-black text-emerald-900 mt-1">
+                    {orders.filter(o => o.status === 'approved').length}
+                  </p>
+                </div>
+                <div className="bg-blue-50/70 p-4 rounded-2xl border border-blue-200/80 card-natural-shadow">
+                  <p className="text-[11px] font-bold text-blue-800 uppercase">মোট আদায়কৃত ফি</p>
+                  <p className="text-2xl font-black text-blue-900 mt-1">
+                    ৳{orders.filter(o => o.status === 'approved').reduce((sum, o) => sum + (o.amount || 0), 0).toLocaleString('bn-BD')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Filters & Search */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#ece8e0]">
+                {/* Status Tabs */}
+                <div className="flex flex-wrap gap-1.5">
+                  {(['all', 'pending', 'approved', 'rejected'] as const).map((filter) => {
+                    const count = filter === 'all' 
+                      ? orders.length 
+                      : orders.filter(o => o.status === filter).length;
+                    return (
+                      <button
+                        key={filter}
+                        type="button"
+                        onClick={() => setOrderFilter(filter)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold font-tiro transition-all flex items-center gap-1.5 ${
+                          orderFilter === filter
+                            ? 'bg-[#112734] text-white shadow-sm'
+                            : 'bg-[#fdfcf9] text-[#5a524d] hover:bg-slate-100 border border-[#ece8e0]'
+                        }`}
+                      >
+                        <span>
+                          {filter === 'all' && 'সকল অর্ডার'}
+                          {filter === 'pending' && 'পেন্ডিং'}
+                          {filter === 'approved' && 'অনুমোদিত'}
+                          {filter === 'rejected' && 'বাতিল'}
+                        </span>
+                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                          orderFilter === filter
+                            ? 'bg-white/20 text-white font-bold'
+                            : filter === 'pending' && count > 0 ? 'bg-amber-100 text-amber-800 font-bold' : 'bg-slate-200 text-slate-700'
+                        }`}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Search Box */}
+                <div className="relative min-w-[240px]">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="নাম, ফোন, TrxID বা অর্ডার খুঁজুন..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-1.5 rounded-xl border border-[#ece8e0] text-xs bg-[#fdfcf9] focus:bg-white focus:border-[#17A2B8] outline-none font-tiro"
+                  />
+                  {searchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Orders Table Container */}
               <div className="bg-white rounded-3xl border border-[#ece8e0] card-natural-shadow overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-[#fdfcf9] border-b border-[#ece8e0] text-[#8a817c] uppercase">
+                    <thead className="bg-[#fdfcf9] border-b border-[#ece8e0] text-[#8a817c] uppercase font-bold text-[10px]">
                       <tr>
-                        <th className="p-4">অর্ডার আইডি</th>
-                        <th className="p-4">শিক্ষার্থীর বিবরণ</th>
-                        <th className="p-4">আইটেম / কোর্স</th>
+                        <th className="p-4">অর্ডার নং ও তারিখ</th>
+                        <th className="p-4">শিক্ষার্থীর তথ্য</th>
+                        <th className="p-4">কোর্স / আইটেম</th>
                         <th className="p-4">পেমেন্ট মেথড ও TrxID</th>
-                        <th className="p-4">পরিমাণ</th>
-                        <th className="p-4">তারিখ</th>
-                        <th className="p-4">অ্যাকশন</th>
+                        <th className="p-4">ফি</th>
+                        <th className="p-4">স্ট্যাটাস</th>
+                        <th className="p-4 text-right">অ্যাকশন ও এক্সেস</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#ece8e0]">
                       {orders
                         .filter(o => orderFilter === 'all' || o.status === orderFilter)
+                        .filter(o => {
+                          if (!searchTerm.trim()) return true;
+                          const q = searchTerm.toLowerCase();
+                          return (
+                            (o.userName || '').toLowerCase().includes(q) ||
+                            (o.userPhone || '').toLowerCase().includes(q) ||
+                            (o.userEmail || '').toLowerCase().includes(q) ||
+                            (o.trxId || '').toLowerCase().includes(q) ||
+                            (o.orderNumber || '').toLowerCase().includes(q) ||
+                            (o.itemTitle || '').toLowerCase().includes(q)
+                          );
+                        })
                         .map((ord) => (
-                          <tr key={ord.id} className="hover:bg-slate-50/50">
-                            <td className="p-4 font-mono font-bold text-[#112734]">{ord.orderNumber}</td>
+                          <tr key={ord.id} className="hover:bg-slate-50/60 transition-colors">
                             <td className="p-4">
-                              <p className="font-bold text-[#2c3e50]">{ord.userName}</p>
-                              <p className="text-[11px] text-[#8a817c]">{ord.userPhone || ord.userEmail}</p>
+                              <span className="font-mono font-black text-[#112734] bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                {ord.orderNumber}
+                              </span>
+                              <p className="text-[11px] text-[#8a817c] mt-1">
+                                {new Date(ord.createdAt || Date.now()).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </p>
+                            </td>
+
+                            <td className="p-4">
+                              <p className="font-bold text-[#112734] text-[13px]">{ord.userName}</p>
+                              {ord.userPhone && (
+                                <a 
+                                  href={`tel:${ord.userPhone}`}
+                                  className="text-[11px] text-[#17A2B8] hover:underline font-mono flex items-center gap-1 mt-0.5"
+                                  title="সরাসরি কল করুন"
+                                >
+                                  <Phone size={10} />
+                                  <span>{ord.userPhone}</span>
+                                </a>
+                              )}
+                              {ord.userEmail && (
+                                <p className="text-[11px] text-[#8a817c] truncate max-w-[180px]">{ord.userEmail}</p>
+                              )}
                               {ord.shippingAddress && (
-                                <p className="text-[10px] text-amber-800 italic mt-0.5">ঠিকানা: {ord.shippingAddress}</p>
+                                <p className="text-[10px] text-amber-800 bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/60 mt-1 line-clamp-1 max-w-[200px]" title={ord.shippingAddress}>
+                                  ঠিকানা: {ord.shippingAddress}
+                                </p>
                               )}
                             </td>
+
                             <td className="p-4">
-                              <p className="font-bold text-[#2c3e50]">{ord.itemTitle}</p>
+                              <p className="font-bold text-[#2c3e50] max-w-[220px] line-clamp-2">{ord.itemTitle}</p>
                               <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
                                   ord.itemType === 'course' 
                                     ? 'bg-purple-50 text-purple-700 border border-purple-200' 
                                     : (ord.purchaseType === 'pdf' ? 'bg-[#17A2B8]/10 text-[#112734] border border-[#17A2B8]/30' : 'bg-amber-50 text-amber-800 border border-amber-200')
                                 }`}>
-                                  {ord.itemType === 'course' ? '🎓 কোর্স এনরোলমেন্ট' : (ord.purchaseType === 'pdf' ? '📘 ই-বুক (PDF)' : '📦 হার্ডকভার প্রিন্ট')}
+                                  {ord.itemType === 'course' ? '🎓 পূর্ণাঙ্গ কোর্স' : (ord.purchaseType === 'pdf' ? '📘 ই-বুক (PDF)' : '📦 হার্ডকভার বই')}
                                 </span>
 
                                 {ord.itemType === 'book' && ord.purchaseType === 'pdf' && (
@@ -1109,63 +1292,103 @@ export default function AdminDashboardPage() {
                                           href={linkedBook.pdfUrl}
                                           target="_blank"
                                           rel="noreferrer"
-                                          className="text-[9px] font-bold text-[#112734] bg-[#17A2B8]/15/60 px-1.5 py-0.5 rounded hover:underline flex items-center gap-0.5"
+                                          className="text-[9px] font-bold text-[#17A2B8] bg-[#17A2B8]/10 px-1.5 py-0.5 rounded hover:underline flex items-center gap-0.5"
                                           title="পিডিএফ লিংক চেক করুন"
                                         >
-                                          <span>PDF লিংক</span>
+                                          <span>PDF</span>
                                           <ExternalLink size={9} />
                                         </a>
                                       );
-                                    } else {
-                                      return (
-                                        <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
-                                          PDF লিংক সেট করা নেই
-                                        </span>
-                                      );
                                     }
+                                    return null;
                                   })()
                                 )}
                               </div>
                             </td>
+
                             <td className="p-4">
-                              <span className="uppercase font-bold text-[#112734]">{ord.paymentMethod}</span>
-                              <div className="font-mono font-bold text-slate-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-block mt-1">
-                                Trx: {ord.trxId || 'N/A'}
+                              <div className="flex items-center gap-1">
+                                <span className="uppercase font-extrabold text-[#112734] text-[11px] px-1.5 py-0.5 bg-slate-100 rounded">
+                                  {ord.paymentMethod}
+                                </span>
+                              </div>
+                              <div className="mt-1 flex items-center gap-1">
+                                <span className="font-mono font-bold text-slate-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">
+                                  {ord.trxId || 'N/A'}
+                                </span>
+                                {ord.trxId && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (ord.trxId) {
+                                        navigator.clipboard.writeText(ord.trxId);
+                                        showNotification(`TrxID ${ord.trxId} কপি করা হয়েছে`);
+                                      }
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-[#17A2B8] rounded"
+                                    title="TrxID কপি করুন"
+                                  >
+                                    <Copy size={11} />
+                                  </button>
+                                )}
                               </div>
                             </td>
+
                             <td className="p-4 font-black text-[#112734] text-sm">৳{ord.amount}</td>
-                            <td className="p-4 text-[11px] text-[#8a817c]">{new Date(ord.createdAt).toLocaleDateString('bn-BD')}</td>
+
                             <td className="p-4">
-                              <div className="flex items-center gap-2">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1 ${
+                                ord.status === 'approved' 
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
+                                  : ord.status === 'rejected'
+                                  ? 'bg-red-100 text-red-800 border border-red-200'
+                                  : 'bg-amber-100 text-amber-800 border border-amber-200 animate-pulse'
+                              }`}>
+                                {ord.status === 'approved' && <><Check size={11} /> <span>অনুমোদিত</span></>}
+                                {ord.status === 'rejected' && <><X size={11} /> <span>বাতিলকৃত</span></>}
+                                {ord.status === 'pending' && <><Clock size={11} /> <span>পেন্ডিং</span></>}
+                              </span>
+                            </td>
+
+                            <td className="p-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {/* Details & Action Button */}
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOrderForAction(ord)}
+                                  className="px-2.5 py-1.5 bg-[#fdfcf9] hover:bg-slate-100 text-[#112734] border border-[#ece8e0] rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-sm"
+                                  title="সম্পূর্ণ বিবরণ ও হোয়াটসঅ্যাপ মেসেজ"
+                                >
+                                  <Eye size={12} className="text-[#17A2B8]" />
+                                  <span>বিবরণ</span>
+                                </button>
+
                                 {ord.status === 'pending' && (
                                   <>
                                     <button
+                                      type="button"
                                       onClick={() => handleApproveOrder(ord.id)}
-                                      className="px-3 py-1.5 bg-[#17A2B8] hover:bg-[#23626F] text-white rounded-lg font-bold text-[11px] flex items-center gap-1 shadow-sm"
-                                      title="অনুমোদন করুন"
+                                      className="px-3 py-1.5 bg-[#17A2B8] hover:bg-[#23626F] text-white rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-sm transition-all"
+                                      title="১-ক্লিকে অনুমোদন ও কোর্স এক্সেস দিন"
                                     >
                                       <CheckCircle size={12} />
                                       <span>অনুমোদন</span>
                                     </button>
                                     <button
+                                      type="button"
                                       onClick={() => handleRejectOrder(ord.id)}
-                                      className="px-2.5 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-bold text-[11px]"
-                                      title="বাতিল করুন"
+                                      className="p-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl font-bold text-[11px]"
+                                      title="অর্ডার বাতিল করুন"
                                     >
-                                      <XCircle size={12} />
+                                      <XCircle size={14} />
                                     </button>
                                   </>
                                 )}
-                                {ord.status !== 'pending' && (
-                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                                    ord.status === 'approved' ? 'bg-[#17A2B8]/15 text-[#112734]' : 'bg-red-100 text-red-800'
-                                  }`}>
-                                    {ord.status === 'approved' ? 'অনুমোদিত ✓' : 'বাতিলকৃত'}
-                                  </span>
-                                )}
+
                                 <button
+                                  type="button"
                                   onClick={() => handleDeleteOrder(ord.id)}
-                                  className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg"
+                                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                                   title="মুছে ফেলুন"
                                 >
                                   <Trash2 size={14} />
@@ -1176,6 +1399,30 @@ export default function AdminDashboardPage() {
                         ))}
                     </tbody>
                   </table>
+
+                  {/* Empty State */}
+                  {orders.length === 0 && (
+                    <div className="p-12 text-center text-[#8a817c] space-y-3">
+                      <ShoppingBag size={40} className="mx-auto text-slate-300" />
+                      <p className="font-bold text-sm text-[#112734]">এখনও কোনো কোর্স বা বইয়ের অর্ডার নেই</p>
+                      <p className="text-xs max-w-sm mx-auto">
+                        শিক্ষার্থীরা ওয়েবসাইট থেকে কোর্সে ভর্তি হলে বা বই অর্ডার করলে এখানে স্বয়ংক্রিয়ভাবে তালিকা দেখা যাবে।
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowManualOrderModal(true)}
+                        className="mt-2 px-4 py-2 bg-[#112734] text-white rounded-xl text-xs font-bold"
+                      >
+                        + প্রথম ম্যানুয়াল অর্ডার তৈরি করুন
+                      </button>
+                    </div>
+                  )}
+
+                  {orders.length > 0 && orders.filter(o => orderFilter === 'all' || o.status === orderFilter).length === 0 && (
+                    <div className="p-8 text-center text-[#8a817c]">
+                      <p className="text-xs font-tiro">এই ফিল্টারে কোনো অর্ডার পাওয়া যায়নি।</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -2434,20 +2681,59 @@ export default function AdminDashboardPage() {
                       }`}
                     >
                       <ImageIcon size={16} className={settingsSubTab === 'hero' ? 'text-amber-400' : 'text-blue-600'} />
-                      <span className="whitespace-nowrap">২. হিরো সেকশন ও ব্যানার</span>
+                      <span className="whitespace-nowrap">২. হোমপেজ হিরো ও ব্যানার</span>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => setSettingsSubTab('notice')}
+                      onClick={() => setSettingsSubTab('courses_page')}
                       className={`flex-shrink-0 lg:w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-left transition-all ${
-                        settingsSubTab === 'notice'
+                        settingsSubTab === 'courses_page'
                           ? 'bg-[#112734] text-white shadow-md'
                           : 'text-[#2c3e50] hover:bg-slate-50 border border-transparent hover:border-[#ece8e0]'
                       }`}
                     >
-                      <Sparkles size={16} className={settingsSubTab === 'notice' ? 'text-amber-400' : 'text-[#17A2B8]'} />
-                      <span className="whitespace-nowrap">৩. টপ নোটিশ বার</span>
+                      <BookOpen size={16} className={settingsSubTab === 'courses_page' ? 'text-amber-400' : 'text-indigo-600'} />
+                      <span className="whitespace-nowrap">৩. কোর্সসমূহ পেজ ব্যানার ও টেক্সট</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSettingsSubTab('books_page')}
+                      className={`flex-shrink-0 lg:w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-left transition-all ${
+                        settingsSubTab === 'books_page'
+                          ? 'bg-[#112734] text-white shadow-md'
+                          : 'text-[#2c3e50] hover:bg-slate-50 border border-transparent hover:border-[#ece8e0]'
+                      }`}
+                    >
+                      <Library size={16} className={settingsSubTab === 'books_page' ? 'text-amber-400' : 'text-amber-600'} />
+                      <span className="whitespace-nowrap">৪. কিতাব ও প্রকাশনা পেজ সেটিংস</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSettingsSubTab('fatwa_page')}
+                      className={`flex-shrink-0 lg:w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-left transition-all ${
+                        settingsSubTab === 'fatwa_page'
+                          ? 'bg-[#112734] text-white shadow-md'
+                          : 'text-[#2c3e50] hover:bg-slate-50 border border-transparent hover:border-[#ece8e0]'
+                      }`}
+                    >
+                      <HelpCircle size={16} className={settingsSubTab === 'fatwa_page' ? 'text-amber-400' : 'text-teal-600'} />
+                      <span className="whitespace-nowrap">৫. ফতোয়া পেজ সেটিংস</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSettingsSubTab('categories')}
+                      className={`flex-shrink-0 lg:w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-left transition-all ${
+                        settingsSubTab === 'categories'
+                          ? 'bg-[#112734] text-white shadow-md'
+                          : 'text-[#2c3e50] hover:bg-slate-50 border border-transparent hover:border-[#ece8e0]'
+                      }`}
+                    >
+                      <Layers size={16} className={settingsSubTab === 'categories' ? 'text-amber-400' : 'text-emerald-600'} />
+                      <span className="whitespace-nowrap">৬. কোর্স ক্যাটাগরি ব্যবস্থাপনা</span>
                     </button>
 
                     <button
@@ -2460,7 +2746,20 @@ export default function AdminDashboardPage() {
                       }`}
                     >
                       <FileText size={16} className={settingsSubTab === 'about' ? 'text-amber-400' : 'text-purple-600'} />
-                      <span className="whitespace-nowrap">৪. সম্পর্কে পেজ কন্টেন্ট</span>
+                      <span className="whitespace-nowrap">৭. About পেজ কন্টেন্ট</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSettingsSubTab('notice')}
+                      className={`flex-shrink-0 lg:w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-left transition-all ${
+                        settingsSubTab === 'notice'
+                          ? 'bg-[#112734] text-white shadow-md'
+                          : 'text-[#2c3e50] hover:bg-slate-50 border border-transparent hover:border-[#ece8e0]'
+                      }`}
+                    >
+                      <Sparkles size={16} className={settingsSubTab === 'notice' ? 'text-amber-400' : 'text-[#17A2B8]'} />
+                      <span className="whitespace-nowrap">৮. টপ নোটিশ বার</span>
                     </button>
 
                     <button
@@ -2473,7 +2772,7 @@ export default function AdminDashboardPage() {
                       }`}
                     >
                       <ShieldCheck size={16} className={settingsSubTab === 'terms' ? 'text-amber-400' : 'text-emerald-600'} />
-                      <span className="whitespace-nowrap">৫. গোপনীয়তা ও শর্তাবলী</span>
+                      <span className="whitespace-nowrap">৯. গোপনীয়তা ও শর্তাবলী</span>
                     </button>
 
                     <button
@@ -2486,7 +2785,7 @@ export default function AdminDashboardPage() {
                       }`}
                     >
                       <HelpCircle size={16} className={settingsSubTab === 'faq' ? 'text-amber-400' : 'text-orange-600'} />
-                      <span className="whitespace-nowrap">৬. সাধারণ প্রশ্নোত্তর (FAQ)</span>
+                      <span className="whitespace-nowrap">১০. সাধারণ প্রশ্নোত্তর (FAQ)</span>
                     </button>
 
                     <button
@@ -2499,7 +2798,7 @@ export default function AdminDashboardPage() {
                       }`}
                     >
                       <Phone size={16} className={settingsSubTab === 'contact' ? 'text-amber-400' : 'text-teal-600'} />
-                      <span className="whitespace-nowrap">৭. যোগাযোগ ও সোশ্যাল</span>
+                      <span className="whitespace-nowrap">১১. যোগাযোগ ও সোশ্যাল</span>
                     </button>
 
                     <button
@@ -2512,7 +2811,7 @@ export default function AdminDashboardPage() {
                       }`}
                     >
                       <Award size={16} className={settingsSubTab === 'marketing' ? 'text-amber-400' : 'text-[#17A2B8]'} />
-                      <span className="whitespace-nowrap">৮. পিক্সেল ও সনদ ক্যাটালগ</span>
+                      <span className="whitespace-nowrap">১২. পিক্সেল ও সনদ ক্যাটালগ</span>
                     </button>
 
                     <button
@@ -2525,7 +2824,7 @@ export default function AdminDashboardPage() {
                       }`}
                     >
                       <Mail size={16} className={settingsSubTab === 'email_notify' ? 'text-amber-400' : 'text-rose-600'} />
-                      <span className="whitespace-nowrap">৯. অর্ডার ইমেইল নোটিফিকেশন</span>
+                      <span className="whitespace-nowrap">১৩. অর্ডার ইমেইল নোটিফিকেশন</span>
                     </button>
                   </div>
                 </div>
@@ -3313,8 +3612,1899 @@ export default function AdminDashboardPage() {
               </div>
             )}
 
-              {/* 3. TOP NOTIFICATION BAR MANAGEMENT */}
-              {settingsSubTab === 'notice' && (
+            {/* 2.5 COURSES PAGE CUSTOMIZATION */}
+            {settingsSubTab === 'courses_page' && (
+              <div className="space-y-6 animate-in fade-in">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+                  <div>
+                    <h3 className="font-extrabold text-base text-[#112734] flex items-center gap-2">
+                      <BookOpen size={20} className="text-indigo-600" />
+                      <span>কোর্সসমূহ পেজ কাস্টমাইজেশন (Courses Page Settings)</span>
+                    </h3>
+                    <p className="text-xs text-[#8a817c] mt-0.5">
+                      ওয়েবসাইটের <strong>&apos;/courses&apos;</strong> পেজের শীর্ষ হিরো সেকশন, ব্যানার ছবি, শিরোনাম, উপশিরোনাম ও হাইলাইটস এখান থেকে পরিবর্তন করুন।
+                    </p>
+                  </div>
+
+                  <a
+                    href="/courses"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold transition-all shrink-0 border border-indigo-200"
+                  >
+                    <span>কোর্স পেজ ভিজিট করুন</span>
+                    <ExternalLink size={13} />
+                  </a>
+                </div>
+
+                {/* Form Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  
+                  {/* Left Controls (7 Cols) */}
+                  <div className="lg:col-span-7 space-y-5 text-xs">
+                    
+                    {/* 1. Hero Image Management Box */}
+                    <div className="bg-[#fdfcf9] p-4 sm:p-5 rounded-2xl border border-[#ece8e0] space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-[#112734] text-xs flex items-center gap-1.5">
+                          <ImageIcon size={15} className="text-indigo-600" />
+                          <span>হিরো ইমেজ ও ব্যানার ছবি</span>
+                        </span>
+                        
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={siteSettings.coursesPage?.showHeroImage !== false}
+                            onChange={(e) => {
+                              const curr = siteSettings.coursesPage || {
+                                badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                                subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।',
+                                heroImage: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80',
+                                showHeroImage: true,
+                                heroImagePosition: 'right'
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                coursesPage: { ...curr, showHeroImage: e.target.checked }
+                              });
+                            }}
+                            className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                          />
+                          <span className="font-bold text-[#112734] text-[11px]">ছবি প্রদর্শন চালু</span>
+                        </label>
+                      </div>
+
+                      {/* Image Upload & Link */}
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* File Upload Button */}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">ডিভাইস থেকে আপলোড করুন</label>
+                            <label className="flex items-center justify-center gap-1.5 px-3 py-2.5 border border-dashed border-indigo-300 hover:border-indigo-500 bg-indigo-50/50 hover:bg-indigo-50 rounded-xl cursor-pointer transition-all">
+                              <Upload size={14} className="text-indigo-600" />
+                              <span className="font-bold text-indigo-700 text-xs">ইমেজ ফাইল নির্বাচন</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = (uploadEvent) => {
+                                      const result = uploadEvent.target?.result as string;
+                                      if (result) {
+                                        const curr = siteSettings.coursesPage || {
+                                          badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                          titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                                          subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।',
+                                          heroImage: '',
+                                          showHeroImage: true,
+                                          heroImagePosition: 'right'
+                                        };
+                                        setSiteSettings({
+                                          ...siteSettings,
+                                          coursesPage: { ...curr, heroImage: result, showHeroImage: true }
+                                        });
+                                      }
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+
+                          {/* Direct Image URL */}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">অথবা ছবির অনলাইন লিংক (URL)</label>
+                            <input
+                              type="text"
+                              placeholder="https://... ইমেজ URL"
+                              value={siteSettings.coursesPage?.heroImage || ''}
+                              onChange={(e) => {
+                                const curr = siteSettings.coursesPage || {
+                                  badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                  titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                                  subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।',
+                                  heroImage: '',
+                                  showHeroImage: true,
+                                  heroImagePosition: 'right'
+                                };
+                                setSiteSettings({
+                                  ...siteSettings,
+                                  coursesPage: { ...curr, heroImage: e.target.value }
+                                });
+                              }}
+                              className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] font-mono text-xs bg-white focus:outline-none focus:border-indigo-600"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Preset Quick Images */}
+                        <div className="pt-2 border-t border-[#ece8e0]/70 space-y-1.5">
+                          <span className="text-[11px] font-bold text-[#5a524d] block">
+                            পছন্দসই ইসলামিক ও একাডেমিক ছবি নির্বাচন করুন (এক-ক্লিক প্রিসেট):
+                          </span>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {[
+                              { label: '📚 কিতাব ও লাইব্রেরী', url: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80' },
+                              { label: '🏛️ ইসলামিক আর্চ', url: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=1200&q=80' },
+                              { label: '📖 কুরআন ও ফিকহ স্টাডি', url: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80' },
+                              { label: '🕌 মনোরম একাডেমি ক্যাম্পাস', url: 'https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=1200&q=80' }
+                            ].map((preset, pIdx) => (
+                              <button
+                                key={pIdx}
+                                type="button"
+                                onClick={() => {
+                                  const curr = siteSettings.coursesPage || {
+                                    badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                    titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                                    subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।',
+                                    heroImage: '',
+                                    showHeroImage: true,
+                                    heroImagePosition: 'right'
+                                  };
+                                  setSiteSettings({
+                                    ...siteSettings,
+                                    coursesPage: { ...curr, heroImage: preset.url, showHeroImage: true }
+                                  });
+                                }}
+                                className={`p-1.5 rounded-xl border text-[10px] font-bold text-center transition-all ${
+                                  siteSettings.coursesPage?.heroImage === preset.url
+                                    ? 'border-indigo-600 bg-indigo-50 text-indigo-900 shadow-sm'
+                                    : 'border-[#ece8e0] bg-white text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Image Layout Position */}
+                        <div className="pt-2 border-t border-[#ece8e0]/70">
+                          <label className="block text-[11px] font-bold text-[#5a524d] mb-1.5">ছবির লেআউট ও পজিশন</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { id: 'right', label: 'ডান পাশে ছবি (Right)' },
+                              { id: 'left', label: 'বাম পাশে ছবি (Left)' },
+                              { id: 'background', label: 'ব্যাকগ্রাউন্ড ব্যানার (Full)' }
+                            ].map((pos) => (
+                              <button
+                                key={pos.id}
+                                type="button"
+                                onClick={() => {
+                                  const curr = siteSettings.coursesPage || {
+                                    badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                    titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                                    subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।',
+                                    heroImage: '',
+                                    showHeroImage: true,
+                                    heroImagePosition: 'right'
+                                  };
+                                  setSiteSettings({
+                                    ...siteSettings,
+                                    coursesPage: { ...curr, heroImagePosition: pos.id as any }
+                                  });
+                                }}
+                                className={`py-2 px-2.5 rounded-xl text-[11px] font-bold transition-all text-center ${
+                                  (siteSettings.coursesPage?.heroImagePosition || 'right') === pos.id
+                                    ? 'bg-[#112734] text-white shadow-sm'
+                                    : 'bg-white text-slate-700 border border-[#ece8e0] hover:bg-slate-50'
+                                }`}
+                              >
+                                {pos.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Text & Content Settings */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#ece8e0] space-y-4 shadow-sm">
+                      <span className="font-extrabold text-[#112734] text-xs flex items-center gap-1.5">
+                        <FileText size={15} className="text-amber-600" />
+                        <span>শিরোনাম, উপশিরোনাম ও ব্যাজ টেক্সট</span>
+                      </span>
+
+                      {/* Badge */}
+                      <div>
+                        <label className="block font-bold text-[#2c3e50] mb-1">শীর্ষ ব্যাজ টেক্সট (Top Badge)</label>
+                        <input
+                          type="text"
+                          placeholder="যেমন: প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ"
+                          value={siteSettings.coursesPage?.badgeText || ''}
+                          onChange={(e) => {
+                            const curr = siteSettings.coursesPage || {
+                              badgeText: '',
+                              titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                              subtitleBn: '',
+                              heroImage: ''
+                            };
+                            setSiteSettings({
+                              ...siteSettings,
+                              coursesPage: { ...curr, badgeText: e.target.value }
+                            });
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-[#112734] font-medium"
+                        />
+                      </div>
+
+                      {/* Main Title */}
+                      <div>
+                        <label className="block font-bold text-[#2c3e50] mb-1">মূল শিরোনাম (Page Title)</label>
+                        <input
+                          type="text"
+                          placeholder="যেমন: নূর ফিকহ একাডেমি কোর্সসমূহ"
+                          value={siteSettings.coursesPage?.titleBn || ''}
+                          onChange={(e) => {
+                            const curr = siteSettings.coursesPage || {
+                              badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                              titleBn: '',
+                              subtitleBn: '',
+                              heroImage: ''
+                            };
+                            setSiteSettings({
+                              ...siteSettings,
+                              coursesPage: { ...curr, titleBn: e.target.value }
+                            });
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-[#112734] font-bold text-sm"
+                        />
+                      </div>
+
+                      {/* Subtitle / Description */}
+                      <div>
+                        <label className="block font-bold text-[#2c3e50] mb-1">উপশিরোনাম ও বিবরণ (Subtitle / Description)</label>
+                        <textarea
+                          rows={3}
+                          placeholder="যেমন: দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান..."
+                          value={siteSettings.coursesPage?.subtitleBn || ''}
+                          onChange={(e) => {
+                            const curr = siteSettings.coursesPage || {
+                              badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                              titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                              subtitleBn: '',
+                              heroImage: ''
+                            };
+                            setSiteSettings({
+                              ...siteSettings,
+                              coursesPage: { ...curr, subtitleBn: e.target.value }
+                            });
+                          }}
+                          className="w-full px-3.5 py-2 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-[#112734] font-medium"
+                        />
+                      </div>
+
+                      {/* Search Placeholder */}
+                      <div>
+                        <label className="block font-bold text-[#2c3e50] mb-1">সার্চ বক্স প্লেসহোল্ডার (Search Placeholder)</label>
+                        <input
+                          type="text"
+                          placeholder="যেমন: কোর্সের নাম বা বিষয় খুঁজুন..."
+                          value={siteSettings.coursesPage?.searchPlaceholder || ''}
+                          onChange={(e) => {
+                            const curr = siteSettings.coursesPage || {
+                              badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                              titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                              subtitleBn: '',
+                              heroImage: ''
+                            };
+                            setSiteSettings({
+                              ...siteSettings,
+                              coursesPage: { ...curr, searchPlaceholder: e.target.value }
+                            });
+                          }}
+                          className="w-full px-3.5 py-2 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-[#112734]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 3. Three Highlight Badges */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#ece8e0] space-y-3 shadow-sm">
+                      <span className="font-extrabold text-[#112734] text-xs flex items-center gap-1.5">
+                        <CheckCircle2 size={15} className="text-emerald-600" />
+                        <span>৩টি বৈশিষ্ট্য ও হাইলাইটস (Highlights Pills)</span>
+                      </span>
+
+                      <div className="space-y-2.5">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">হাইলাইট ১</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: সহিহ সুন্নাহ ও দলীলভিত্তিক পাঠ্যক্রম"
+                            value={siteSettings.coursesPage?.highlight1 || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.coursesPage || {
+                                badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                coursesPage: { ...curr, highlight1: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">হাইলাইট ২</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: অভিজ্ঞ মুফতী ও স্কলারদের সরাসরি তত্ত্বাবধান"
+                            value={siteSettings.coursesPage?.highlight2 || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.coursesPage || {
+                                badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                coursesPage: { ...curr, highlight2: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">হাইলাইট ৩</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: ভেরিফায়েড প্রফেশনাল সনদপত্র"
+                            value={siteSettings.coursesPage?.highlight3 || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.coursesPage || {
+                                badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                coursesPage: { ...curr, highlight3: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Right Live Preview Box (5 Cols) */}
+                  <div className="lg:col-span-5 space-y-3">
+                    <div className="sticky top-24 bg-[#f8faf7] p-4 sm:p-5 rounded-2xl border border-[#ece8e0] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-black text-[#8a817c] uppercase tracking-wider flex items-center gap-1.5">
+                          <Eye size={13} className="text-indigo-600" />
+                          <span>কোর্স পেজ লাইভ প্রিভিউ</span>
+                        </span>
+                        <span className="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full">
+                          রিয়েল-টাইম
+                        </span>
+                      </div>
+
+                      {/* Mini Courses Page Hero Mockup */}
+                      <div className="rounded-2xl border border-[#ece8e0] bg-[#fdfcf9] p-3 shadow-inner overflow-hidden">
+                        
+                        {/* Mock Hero Container */}
+                        {siteSettings.coursesPage?.heroImagePosition === 'background' && siteSettings.coursesPage?.showHeroImage !== false && siteSettings.coursesPage?.heroImage ? (
+                          <div className="relative rounded-xl overflow-hidden p-4 text-white bg-[#112734] border border-[#23626F] shadow-sm">
+                            <div 
+                              className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-35"
+                              style={{ backgroundImage: `url(${siteSettings.coursesPage?.heroImage})` }}
+                            />
+                            <div className="relative z-10 space-y-2">
+                              <span className="inline-block px-2 py-0.5 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-[9px] font-bold border border-[#17A2B8]/40">
+                                ✨ {siteSettings.coursesPage?.badgeText || 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ'}
+                              </span>
+                              <h4 className="text-sm font-black leading-tight text-white font-anek">
+                                {siteSettings.coursesPage?.titleBn || 'নূর ফিকহ একাডেমি কোর্সসমূহ'}
+                              </h4>
+                              <p className="text-[10px] text-slate-200 line-clamp-2 leading-relaxed font-tiro">
+                                {siteSettings.coursesPage?.subtitleBn || 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।'}
+                              </p>
+                            </div>
+                          </div>
+                        ) : siteSettings.coursesPage?.showHeroImage !== false && siteSettings.coursesPage?.heroImage ? (
+                          <div className="bg-white rounded-xl p-3.5 border border-[#ece8e0] shadow-sm space-y-2.5">
+                            <div className={`flex flex-col sm:flex-row gap-3 items-center ${siteSettings.coursesPage?.heroImagePosition === 'left' ? 'sm:flex-row-reverse' : ''}`}>
+                              <div className="flex-1 space-y-1.5">
+                                <span className="inline-block px-2 py-0.5 rounded-full bg-[#17A2B8]/10 text-[#112734] text-[9px] font-bold border border-[#17A2B8]/30">
+                                  ✨ {siteSettings.coursesPage?.badgeText || 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ'}
+                                </span>
+                                <h4 className="text-xs font-black text-[#112734] leading-tight font-anek">
+                                  {siteSettings.coursesPage?.titleBn || 'নূর ফিকহ একাডেমি কোর্সসমূহ'}
+                                </h4>
+                                <p className="text-[10px] text-[#5a524d] line-clamp-2 leading-relaxed font-tiro">
+                                  {siteSettings.coursesPage?.subtitleBn || 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।'}
+                                </p>
+                              </div>
+                              <div className="w-24 h-16 rounded-lg overflow-hidden border border-[#ece8e0] shrink-0 bg-slate-100">
+                                <img
+                                  src={siteSettings.coursesPage?.heroImage}
+                                  alt="Course Hero Preview"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Highlights pills */}
+                            <div className="flex flex-wrap gap-1 pt-1 border-t border-slate-100">
+                              {(siteSettings.coursesPage?.highlight1 || 'সহিহ সুন্নাহ ও দলীলভিত্তিক পাঠ্যক্রম') && (
+                                <span className="text-[9px] bg-slate-50 text-slate-700 px-1.5 py-0.5 rounded-md border border-slate-200">
+                                  ✓ {siteSettings.coursesPage?.highlight1 || 'সহিহ সুন্নাহ ও দলীলভিত্তিক পাঠ্যক্রম'}
+                                </span>
+                              )}
+                              {(siteSettings.coursesPage?.highlight2 || 'অভিজ্ঞ মুফতী ও স্কলারদের সরাসরি তত্ত্বাবধান') && (
+                                <span className="text-[9px] bg-slate-50 text-slate-700 px-1.5 py-0.5 rounded-md border border-slate-200">
+                                  🎓 {siteSettings.coursesPage?.highlight2 || 'অভিজ্ঞ মুফতী ও স্কলারদের সরাসরি তত্ত্বাবধান'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-white rounded-xl p-4 border border-[#ece8e0] text-center space-y-2 shadow-sm">
+                            <span className="inline-block px-2 py-0.5 rounded-full bg-[#17A2B8]/10 text-[#112734] text-[9px] font-bold border border-[#17A2B8]/30">
+                              ✨ {siteSettings.coursesPage?.badgeText || 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ'}
+                            </span>
+                            <h4 className="text-sm font-black text-[#112734] leading-tight font-anek">
+                              {siteSettings.coursesPage?.titleBn || 'নূর ফিকহ একাডেমি কোর্সসমূহ'}
+                            </h4>
+                            <p className="text-[10px] text-[#5a524d] leading-relaxed font-tiro">
+                              {siteSettings.coursesPage?.subtitleBn || 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।'}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Search Toolbar Preview */}
+                        <div className="mt-2.5 p-2 bg-white rounded-lg border border-[#ece8e0] flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                            <Search size={11} />
+                            <span>{siteSettings.coursesPage?.searchPlaceholder || 'কোর্সের নাম বা বিষয় খুঁজুন...'}</span>
+                          </div>
+                          <span className="text-[9px] font-bold text-[#112734] bg-slate-100 px-1.5 py-0.5 rounded">
+                            মোট: {courses.length}টি কোর্স
+                          </span>
+                        </div>
+
+                      </div>
+
+                      <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 text-[11px] text-indigo-900 leading-relaxed">
+                        💡 <strong>পরামর্শ:</strong> কাঙ্ক্ষিত পরিবর্তন শেষে নিচে <strong>&quot;সাইট সেটিংস সেভ করুন&quot;</strong> বাটনে ক্লিক করলে তা সরাসরি মূল ওয়েবসাইটে সেভ হয়ে যাবে।
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* 4. BOOKS & PUBLICATIONS PAGE CUSTOMIZATION */}
+            {settingsSubTab === 'books_page' && (
+              <div className="space-y-6 animate-in fade-in">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+                  <div>
+                    <h3 className="font-extrabold text-base text-[#112734] flex items-center gap-2">
+                      <Library size={20} className="text-amber-600" />
+                      <span>কিতাব ও প্রকাশনা পেজ সেটিংস (Books Page Settings)</span>
+                    </h3>
+                    <p className="text-xs text-[#8a817c] mt-0.5">
+                      ওয়েবসাইটের <strong>&apos;/books&apos;</strong> পেজের হিরো ব্যানার ইমেজ, শিরোনাম, উপশিরোনাম, ৩টি হাইলাইট ব্যাজ ও সার্চ বার কাস্টমাইজ করুন।
+                    </p>
+                  </div>
+
+                  <a
+                    href="/books"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-xl text-xs font-bold transition-all shrink-0 border border-amber-200"
+                  >
+                    <span>কিতাব পেজ ভিজিট করুন</span>
+                    <ExternalLink size={13} />
+                  </a>
+                </div>
+
+                {/* Form Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  
+                  {/* Left Controls (7 Cols) */}
+                  <div className="lg:col-span-7 space-y-5 text-xs">
+                    
+                    {/* 1. Hero Image Management Box */}
+                    <div className="bg-[#fdfcf9] p-4 sm:p-5 rounded-2xl border border-[#ece8e0] space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-[#112734] text-xs flex items-center gap-1.5">
+                          <ImageIcon size={15} className="text-amber-600" />
+                          <span>হিরো ইমেজ ও ব্যানার ছবি</span>
+                        </span>
+                        
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={siteSettings.booksPage?.showHeroImage !== false}
+                            onChange={(e) => {
+                              const curr = siteSettings.booksPage || {
+                                badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                subtitleBn: 'বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন ঘরে বসেই নির্ভরযোগ্য হোম ডেলিভারির মাধ্যমে।',
+                                heroImage: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80',
+                                showHeroImage: true,
+                                heroImagePosition: 'right'
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                booksPage: { ...curr, showHeroImage: e.target.checked }
+                              });
+                            }}
+                            className="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500"
+                          />
+                          <span className="font-bold text-[#112734] text-[11px]">ছবি প্রদর্শন চালু</span>
+                        </label>
+                      </div>
+
+                      {/* Image Upload & Link */}
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* File Upload Button */}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">ডিভাইস থেকে আপলোড করুন</label>
+                            <label className="flex items-center justify-center gap-1.5 px-3 py-2.5 border border-dashed border-amber-300 hover:border-amber-500 bg-amber-50/50 hover:bg-amber-50 rounded-xl cursor-pointer transition-all">
+                              <Upload size={14} className="text-amber-600" />
+                              <span className="font-bold text-amber-800 text-xs">ইমেজ ফাইল নির্বাচন</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = (uploadEvent) => {
+                                      const result = uploadEvent.target?.result as string;
+                                      if (result) {
+                                        const curr = siteSettings.booksPage || {
+                                          badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                          titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                          subtitleBn: 'বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন ঘরে বসেই নির্ভরযোগ্য হোম ডেলিভারির মাধ্যমে।',
+                                          heroImage: '',
+                                          showHeroImage: true,
+                                          heroImagePosition: 'right'
+                                        };
+                                        setSiteSettings({
+                                          ...siteSettings,
+                                          booksPage: { ...curr, heroImage: result, showHeroImage: true }
+                                        });
+                                      }
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+
+                          {/* Image URL Input */}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">অথবা ইমেজ ইউআরএল (URL)</label>
+                            <input
+                              type="text"
+                              placeholder="https://example.com/books-banner.jpg"
+                              value={siteSettings.booksPage?.heroImage || ''}
+                              onChange={(e) => {
+                                const curr = siteSettings.booksPage || {
+                                  badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                  titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                  subtitleBn: 'বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন ঘরে বসেই নির্ভরযোগ্য হোম ডেলিভারির মাধ্যমে।',
+                                  heroImage: '',
+                                  showHeroImage: true,
+                                  heroImagePosition: 'right'
+                                };
+                                setSiteSettings({
+                                  ...siteSettings,
+                                  booksPage: { ...curr, heroImage: e.target.value }
+                                });
+                              }}
+                              className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-amber-600 text-xs font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Image Preview / Remove Row */}
+                        {siteSettings.booksPage?.heroImage && (
+                          <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-[#ece8e0]">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#ece8e0] bg-slate-100 shrink-0">
+                                <img
+                                  src={siteSettings.booksPage.heroImage}
+                                  alt="Books Hero Banner"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div className="overflow-hidden">
+                                <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                                  <CheckCircle2 size={13} />
+                                  <span>ইমেজ সক্রিয় আছে</span>
+                                </span>
+                                <span className="text-[10px] text-slate-500 block truncate max-w-[200px] sm:max-w-[280px]">
+                                  {siteSettings.booksPage.heroImage.startsWith('data:') ? 'আপলোডকৃত লোকাল ফাইল' : siteSettings.booksPage.heroImage}
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const curr = siteSettings.booksPage || {
+                                  badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                  titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                  subtitleBn: '',
+                                  heroImage: ''
+                                };
+                                setSiteSettings({
+                                  ...siteSettings,
+                                  booksPage: { ...curr, heroImage: '' }
+                                });
+                              }}
+                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                              title="ইমেজ মুছুন"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Quick Presets */}
+                        <div className="pt-2 border-t border-[#ece8e0]/70">
+                          <label className="block text-[11px] font-bold text-[#5a524d] mb-1.5">রেডিমেড প্রিসেট ইমেজসমূহ (ক্লিক করে নির্বাচন করুন)</label>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {[
+                              { label: '📚 মাকতাবা ও কিতাব', url: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80' },
+                              { label: '📖 ইসলামি পাঠ ও গবেষণা', url: 'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?auto=format&fit=crop&w=1200&q=80' },
+                              { label: '✨ পবিত্র কুরআন ও কিতাব', url: 'https://images.unsplash.com/photo-1585776245991-cf89dd7fc73a?auto=format&fit=crop&w=1200&q=80' },
+                              { label: '🏛️ ক্লাসিক লাইব্রেরি', url: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=1200&q=80' }
+                            ].map((preset) => (
+                              <button
+                                key={preset.url}
+                                type="button"
+                                onClick={() => {
+                                  const curr = siteSettings.booksPage || {
+                                    badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                    titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                    subtitleBn: 'বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন ঘরে বসেই নির্ভরযোগ্য হোম ডেলিভারির মাধ্যমে।',
+                                    heroImage: preset.url,
+                                    showHeroImage: true,
+                                    heroImagePosition: 'right'
+                                  };
+                                  setSiteSettings({
+                                    ...siteSettings,
+                                    booksPage: { ...curr, heroImage: preset.url, showHeroImage: true }
+                                  });
+                                }}
+                                className={`p-1.5 rounded-xl border text-[10px] font-bold text-center transition-all ${
+                                  siteSettings.booksPage?.heroImage === preset.url
+                                    ? 'border-amber-600 bg-amber-50 text-amber-900 shadow-sm'
+                                    : 'border-[#ece8e0] bg-white text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Image Layout Position */}
+                        <div className="pt-2 border-t border-[#ece8e0]/70">
+                          <label className="block text-[11px] font-bold text-[#5a524d] mb-1.5">ছবির লেআউট ও পজিশন</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { id: 'right', label: 'ডান পাশে ছবি (Right)' },
+                              { id: 'left', label: 'বাম পাশে ছবি (Left)' },
+                              { id: 'background', label: 'ব্যাকগ্রাউন্ড ব্যানার (Full)' }
+                            ].map((pos) => (
+                              <button
+                                key={pos.id}
+                                type="button"
+                                onClick={() => {
+                                  const curr = siteSettings.booksPage || {
+                                    badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                    titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                    subtitleBn: 'বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন ঘরে বসেই নির্ভরযোগ্য হোম ডেলিভারির মাধ্যমে।',
+                                    heroImage: '',
+                                    showHeroImage: true,
+                                    heroImagePosition: 'right'
+                                  };
+                                  setSiteSettings({
+                                    ...siteSettings,
+                                    booksPage: { ...curr, heroImagePosition: pos.id as any }
+                                  });
+                                }}
+                                className={`py-2 px-2.5 rounded-xl text-[11px] font-bold transition-all text-center ${
+                                  (siteSettings.booksPage?.heroImagePosition || 'right') === pos.id
+                                    ? 'bg-[#112734] text-white shadow-sm'
+                                    : 'bg-white text-slate-700 border border-[#ece8e0] hover:bg-slate-50'
+                                }`}
+                              >
+                                {pos.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Text & Content Settings */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#ece8e0] space-y-4 shadow-sm">
+                      <span className="font-extrabold text-[#112734] text-xs flex items-center gap-1.5">
+                        <FileText size={15} className="text-amber-600" />
+                        <span>শিরোনাম, উপশিরোনাম ও ব্যাজ টেক্সট</span>
+                      </span>
+
+                      {/* Badge */}
+                      <div>
+                        <label className="block font-bold text-[#2c3e50] mb-1">শীর্ষ ব্যাজ টেক্সট (Top Badge)</label>
+                        <input
+                          type="text"
+                          placeholder="যেমন: নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ"
+                          value={siteSettings.booksPage?.badgeText || ''}
+                          onChange={(e) => {
+                            const curr = siteSettings.booksPage || {
+                              badgeText: '',
+                              titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                              subtitleBn: '',
+                              heroImage: ''
+                            };
+                            setSiteSettings({
+                              ...siteSettings,
+                              booksPage: { ...curr, badgeText: e.target.value }
+                            });
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-[#112734] font-medium"
+                        />
+                      </div>
+
+                      {/* Main Title */}
+                      <div>
+                        <label className="block font-bold text-[#2c3e50] mb-1">মূল শিরোনাম (Page Title)</label>
+                        <input
+                          type="text"
+                          placeholder="যেমন: প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার"
+                          value={siteSettings.booksPage?.titleBn || ''}
+                          onChange={(e) => {
+                            const curr = siteSettings.booksPage || {
+                              badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                              titleBn: '',
+                              subtitleBn: '',
+                              heroImage: ''
+                            };
+                            setSiteSettings({
+                              ...siteSettings,
+                              booksPage: { ...curr, titleBn: e.target.value }
+                            });
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-[#112734] font-bold text-sm"
+                        />
+                      </div>
+
+                      {/* Subtitle / Description */}
+                      <div>
+                        <label className="block font-bold text-[#2c3e50] mb-1">উপশিরোনাম ও বিবরণ (Subtitle / Description)</label>
+                        <textarea
+                          rows={3}
+                          placeholder="যেমন: বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন..."
+                          value={siteSettings.booksPage?.subtitleBn || ''}
+                          onChange={(e) => {
+                            const curr = siteSettings.booksPage || {
+                              badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                              titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                              subtitleBn: '',
+                              heroImage: ''
+                            };
+                            setSiteSettings({
+                              ...siteSettings,
+                              booksPage: { ...curr, subtitleBn: e.target.value }
+                            });
+                          }}
+                          className="w-full px-3.5 py-2 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-[#112734] font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 3. Three Highlight Badges */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#ece8e0] space-y-3 shadow-sm">
+                      <span className="font-extrabold text-[#112734] text-xs flex items-center gap-1.5">
+                        <CheckCircle2 size={15} className="text-emerald-600" />
+                        <span>৩টি বৈশিষ্ট্য ও হাইলাইটস (Highlights Pills)</span>
+                      </span>
+
+                      <div className="space-y-2.5">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">হাইলাইট ১</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: সারাদেশে দ্রুততম হোম ডেলিভারি"
+                            value={siteSettings.booksPage?.highlight1 || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.booksPage || {
+                                badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                booksPage: { ...curr, highlight1: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">হাইলাইট ২</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: প্রামাণ্য ও নির্ভরযোগ্য ফিকহী সংকলন"
+                            value={siteSettings.booksPage?.highlight2 || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.booksPage || {
+                                badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                booksPage: { ...curr, highlight2: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">হাইলাইট ৩</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: সুলভ হাদিয়া ও ক্যাশ অন ডেলিভারি"
+                            value={siteSettings.booksPage?.highlight3 || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.booksPage || {
+                                badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                booksPage: { ...curr, highlight3: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. Search & Section Headings */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#ece8e0] space-y-4 shadow-sm">
+                      <span className="font-extrabold text-[#112734] text-xs flex items-center gap-1.5">
+                        <Search size={15} className="text-amber-600" />
+                        <span>সার্চ বার ও কিতাব তালিকা সেকশন হেডলাইন</span>
+                      </span>
+
+                      {/* Search Placeholder */}
+                      <div>
+                        <label className="block font-bold text-[#2c3e50] mb-1">সার্চ বক্স প্লেসহোল্ডার (Search Placeholder)</label>
+                        <input
+                          type="text"
+                          placeholder="যেমন: কিতাবের নাম, লেখক, অনুবাদক বা বিষয় দিয়ে অনুসন্ধান করুন..."
+                          value={siteSettings.booksPage?.searchPlaceholder || ''}
+                          onChange={(e) => {
+                            const curr = siteSettings.booksPage || {
+                              badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                              titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                              subtitleBn: '',
+                              heroImage: ''
+                            };
+                            setSiteSettings({
+                              ...siteSettings,
+                              booksPage: { ...curr, searchPlaceholder: e.target.value }
+                            });
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] text-xs bg-[#fdfcf9]"
+                        />
+                      </div>
+
+                      {/* Books Section Title & Subtitle */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-amber-50/40 rounded-xl border border-amber-100">
+                        <div>
+                          <label className="block text-[11px] font-bold text-amber-900 mb-1">কিতাব তালিকার সেকশন শিরোনাম</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: প্রকাশিত ও সংগৃহীত কিতাবসমূহ"
+                            value={siteSettings.booksPage?.featuredSectionTitle || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.booksPage || {
+                                badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                booksPage: { ...curr, featuredSectionTitle: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-amber-200 text-xs bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-amber-900 mb-1">কিতাব তালিকার সেকশন বিবরণ/সাবটাইটেল</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: আপনার পছন্দের কিতাবটি সহজে বেছে নিতে ক্যাটাগরি ও ফিল্টার ব্যবহার করুন"
+                            value={siteSettings.booksPage?.featuredSectionSubtitle || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.booksPage || {
+                                badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                booksPage: { ...curr, featuredSectionSubtitle: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-amber-200 text-xs bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Right Live Preview Column (5 Cols) */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <div className="sticky top-24 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-[#112734] text-xs flex items-center gap-1.5">
+                          <Eye size={15} className="text-amber-600" />
+                          <span>রিয়েলটাইম লাইভ প্রিভিউ (Live Preview)</span>
+                        </span>
+                        <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                          /books পেজে যেমন দেখাবে
+                        </span>
+                      </div>
+
+                      {/* Mini Mock of /books Hero */}
+                      <div className="rounded-2xl border border-[#ece8e0] shadow-md bg-white overflow-hidden text-slate-800">
+                        {/* Browser Top Bar Mock */}
+                        <div className="bg-[#112734] px-3 py-2 flex items-center gap-1.5 border-b border-[#112734]">
+                          <div className="w-2 h-2 rounded-full bg-rose-400"></div>
+                          <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+                          <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+                          <span className="text-[10px] font-mono text-slate-300 ml-2 truncate">
+                            noorfiqhacademy.com/books
+                          </span>
+                        </div>
+
+                        {/* Preview Body */}
+                        <div className="p-4 bg-gradient-to-b from-[#f8f9fa] to-white relative overflow-hidden space-y-3.5">
+                          {/* Background image preview if background mode */}
+                          {siteSettings.booksPage?.heroImage && siteSettings.booksPage?.heroImagePosition === 'background' && siteSettings.booksPage?.showHeroImage !== false && (
+                            <div className="absolute inset-0 opacity-15 pointer-events-none">
+                              <img
+                                src={siteSettings.booksPage.heroImage}
+                                alt="bg"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+
+                          {/* Top Badge */}
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-[9px] font-bold text-amber-900 shadow-sm">
+                            <Library size={10} className="text-amber-700 shrink-0" />
+                            <span className="truncate">{siteSettings.booksPage?.badgeText || 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ'}</span>
+                          </div>
+
+                          {/* Hero flex / grid */}
+                          <div className={`flex flex-col gap-3 relative z-10 ${
+                            siteSettings.booksPage?.heroImage && siteSettings.booksPage?.showHeroImage !== false && siteSettings.booksPage?.heroImagePosition === 'left' ? 'sm:flex-row-reverse items-center' :
+                            siteSettings.booksPage?.heroImage && siteSettings.booksPage?.showHeroImage !== false && siteSettings.booksPage?.heroImagePosition === 'right' ? 'sm:flex-row items-center' : ''
+                          }`}>
+                            <div className="flex-1 space-y-2">
+                              <h4 className="text-sm font-extrabold text-[#112734] leading-snug">
+                                {siteSettings.booksPage?.titleBn || 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার'}
+                              </h4>
+                              <p className="text-[10px] text-[#5a524d] leading-relaxed line-clamp-3">
+                                {siteSettings.booksPage?.subtitleBn || 'বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন...'}
+                              </p>
+
+                              {/* Highlight Pills */}
+                              <div className="space-y-1 pt-1">
+                                {[
+                                  siteSettings.booksPage?.highlight1 || 'সারাদেশে দ্রুততম হোম ডেলিভারি',
+                                  siteSettings.booksPage?.highlight2 || 'প্রামাণ্য ও নির্ভরযোগ্য ফিকহী সংকলন',
+                                  siteSettings.booksPage?.highlight3 || 'সুলভ হাদিয়া ও ক্যাশ অন ডেলিভারি'
+                                ].map((hl, idx) => (
+                                  <div key={idx} className="flex items-center gap-1 text-[9px] text-slate-700">
+                                    <CheckCircle2 size={11} className="text-amber-600 shrink-0" />
+                                    <span className="truncate font-medium">{hl}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Image side mock */}
+                            {siteSettings.booksPage?.heroImage && siteSettings.booksPage?.showHeroImage !== false && siteSettings.booksPage?.heroImagePosition !== 'background' && (
+                              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden border-2 border-white shadow-md bg-slate-100 shrink-0">
+                                <img
+                                  src={siteSettings.booksPage.heroImage}
+                                  alt="Preview"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Search bar mock */}
+                          <div className="mt-2 p-2 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-2">
+                            <Search size={12} className="text-amber-600 shrink-0" />
+                            <span className="text-[9px] text-slate-400 italic truncate">
+                              {siteSettings.booksPage?.searchPlaceholder || 'কিতাবের নাম, লেখক বা বিষয় দিয়ে অনুসন্ধান করুন...'}
+                            </span>
+                          </div>
+
+                          {/* Section Title mock */}
+                          <div className="pt-2 border-t border-slate-200 flex justify-between items-center">
+                            <div>
+                              <span className="text-[10px] font-bold text-[#112734] block">
+                                {siteSettings.booksPage?.featuredSectionTitle || 'প্রকাশিত ও সংগৃহীত কিতাবসমূহ'}
+                              </span>
+                              <span className="text-[8px] text-slate-500 block truncate">
+                                {siteSettings.booksPage?.featuredSectionSubtitle || 'ক্যাটাগরি ও ফিল্টার ব্যবহার করুন'}
+                              </span>
+                            </div>
+                            <span className="text-[8px] font-bold px-1.5 py-0.5 bg-amber-50 text-amber-800 rounded border border-amber-200">
+                              ফিল্টার
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-3 bg-amber-50/70 rounded-b-2xl border-t border-amber-100 text-[11px] text-amber-900 leading-relaxed">
+                          💡 <strong>পরামর্শ:</strong> কাঙ্ক্ষিত পরিবর্তন শেষে নিচে <strong>&quot;সাইট সেটিংস সেভ করুন&quot;</strong> বাটনে ক্লিক করলে তা সরাসরি কিতাব পেজে সেভ হয়ে রিয়েলটাইমে দৃশ্যমান হবে।
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 5. FATWA & MASALA PAGE CUSTOMIZATION */}
+            {settingsSubTab === 'fatwa_page' && (
+              <div className="space-y-6 animate-in fade-in">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+                  <div>
+                    <h3 className="font-extrabold text-base text-[#112734] flex items-center gap-2">
+                      <HelpCircle size={20} className="text-teal-600" />
+                      <span>ফতোয়া ও মাসআলা পেজ সেটিংস (Fatwa Page Settings)</span>
+                    </h3>
+                    <p className="text-xs text-[#8a817c] mt-0.5">
+                      ওয়েবসাইটের <strong>&apos;/fatwa&apos;</strong> পেজের শীর্ষ হিরো সেকশন, ব্যানার ছবি, শিরোনাম, উপশিরোনাম, ৩টি হাইলাইটস ও সেকশন হেডলাইন পরিবর্তন করুন।
+                    </p>
+                  </div>
+
+                  <a
+                    href="/fatwa"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-xl text-xs font-bold transition-all shrink-0 border border-teal-200"
+                  >
+                    <span>ফতোয়া পেজ ভিজিট করুন</span>
+                    <ExternalLink size={13} />
+                  </a>
+                </div>
+
+                {/* Form Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  
+                  {/* Left Controls (7 Cols) */}
+                  <div className="lg:col-span-7 space-y-5 text-xs">
+                    
+                    {/* 1. Hero Image Management Box */}
+                    <div className="bg-[#fdfcf9] p-4 sm:p-5 rounded-2xl border border-[#ece8e0] space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-[#112734] text-xs flex items-center gap-1.5">
+                          <ImageIcon size={15} className="text-teal-600" />
+                          <span>হিরো ইমেজ ও ব্যানার ছবি</span>
+                        </span>
+                        
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={siteSettings.fatwaPage?.showHeroImage !== false}
+                            onChange={(e) => {
+                              const curr = siteSettings.fatwaPage || {
+                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
+                                heroImage: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80',
+                                showHeroImage: true,
+                                heroImagePosition: 'right'
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                fatwaPage: { ...curr, showHeroImage: e.target.checked }
+                              });
+                            }}
+                            className="w-4 h-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500"
+                          />
+                          <span className="font-bold text-[#112734] text-[11px]">ছবি প্রদর্শন চালু</span>
+                        </label>
+                      </div>
+
+                      {/* Image Upload & Link */}
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {/* File Upload Button */}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">ডিভাইস থেকে আপলোড করুন</label>
+                            <label className="flex items-center justify-center gap-1.5 px-3 py-2.5 border border-dashed border-teal-300 hover:border-teal-500 bg-teal-50/50 hover:bg-teal-50 rounded-xl cursor-pointer transition-all">
+                              <Upload size={14} className="text-teal-600" />
+                              <span className="font-bold text-teal-700 text-xs">ইমেজ ফাইল নির্বাচন</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = (uploadEvent) => {
+                                      const result = uploadEvent.target?.result as string;
+                                      if (result) {
+                                        const curr = siteSettings.fatwaPage || {
+                                          badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                          titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                          subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
+                                          heroImage: '',
+                                          showHeroImage: true,
+                                          heroImagePosition: 'right'
+                                        };
+                                        setSiteSettings({
+                                          ...siteSettings,
+                                          fatwaPage: { ...curr, heroImage: result, showHeroImage: true }
+                                        });
+                                      }
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+
+                          {/* Image URL Input */}
+                          <div>
+                            <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">অথবা ইমেজ ইউআরএল (URL)</label>
+                            <input
+                              type="text"
+                              placeholder="https://example.com/image.jpg"
+                              value={siteSettings.fatwaPage?.heroImage || ''}
+                              onChange={(e) => {
+                                const curr = siteSettings.fatwaPage || {
+                                  badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                  titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                  subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
+                                  heroImage: '',
+                                  showHeroImage: true,
+                                  heroImagePosition: 'right'
+                                };
+                                setSiteSettings({
+                                  ...siteSettings,
+                                  fatwaPage: { ...curr, heroImage: e.target.value }
+                                });
+                              }}
+                              className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-teal-600 text-xs font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Image Preview / Remove Row */}
+                        {siteSettings.fatwaPage?.heroImage && (
+                          <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-[#ece8e0]">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#ece8e0] bg-slate-100 shrink-0">
+                                <img
+                                  src={siteSettings.fatwaPage.heroImage}
+                                  alt="Fatwa Hero Banner"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <div>
+                                <span className="block font-bold text-slate-800 text-[11px]">বর্তমান ব্যানার ছবি</span>
+                                <span className="block text-[10px] text-slate-400 truncate max-w-[200px] sm:max-w-xs">
+                                  {siteSettings.fatwaPage.heroImage.startsWith('data:') ? 'আপলোডকৃত ছবি (Base64)' : siteSettings.fatwaPage.heroImage}
+                                </span>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const curr = siteSettings.fatwaPage || {
+                                  badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                  titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                  subtitleBn: '',
+                                  heroImage: ''
+                                };
+                                setSiteSettings({
+                                  ...siteSettings,
+                                  fatwaPage: { ...curr, heroImage: '' }
+                                });
+                              }}
+                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-bold flex items-center gap-1 text-[11px]"
+                            >
+                              <Trash2 size={13} />
+                              <span>মুছুন</span>
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Presets Grid */}
+                        <div className="pt-2">
+                          <label className="block text-[11px] font-bold text-[#5a524d] mb-1.5">প্রিসেট ইসলামিক ছবি থেকে বেছে নিন:</label>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {[
+                              {
+                                label: 'প্রামাণ্য কিতাব ও লাইব্রেরী',
+                                url: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80'
+                              },
+                              {
+                                label: 'ইসলামিক আর্চ ও মসজিদ',
+                                url: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80'
+                              },
+                              {
+                                label: 'কুরআন ও রিডিং ডেস্ক',
+                                url: 'https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=1200&q=80'
+                              },
+                              {
+                                label: 'দারুল ইফতা স্টাডি',
+                                url: 'https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=1200&q=80'
+                              }
+                            ].map((preset, pIdx) => (
+                              <button
+                                key={pIdx}
+                                type="button"
+                                onClick={() => {
+                                  const curr = siteSettings.fatwaPage || {
+                                    badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                    titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                    subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
+                                    heroImage: '',
+                                    showHeroImage: true,
+                                    heroImagePosition: 'right'
+                                  };
+                                  setSiteSettings({
+                                    ...siteSettings,
+                                    fatwaPage: { ...curr, heroImage: preset.url, showHeroImage: true }
+                                  });
+                                }}
+                                className={`p-1.5 rounded-xl border text-[10px] font-bold text-center transition-all ${
+                                  siteSettings.fatwaPage?.heroImage === preset.url
+                                    ? 'border-teal-600 bg-teal-50 text-teal-900 shadow-sm'
+                                    : 'border-[#ece8e0] bg-white text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Image Layout Position */}
+                        <div className="pt-2 border-t border-[#ece8e0]/70">
+                          <label className="block text-[11px] font-bold text-[#5a524d] mb-1.5">ছবির লেআউট ও পজিশন</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { id: 'right', label: 'ডান পাশে ছবি (Right)' },
+                              { id: 'left', label: 'বাম পাশে ছবি (Left)' },
+                              { id: 'background', label: 'ব্যাকগ্রাউন্ড ব্যানার (Full)' }
+                            ].map((pos) => (
+                              <button
+                                key={pos.id}
+                                type="button"
+                                onClick={() => {
+                                  const curr = siteSettings.fatwaPage || {
+                                    badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                    titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                    subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
+                                    heroImage: '',
+                                    showHeroImage: true,
+                                    heroImagePosition: 'right'
+                                  };
+                                  setSiteSettings({
+                                    ...siteSettings,
+                                    fatwaPage: { ...curr, heroImagePosition: pos.id as any }
+                                  });
+                                }}
+                                className={`py-2 px-2.5 rounded-xl text-[11px] font-bold transition-all text-center ${
+                                  (siteSettings.fatwaPage?.heroImagePosition || 'right') === pos.id
+                                    ? 'bg-[#112734] text-white shadow-sm'
+                                    : 'bg-white text-slate-700 border border-[#ece8e0] hover:bg-slate-50'
+                                }`}
+                              >
+                                {pos.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Text & Content Settings */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#ece8e0] space-y-4 shadow-sm">
+                      <span className="font-extrabold text-[#112734] text-xs flex items-center gap-1.5">
+                        <FileText size={15} className="text-teal-600" />
+                        <span>শিরোনাম, উপশিরোনাম ও ব্যাজ টেক্সট</span>
+                      </span>
+
+                      {/* Badge */}
+                      <div>
+                        <label className="block font-bold text-[#2c3e50] mb-1">শীর্ষ ব্যাজ টেক্সট (Top Badge)</label>
+                        <input
+                          type="text"
+                          placeholder="যেমন: দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY"
+                          value={siteSettings.fatwaPage?.badgeText || ''}
+                          onChange={(e) => {
+                            const curr = siteSettings.fatwaPage || {
+                              badgeText: '',
+                              titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                              subtitleBn: '',
+                              heroImage: ''
+                            };
+                            setSiteSettings({
+                              ...siteSettings,
+                              fatwaPage: { ...curr, badgeText: e.target.value }
+                            });
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-[#112734] font-medium"
+                        />
+                      </div>
+
+                      {/* Main Title */}
+                      <div>
+                        <label className="block font-bold text-[#2c3e50] mb-1">মূল শিরোনাম (Page Title)</label>
+                        <input
+                          type="text"
+                          placeholder="যেমন: অনলাইন ইফতা ও ফতোয়া সেবা"
+                          value={siteSettings.fatwaPage?.titleBn || ''}
+                          onChange={(e) => {
+                            const curr = siteSettings.fatwaPage || {
+                              badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                              titleBn: '',
+                              subtitleBn: '',
+                              heroImage: ''
+                            };
+                            setSiteSettings({
+                              ...siteSettings,
+                              fatwaPage: { ...curr, titleBn: e.target.value }
+                            });
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-[#112734] font-bold text-sm"
+                        />
+                      </div>
+
+                      {/* Subtitle / Description */}
+                      <div>
+                        <label className="block font-bold text-[#2c3e50] mb-1">উপশিরোনাম ও বিবরণ (Subtitle / Description)</label>
+                        <textarea
+                          rows={3}
+                          placeholder="যেমন: দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন..."
+                          value={siteSettings.fatwaPage?.subtitleBn || ''}
+                          onChange={(e) => {
+                            const curr = siteSettings.fatwaPage || {
+                              badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                              titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                              subtitleBn: '',
+                              heroImage: ''
+                            };
+                            setSiteSettings({
+                              ...siteSettings,
+                              fatwaPage: { ...curr, subtitleBn: e.target.value }
+                            });
+                          }}
+                          className="w-full px-3.5 py-2 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-[#112734] font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 3. Three Highlight Badges */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#ece8e0] space-y-3 shadow-sm">
+                      <span className="font-extrabold text-[#112734] text-xs flex items-center gap-1.5">
+                        <CheckCircle2 size={15} className="text-emerald-600" />
+                        <span>৩টি বৈশিষ্ট্য ও হাইলাইটস (Highlights Pills)</span>
+                      </span>
+
+                      <div className="space-y-2.5">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">হাইলাইট ১</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: প্রামাণ্য ফিকহী কিতাব ও দলীলভিত্তিক সমাধান"
+                            value={siteSettings.fatwaPage?.highlight1 || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.fatwaPage || {
+                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                fatwaPage: { ...curr, highlight1: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">হাইলাইট ২</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: অভিজ্ঞ মুফতী বোর্ডের সরাসরি তত্ত্বাবধান"
+                            value={siteSettings.fatwaPage?.highlight2 || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.fatwaPage || {
+                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                fatwaPage: { ...curr, highlight2: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] text-xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">হাইলাইট ৩</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: ব্যক্তিগত ও গোপনীয় প্রশ্ন ট্র্যাকিং সেবা"
+                            value={siteSettings.fatwaPage?.highlight3 || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.fatwaPage || {
+                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                fatwaPage: { ...curr, highlight3: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. Section Headings (Ask Card, Track Card, Archive) */}
+                    <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#ece8e0] space-y-4 shadow-sm">
+                      <span className="font-extrabold text-[#112734] text-xs flex items-center gap-1.5">
+                        <Send size={15} className="text-teal-600" />
+                        <span>সেকশন ও কার্ডের শিরোনামসমূহ (Card & Archive Headings)</span>
+                      </span>
+
+                      {/* Ask Card */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-teal-50/40 rounded-xl border border-teal-100">
+                        <div>
+                          <label className="block text-[11px] font-bold text-teal-900 mb-1">প্রশ্ন পাঠানোর কার্ড শিরোনাম</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: সরাসরি ফতোয়া বিভাগে প্রশ্ন পাঠান"
+                            value={siteSettings.fatwaPage?.askCardTitle || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.fatwaPage || {
+                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                fatwaPage: { ...curr, askCardTitle: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-teal-200 text-xs bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-teal-900 mb-1">প্রশ্ন পাঠানোর কার্ড সাবটাইটেল</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: মুফতী প্যানেল কর্তৃক ব্যক্তিগতভাবে যাচাই ও সমাধান করা হবে"
+                            value={siteSettings.fatwaPage?.askCardSubtitle || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.fatwaPage || {
+                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                fatwaPage: { ...curr, askCardSubtitle: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-teal-200 text-xs bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Track Card */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-amber-50/40 rounded-xl border border-amber-100">
+                        <div>
+                          <label className="block text-[11px] font-bold text-amber-900 mb-1">ট্র্যাকিং কার্ড শিরোনাম</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: প্রশ্নের স্ট্যাটাস দেখুন"
+                            value={siteSettings.fatwaPage?.trackCardTitle || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.fatwaPage || {
+                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                fatwaPage: { ...curr, trackCardTitle: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-amber-200 text-xs bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-amber-900 mb-1">ট্র্যাকিং কার্ড সাবটাইটেল</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: ট্র্যাকিং কোড দিয়ে উত্তর জানুন"
+                            value={siteSettings.fatwaPage?.trackCardSubtitle || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.fatwaPage || {
+                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                fatwaPage: { ...curr, trackCardSubtitle: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-amber-200 text-xs bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Archive Section */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-800 mb-1">আর্কাইভ সেকশন শিরোনাম</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: উন্মুক্ত ফতোয়া ও গবেষণা আর্কাইভ"
+                            value={siteSettings.fatwaPage?.archiveTitle || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.fatwaPage || {
+                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                fatwaPage: { ...curr, archiveTitle: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-800 mb-1">আর্কাইভ সেকশন সাবটাইটেল</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: মুফতীগণের স্বাক্ষরিত ও প্রামাণ্য গ্রন্থাবলি থেকে সংকলিত উত্তরসমূহ"
+                            value={siteSettings.fatwaPage?.archiveSubtitle || ''}
+                            onChange={(e) => {
+                              const curr = siteSettings.fatwaPage || {
+                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                subtitleBn: '',
+                                heroImage: ''
+                              };
+                              setSiteSettings({
+                                ...siteSettings,
+                                fatwaPage: { ...curr, archiveSubtitle: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Right Preview Panel (5 Cols) */}
+                  <div className="lg:col-span-5 space-y-4 text-xs">
+                    <div className="sticky top-6 space-y-4">
+                      
+                      {/* Live Mini Preview Box */}
+                      <div className="bg-[#f8faf7] p-4 sm:p-5 rounded-2xl border border-[#ece8e0] shadow-sm space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-extrabold text-[#8a817c] uppercase tracking-wider flex items-center gap-1">
+                            <Eye size={12} className="text-teal-600" />
+                            <span>লাইভ প্রিভিউ (Live Mini Preview)</span>
+                          </span>
+                          <span className="text-[9px] bg-teal-100 text-teal-800 font-bold px-2 py-0.5 rounded-full">
+                            /fatwa
+                          </span>
+                        </div>
+
+                        {/* Hero Section Preview Rendering */}
+                        {siteSettings.fatwaPage?.heroImagePosition === 'background' && siteSettings.fatwaPage?.showHeroImage !== false && siteSettings.fatwaPage?.heroImage ? (
+                          <div className="relative rounded-2xl overflow-hidden min-h-[160px] p-5 flex items-center justify-center text-center shadow-inner border border-[#23626F]">
+                            <div
+                              className="absolute inset-0 bg-cover bg-center"
+                              style={{ backgroundImage: `url(${siteSettings.fatwaPage.heroImage})` }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/70 to-slate-950/80" />
+                            
+                            <div className="relative z-10 space-y-2">
+                              <span className="inline-block px-2 py-0.5 rounded-full bg-teal-400/20 text-teal-300 text-[9px] font-bold border border-teal-400/40">
+                                ✨ {siteSettings.fatwaPage?.badgeText || 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY'}
+                              </span>
+                              <h4 className="text-sm font-black leading-tight text-white font-anek">
+                                {siteSettings.fatwaPage?.titleBn || 'অনলাইন ইফতা ও ফতোয়া সেবা'}
+                              </h4>
+                              <p className="text-[10px] text-slate-200 line-clamp-2 leading-relaxed font-tiro">
+                                {siteSettings.fatwaPage?.subtitleBn || 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।'}
+                              </p>
+                            </div>
+                          </div>
+                        ) : siteSettings.fatwaPage?.showHeroImage !== false && siteSettings.fatwaPage?.heroImage ? (
+                          <div className="bg-white rounded-xl p-3.5 border border-[#ece8e0] shadow-sm space-y-2.5">
+                            <div className={`flex flex-col sm:flex-row gap-3 items-center ${siteSettings.fatwaPage?.heroImagePosition === 'left' ? 'sm:flex-row-reverse' : ''}`}>
+                              <div className="flex-1 space-y-1.5">
+                                <span className="inline-block px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 text-[9px] font-bold border border-teal-200">
+                                  ✨ {siteSettings.fatwaPage?.badgeText || 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY'}
+                                </span>
+                                <h4 className="text-xs font-black text-[#112734] leading-tight font-anek">
+                                  {siteSettings.fatwaPage?.titleBn || 'অনলাইন ইফতা ও ফতোয়া সেবা'}
+                                </h4>
+                                <p className="text-[10px] text-[#5a524d] line-clamp-2 leading-relaxed font-tiro">
+                                  {siteSettings.fatwaPage?.subtitleBn || 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।'}
+                                </p>
+                              </div>
+                              <div className="w-24 h-16 rounded-lg overflow-hidden border border-[#ece8e0] shrink-0 bg-slate-100">
+                                <img
+                                  src={siteSettings.fatwaPage?.heroImage}
+                                  alt="Fatwa Hero Preview"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Highlights pills */}
+                            <div className="flex flex-wrap gap-1 pt-1 border-t border-slate-100">
+                              {(siteSettings.fatwaPage?.highlight1 || 'প্রামাণ্য ফিকহী কিতাব ও দলীলভিত্তিক সমাধান') && (
+                                <span className="text-[9px] bg-slate-50 text-slate-700 px-1.5 py-0.5 rounded-md border border-slate-200">
+                                  ✓ {siteSettings.fatwaPage?.highlight1 || 'প্রামাণ্য ফিকহী কিতাব ও দলীলভিত্তিক সমাধান'}
+                                </span>
+                              )}
+                              {(siteSettings.fatwaPage?.highlight2 || 'অভিজ্ঞ মুফতী বোর্ডের সরাসরি তত্ত্বাবধান') && (
+                                <span className="text-[9px] bg-slate-50 text-slate-700 px-1.5 py-0.5 rounded-md border border-slate-200">
+                                  🎓 {siteSettings.fatwaPage?.highlight2 || 'অভিজ্ঞ মুফতী বোর্ডের সরাসরি তত্ত্বাবধান'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-white rounded-xl p-4 border border-[#ece8e0] text-center space-y-2 shadow-sm">
+                            <span className="inline-block px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 text-[9px] font-bold border border-teal-200">
+                              ✨ {siteSettings.fatwaPage?.badgeText || 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY'}
+                            </span>
+                            <h4 className="text-sm font-black text-[#112734] leading-tight font-anek">
+                              {siteSettings.fatwaPage?.titleBn || 'অনলাইন ইফতা ও ফতোয়া সেবা'}
+                            </h4>
+                            <p className="text-[10px] text-[#5a524d] leading-relaxed font-tiro">
+                              {siteSettings.fatwaPage?.subtitleBn || 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।'}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Fatwa Action Cards Preview */}
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                          <div className="p-2.5 bg-white rounded-lg border border-teal-200 text-center space-y-1">
+                            <span className="text-[10px] font-bold text-teal-800 block truncate">
+                              {siteSettings.fatwaPage?.askCardTitle || 'সরাসরি প্রশ্ন পাঠান'}
+                            </span>
+                            <span className="text-[8px] text-slate-500 block truncate">
+                              {siteSettings.fatwaPage?.askCardSubtitle || 'মুফতী প্যানেল কর্তৃক যাচাই'}
+                            </span>
+                          </div>
+                          <div className="p-2.5 bg-white rounded-lg border border-amber-200 text-center space-y-1">
+                            <span className="text-[10px] font-bold text-amber-800 block truncate">
+                              {siteSettings.fatwaPage?.trackCardTitle || 'স্ট্যাটাস দেখুন'}
+                            </span>
+                            <span className="text-[8px] text-slate-500 block truncate">
+                              {siteSettings.fatwaPage?.trackCardSubtitle || 'ট্র্যাকিং কোড দিয়ে উত্তর'}
+                            </span>
+                          </div>
+                        </div>
+
+                      </div>
+
+                      <div className="p-3 bg-teal-50/70 rounded-xl border border-teal-100 text-[11px] text-teal-900 leading-relaxed">
+                        💡 <strong>পরামর্শ:</strong> কাঙ্ক্ষিত পরিবর্তন শেষে নিচে <strong>&quot;সাইট সেটিংস সেভ করুন&quot;</strong> বাটনে ক্লিক করলে তা সরাসরি ফতোয়া পেজে সেভ হয়ে দৃশ্যমান হবে।
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* 5. COURSE CATEGORIES MANAGEMENT */}
+            {settingsSubTab === 'categories' && (
+              <div className="space-y-6 animate-in fade-in">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-3">
+                  <div>
+                    <h3 className="font-extrabold text-base text-[#112734] flex items-center gap-2">
+                      <BookOpen size={18} className="text-emerald-600" />
+                      <span>কোর্স ক্যাটাগরি ও ফিল্টার ব্যবস্থাপনা</span>
+                    </h3>
+                    <p className="text-xs text-[#8a817c] mt-0.5">
+                      ওয়েবসাইটের কোর্স পেইজ এবং নতুন কোর্স যুক্ত করার সময় প্রদর্শিত সকল ক্যাটাগরি এখান থেকে যোগ, এডিট বা মুছতে পারবেন।
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const label = prompt('নতুন ক্যাটাগরির নাম লিখুন:');
+                      if (label && label.trim()) {
+                        const currentCats = siteSettings.courseCategories || DEFAULT_COURSE_CATEGORIES;
+                        const newId = 'cat-' + Date.now().toString().slice(-6);
+                        const updated = [...currentCats, { id: newId, label: label.trim() }];
+                        setSiteSettings({ ...siteSettings, courseCategories: updated });
+                        AppStore.saveCourseCategories(updated);
+                        showNotification('নতুন ক্যাটাগরি সফলভাবে যোগ হয়েছে');
+                      }
+                    }}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-sm"
+                  >
+                    <Plus size={14} />
+                    <span>+ নতুন ক্যাটাগরি যোগ করুন</span>
+                  </button>
+                </div>
+
+                {/* Categories Table / Card Grid */}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(siteSettings.courseCategories || DEFAULT_COURSE_CATEGORIES).map((cat, idx) => (
+                      <div
+                        key={cat.id || idx}
+                        className="p-4 bg-white rounded-2xl border border-[#ece8e0] shadow-sm flex items-center justify-between gap-3 hover:border-emerald-300 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-xs text-[#112734]">{cat.label}</h4>
+                            <span className="text-[10px] font-mono text-slate-400">ID: {cat.id}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newLabel = prompt('ক্যাটাগরির নতুন নাম লিখুন:', cat.label);
+                              if (newLabel && newLabel.trim() && newLabel.trim() !== cat.label) {
+                                const currentCats = siteSettings.courseCategories || DEFAULT_COURSE_CATEGORIES;
+                                const updated = currentCats.map(c => c.id === cat.id ? { ...c, label: newLabel.trim() } : c);
+                                setSiteSettings({ ...siteSettings, courseCategories: updated });
+                                AppStore.saveCourseCategories(updated);
+                                showNotification('ক্যাটাগরি আপডেট হয়েছে');
+                              }
+                            }}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg text-xs font-bold transition-colors"
+                            title="এডিট করুন"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentCats = siteSettings.courseCategories || DEFAULT_COURSE_CATEGORIES;
+                              if (currentCats.length <= 1) {
+                                alert('অন্তত একটি ক্যাটাগরি থাকতে হবে!');
+                                return;
+                              }
+                              if (confirm(`"${cat.label}" ক্যাটাগরিটি মুছে ফেলতে চান?`)) {
+                                const updated = currentCats.filter(c => c.id !== cat.id);
+                                setSiteSettings({ ...siteSettings, courseCategories: updated });
+                                AppStore.saveCourseCategories(updated);
+                                showNotification('ক্যাটাগরি মুছে ফেলা হয়েছে');
+                              }
+                            }}
+                            className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold transition-colors"
+                            title="মুছে ফেলুন"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200 text-xs text-emerald-950 space-y-1">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <Sparkles size={14} className="text-emerald-700" />
+                      <span>টিপস ও তথ্য:</span>
+                    </p>
+                    <p className="text-[11px] text-emerald-900 leading-relaxed">
+                      এখানে যে ক্যাটাগরিগুলো সেভ করবেন, কোর্স তৈরীর ড্রপডাউনে এবং মূল কোর্সের ফিল্টারে তা সরাসরি লাইভ আপডেট হবে। এছাড়াও কোর্স তৈরীর পপআপ উইন্ডো থেকেই সরাসরি নতুন ক্যাটাগরি তৈরি করতে পারবেন।
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4. TOP NOTIFICATION BAR MANAGEMENT */}
+            {settingsSubTab === 'notice' && (
                 <div className="space-y-6 animate-in fade-in">
                   <div className="flex items-center justify-between border-b pb-2">
                     <div className="flex items-center gap-2">
@@ -4505,6 +6695,44 @@ export default function AdminDashboardPage() {
           )}
 
 
+          {/* ORDER ACTION & DETAILS MODAL */}
+          {selectedOrderForAction && (
+            <OrderActionModal
+              order={selectedOrderForAction}
+              courses={courses}
+              books={books}
+              onClose={() => setSelectedOrderForAction(null)}
+              onApprove={(id) => {
+                handleApproveOrder(id);
+                setSelectedOrderForAction(null);
+              }}
+              onReject={(id) => {
+                handleRejectOrder(id);
+                setSelectedOrderForAction(null);
+              }}
+              onDelete={(id) => {
+                handleDeleteOrder(id);
+                setSelectedOrderForAction(null);
+              }}
+              onStatusChange={(id, status) => {
+                AppStore.updateOrderStatus(id, status);
+                refreshAllData();
+                showNotification(`অর্ডার স্ট্যাটাস '${status}' হিসেবে আপডেট করা হয়েছে`);
+                setSelectedOrderForAction(null);
+              }}
+            />
+          )}
+
+          {/* MANUAL ORDER / STUDENT ENROLLMENT MODAL */}
+          {showManualOrderModal && (
+            <ManualOrderModal
+              courses={courses}
+              books={books}
+              onClose={() => setShowManualOrderModal(false)}
+              onSave={handleSaveManualOrder}
+            />
+          )}
+
         </main>
       </div>
 
@@ -4527,13 +6755,61 @@ function CourseBuilderModal({ course, isNew, onClose, onSave }: CourseBuilderMod
   const [activeSubTab, setActiveSubTab] = useState<'basic' | 'curriculum' | 'quizzes' | 'instructor'>('basic');
   const [editingLessonIdx, setEditingLessonIdx] = useState<number | null>(null);
 
-  const categories = [
-    { id: 'ibadat', label: 'তাহরাত, নামাজ ও রোজা' },
-    { id: 'muamalat', label: 'ব্যবসা ও আর্থিক লেনদেন' },
-    { id: 'family', label: 'বিবাহ, তালাক ও পরিবার' },
-    { id: 'usul', label: 'উসূলে ফিকহ ও ফতোয়া শাস্ত্র' },
-    { id: 'contemporary', label: 'চিকিৎসা ও আধুনিক ফিকহ' },
-  ];
+  // Dynamic Course Categories
+  const [categories, setCategories] = useState<CourseCategory[]>(() => AppStore.getCourseCategories());
+  const [isManagingCategories, setIsManagingCategories] = useState(false);
+  const [newCatLabel, setNewCatLabel] = useState('');
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editingCatLabel, setEditingCatLabel] = useState('');
+
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatLabel.trim()) return;
+    const newId = 'cat-' + Date.now().toString().slice(-6);
+    const updated = [...categories, { id: newId, label: newCatLabel.trim() }];
+    setCategories(updated);
+    AppStore.saveCourseCategories(updated);
+    setFormData({
+      ...formData,
+      category: newId,
+      categoryLabelBn: newCatLabel.trim()
+    });
+    setNewCatLabel('');
+  };
+
+  const handleUpdateCategory = (id: string) => {
+    if (!editingCatLabel.trim()) return;
+    const updated = categories.map(c => c.id === id ? { ...c, label: editingCatLabel.trim() } : c);
+    setCategories(updated);
+    AppStore.saveCourseCategories(updated);
+    if (formData.category === id) {
+      setFormData({
+        ...formData,
+        categoryLabelBn: editingCatLabel.trim()
+      });
+    }
+    setEditingCatId(null);
+    setEditingCatLabel('');
+  };
+
+  const handleDeleteCategory = (id: string) => {
+    if (categories.length <= 1) {
+      alert('অন্তত একটি ক্যাটাগরি থাকতে হবে!');
+      return;
+    }
+    if (confirm('এই ক্যাটাগরি মুছে ফেলতে চান?')) {
+      const updated = categories.filter(c => c.id !== id);
+      setCategories(updated);
+      AppStore.saveCourseCategories(updated);
+      if (formData.category === id) {
+        setFormData({
+          ...formData,
+          category: updated[0].id,
+          categoryLabelBn: updated[0].label
+        });
+      }
+    }
+  };
 
   const handleAddLesson = () => {
     const newLesson: Lesson = {
@@ -4696,8 +6972,17 @@ function CourseBuilderModal({ course, isNew, onClose, onSave }: CourseBuilderMod
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-bold text-[#2c3e50] mb-1">ক্যাটাগরি</label>
+                <div className="sm:col-span-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-[#2c3e50] text-xs">ক্যাটাগরি *</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsManagingCategories(!isManagingCategories)}
+                      className="text-[11px] text-[#17A2B8] hover:text-[#112734] font-bold underline transition-colors"
+                    >
+                      {isManagingCategories ? '✕ বন্ধ করুন' : '⚙️ কাস্টমাইজ / এডিট'}
+                    </button>
+                  </div>
                   <select
                     value={formData.category}
                     onChange={(e) => {
@@ -4708,7 +6993,7 @@ function CourseBuilderModal({ course, isNew, onClose, onSave }: CourseBuilderMod
                         categoryLabelBn: selected?.label || 'সাধারণ ফিকহ'
                       });
                     }}
-                    className="w-full px-3 py-2 rounded-xl border border-[#ece8e0]"
+                    className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] font-medium text-xs bg-white"
                   >
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>{c.label}</option>
@@ -4717,26 +7002,127 @@ function CourseBuilderModal({ course, isNew, onClose, onSave }: CourseBuilderMod
                 </div>
 
                 <div>
-                  <label className="block font-bold text-[#2c3e50] mb-1">কোর্স ফি (টাকা) *</label>
+                  <label className="block font-bold text-[#2c3e50] mb-1 text-xs">কোর্স ফি (টাকা) *</label>
                   <input
                     type="number"
                     required
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-[#ece8e0]"
+                    className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] text-xs"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-[#2c3e50] mb-1">আসল মূল্য / ডিসকাউন্ট (টাকা)</label>
+                  <label className="block font-bold text-[#2c3e50] mb-1 text-xs">আসল মূল্য / ডিসকাউন্ট (টাকা)</label>
                   <input
                     type="number"
                     value={formData.originalPrice || ''}
                     onChange={(e) => setFormData({ ...formData, originalPrice: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-[#ece8e0]"
+                    className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] text-xs"
                   />
                 </div>
               </div>
+
+              {/* Category Management Drawer */}
+              {isManagingCategories && (
+                <div className="p-4 bg-slate-50 border border-[#17A2B8]/40 rounded-2xl space-y-3 animate-in fade-in">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <h4 className="text-xs font-black text-[#112734] flex items-center gap-1.5">
+                      <Sparkles size={14} className="text-amber-500" />
+                      <span>ক্যাটাগরি ম্যানেজমেন্ট (নতুন যোগ, নাম পরিবর্তন ও মুছে ফেলা)</span>
+                    </h4>
+                    <span className="text-[10px] text-[#8a817c]">মোট ক্যাটাগরি: {categories.length}টি</span>
+                  </div>
+
+                  {/* Add New Category Input */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="নতুন ক্যাটাগরির নাম লিখুন..."
+                      value={newCatLabel}
+                      onChange={(e) => setNewCatLabel(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCategory(e);
+                        }
+                      }}
+                      className="flex-1 px-3 py-1.5 rounded-xl border border-[#ece8e0] bg-white text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCategory}
+                      className="px-3.5 py-1.5 bg-[#112734] hover:bg-[#23626F] text-white text-xs font-bold rounded-xl shadow transition-colors shrink-0"
+                    >
+                      + যোগ করুন
+                    </button>
+                  </div>
+
+                  {/* List of Existing Categories for Quick Edit & Delete */}
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    {categories.map((cat) => (
+                      <div key={cat.id} className="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-slate-200 text-xs">
+                        {editingCatId === cat.id ? (
+                          <div className="flex-1 flex items-center gap-1.5">
+                            <input
+                              type="text"
+                              value={editingCatLabel}
+                              onChange={(e) => setEditingCatLabel(e.target.value)}
+                              className="flex-1 px-2.5 py-1 rounded-lg border border-[#17A2B8] text-xs font-bold"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateCategory(cat.id)}
+                              className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[11px] font-bold"
+                            >
+                              সেভ
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingCatId(null)}
+                              className="px-2.5 py-1 bg-slate-200 text-slate-700 rounded-lg text-[11px]"
+                            >
+                              বাতিল
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${formData.category === cat.id ? 'bg-emerald-600' : 'bg-slate-300'}`} />
+                              <span className="font-bold text-[#2c3e50]">{cat.label}</span>
+                              {formData.category === cat.id && (
+                                <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">সিলেক্টেড</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingCatId(cat.id);
+                                  setEditingCatLabel(cat.label);
+                                }}
+                                className="px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50 rounded"
+                                title="এডিট করুন"
+                              >
+                                ✏️ এডিট
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCategory(cat.id)}
+                                className="px-2 py-0.5 text-xs text-rose-600 hover:bg-rose-50 rounded"
+                                title="মুছে ফেলুন"
+                              >
+                                🗑️ মুছুন
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
@@ -5354,6 +7740,549 @@ function FacultyEditorModal({ faculty, isNew, onClose, onSave }: FacultyEditorMo
             >
               <Save size={16} />
               <span>সংরক্ষণ করুন</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// -------------------------------------------------------------------------------------
+// ORDER DETAILS & ACTION MODAL
+// -------------------------------------------------------------------------------------
+interface OrderActionModalProps {
+  order: Order;
+  courses: Course[];
+  books: Book[];
+  onClose: () => void;
+  onApprove: (orderId: string) => void;
+  onReject: (orderId: string) => void;
+  onDelete: (orderId: string) => void;
+  onStatusChange: (orderId: string, status: 'approved' | 'rejected' | 'pending') => void;
+}
+
+function OrderActionModal({ order, courses, books, onClose, onApprove, onReject, onDelete, onStatusChange }: OrderActionModalProps) {
+  const [copiedTrx, setCopiedTrx] = useState(false);
+
+  const cleanPhone = (order.userPhone || '').replace(/[^0-9]/g, '');
+  const formattedPhone = cleanPhone.startsWith('88') ? cleanPhone : cleanPhone ? `88${cleanPhone}` : '';
+
+  const waMessage = encodeURIComponent(
+    `আসসালামু আলাইকুম ${order.userName},\n\nনূর ফিকহ একাডেমিতে "${order.itemTitle}"-এ আপনার ভর্তি ও অর্ডার (অর্ডার নং: ${order.orderNumber}) সফলভাবে অনুমোদিত হয়েছে। আলহামদুলিল্লাহ!\n\nআপনি এখন আপনার একাউন্টে লগইন করে কোর্স শুরু করতে পারবেন:\nhttps://noorfiqh.academy/dashboard\n\nযেকোনো সহায়তায় আমাদের সাথে যোগাযোগ করুন। জাযাকাল্লাহু খাইরান!`
+  );
+
+  const waUrl = formattedPhone ? `https://wa.me/${formattedPhone}?text=${waMessage}` : null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+      <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden border border-[#ece8e0] my-8 flex flex-col max-h-[92vh]">
+        {/* Header */}
+        <div className="bg-[#112734] p-6 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#17A2B8]/20 border border-[#17A2B8]/40 flex items-center justify-center text-[#17A2B8]">
+              <ShoppingBag size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono bg-white/15 px-2 py-0.5 rounded font-bold">
+                  {order.orderNumber}
+                </span>
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                  order.status === 'approved' 
+                    ? 'bg-emerald-500 text-white' 
+                    : order.status === 'rejected'
+                    ? 'bg-red-500 text-white'
+                    : 'bg-amber-400 text-slate-950 animate-pulse'
+                }`}>
+                  {order.status === 'approved' ? 'অনুমোদিত' : order.status === 'rejected' ? 'বাতিলকৃত' : 'পেন্ডিং ভেরিফিকেশন'}
+                </span>
+              </div>
+              <h3 className="text-lg font-black font-anek mt-1">অর্ডার ও ভর্তি বিবরণ</h3>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl bg-[#23626F] text-white hover:bg-[#23626F] transition-colors"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-6 overflow-y-auto space-y-5 text-xs">
+          {/* Student Info Box */}
+          <div className="bg-[#fdfcf9] p-4 rounded-2xl border border-[#ece8e0] space-y-2.5">
+            <span className="text-[10px] font-extrabold text-[#8a817c] uppercase tracking-wider block">
+              শিক্ষার্থীর তথ্য
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <p className="text-[11px] text-[#8a817c]">শিক্ষার্থীর নাম</p>
+                <p className="font-extrabold text-sm text-[#112734]">{order.userName}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-[#8a817c]">মোবাইল নম্বর</p>
+                <p className="font-mono font-bold text-sm text-[#112734]">
+                  {order.userPhone || 'দেওয়া হয়নি'}
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] text-[#8a817c]">ইমেইল এড্রেস</p>
+                <p className="font-bold text-[#112734] truncate">{order.userEmail || 'দেওয়া হয়নি'}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-[#8a817c]">আবেদনের তারিখ</p>
+                <p className="font-bold text-[#112734]">
+                  {new Date(order.createdAt || Date.now()).toLocaleDateString('bn-BD', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            </div>
+
+            {order.shippingAddress && (
+              <div className="pt-2 border-t border-[#ece8e0]">
+                <p className="text-[11px] text-amber-800 font-bold">ডেলিভারি ঠিকানা:</p>
+                <p className="text-xs text-[#2c3e50] mt-0.5">{order.shippingAddress}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Item & Payment Details Box */}
+          <div className="bg-[#fdfcf9] p-4 rounded-2xl border border-[#ece8e0] space-y-3">
+            <span className="text-[10px] font-extrabold text-[#8a817c] uppercase tracking-wider block">
+              কোর্স ও পেমেন্টের বিবরণ
+            </span>
+
+            <div className="flex items-start justify-between gap-3 p-3 bg-white rounded-xl border border-[#ece8e0]">
+              <div>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${
+                  order.itemType === 'course' 
+                    ? 'bg-purple-50 text-purple-700 border border-purple-200' 
+                    : 'bg-amber-50 text-amber-800 border border-amber-200'
+                }`}>
+                  {order.itemType === 'course' ? '🎓 পূর্ণাঙ্গ কোর্স' : '📘 কিতাব / প্রকাশনা'}
+                </span>
+                <h4 className="font-black text-sm text-[#112734] mt-1">{order.itemTitle}</h4>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-[10px] text-[#8a817c] block">মোট ফি</span>
+                <span className="font-black text-lg text-[#112734]">৳{order.amount}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="p-3 bg-white rounded-xl border border-[#ece8e0]">
+                <p className="text-[10px] text-[#8a817c] uppercase font-bold">পেমেন্ট মেথড</p>
+                <p className="font-extrabold text-sm text-[#112734] uppercase mt-0.5">
+                  {order.paymentMethod}
+                </p>
+              </div>
+
+              <div className="p-3 bg-white rounded-xl border border-[#ece8e0]">
+                <p className="text-[10px] text-[#8a817c] uppercase font-bold">Transaction ID (TrxID)</p>
+                <div className="flex items-center justify-between gap-1 mt-0.5">
+                  <span className="font-mono font-black text-xs text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                    {order.trxId || 'N/A'}
+                  </span>
+                  {order.trxId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (order.trxId) {
+                          navigator.clipboard.writeText(order.trxId);
+                          setCopiedTrx(true);
+                          setTimeout(() => setCopiedTrx(false), 2500);
+                        }
+                      }}
+                      className="text-[10px] text-[#17A2B8] hover:underline font-bold flex items-center gap-0.5"
+                    >
+                      {copiedTrx ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} />}
+                      <span>{copiedTrx ? 'কপি হয়েছে' : 'কপি'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Direct Communication Buttons */}
+          <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200 space-y-2">
+            <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1.5">
+              <MessageSquare size={13} className="text-emerald-700" />
+              <span>শিক্ষার্থীর সাথে সরাসরি যোগাযোগ ও নোটিফিকেশন</span>
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {waUrl ? (
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                >
+                  <MessageSquare size={13} />
+                  <span>হোয়াটসঅ্যাপে কনফার্মেশন পাঠান</span>
+                </a>
+              ) : (
+                <span className="text-[10px] text-slate-400 italic">
+                  * হোয়াটসঅ্যাপ পাঠানোর জন্য ফোন নম্বর প্রয়োজন
+                </span>
+              )}
+
+              {order.userPhone && (
+                <a
+                  href={`tel:${order.userPhone}`}
+                  className="px-3 py-2 bg-white text-[#112734] border border-[#ece8e0] hover:bg-slate-50 rounded-xl font-bold text-xs flex items-center gap-1.5"
+                >
+                  <Phone size={13} className="text-[#17A2B8]" />
+                  <span>সরাসরি কল করুন</span>
+                </a>
+              )}
+
+              {order.userEmail && (
+                <a
+                  href={`mailto:${order.userEmail}?subject=নূর ফিকহ একাডেমি - আপনার অর্ডার #${order.orderNumber} অনুমোদিত হয়েছে`}
+                  className="px-3 py-2 bg-white text-[#112734] border border-[#ece8e0] hover:bg-slate-50 rounded-xl font-bold text-xs flex items-center gap-1.5"
+                >
+                  <Mail size={13} className="text-[#17A2B8]" />
+                  <span>ইমেইল পাঠান</span>
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Status Change Selector */}
+          <div className="bg-[#fdfcf9] p-3.5 rounded-2xl border border-[#ece8e0] flex items-center justify-between gap-3">
+            <div>
+              <p className="font-bold text-[#112734] text-xs">স্ট্যাটাস পরিবর্তন করুন</p>
+              <p className="text-[10px] text-[#8a817c]">প্রয়োজনে স্ট্যাটাস পেন্ডিং, অনুমোদিত বা বাতিল করুন</p>
+            </div>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => onStatusChange(order.id, 'approved')}
+                className={`px-3 py-1.5 rounded-xl font-bold text-[11px] transition-all ${
+                  order.status === 'approved'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50'
+                }`}
+              >
+                অনুমোদিত
+              </button>
+              <button
+                type="button"
+                onClick={() => onStatusChange(order.id, 'pending')}
+                className={`px-3 py-1.5 rounded-xl font-bold text-[11px] transition-all ${
+                  order.status === 'pending'
+                    ? 'bg-amber-500 text-white shadow-sm'
+                    : 'bg-white text-amber-800 border border-amber-300 hover:bg-amber-50'
+                }`}
+              >
+                পেন্ডিং
+              </button>
+              <button
+                type="button"
+                onClick={() => onStatusChange(order.id, 'rejected')}
+                className={`px-3 py-1.5 rounded-xl font-bold text-[11px] transition-all ${
+                  order.status === 'rejected'
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'bg-white text-red-800 border border-red-300 hover:bg-red-50'
+                }`}
+              >
+                বাতিল
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="p-4 sm:p-6 bg-[#fdfcf9] border-t border-[#ece8e0] flex items-center justify-between shrink-0">
+          <button
+            type="button"
+            onClick={() => onDelete(order.id)}
+            className="px-3.5 py-2 text-red-600 hover:bg-red-50 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors"
+          >
+            <Trash2 size={14} />
+            <span>মুছে ফেলুন</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs"
+            >
+              বন্ধ করুন
+            </button>
+
+            {order.status === 'pending' && (
+              <button
+                type="button"
+                onClick={() => onApprove(order.id)}
+                className="px-5 py-2 bg-[#17A2B8] hover:bg-[#23626F] text-white font-extrabold rounded-xl text-xs flex items-center gap-1.5 shadow-md transition-all"
+              >
+                <CheckCircle size={14} />
+                <span>অনুমোদন ও এক্সেস দিন</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// -------------------------------------------------------------------------------------
+// MANUAL ORDER / STUDENT ENROLLMENT MODAL
+// -------------------------------------------------------------------------------------
+interface ManualOrderModalProps {
+  courses: Course[];
+  books: Book[];
+  onClose: () => void;
+  onSave: (orderData: Partial<Order>) => void;
+}
+
+function ManualOrderModal({ courses, books, onClose, onSave }: ManualOrderModalProps) {
+  const [itemType, setItemType] = useState<'course' | 'book'>('course');
+  const [selectedItemId, setSelectedItemId] = useState<string>(courses[0]?.id || '');
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userPhone, setUserPhone] = useState('');
+  const [amount, setAmount] = useState<number>(courses[0]?.price || 0);
+  const [paymentMethod, setPaymentMethod] = useState<'bkash' | 'nagad' | 'rocket' | 'card' | 'cod' | 'manual'>('bkash');
+  const [trxId, setTrxId] = useState('');
+  const [shippingAddress, setShippingAddress] = useState('');
+  const [status, setStatus] = useState<'approved' | 'pending'>('approved');
+
+  const selectedItem = itemType === 'course' 
+    ? courses.find(c => c.id === selectedItemId) 
+    : books.find(b => b.id === selectedItemId);
+
+  const handleItemTypeChange = (type: 'course' | 'book') => {
+    setItemType(type);
+    if (type === 'course') {
+      const firstCourse = courses[0];
+      setSelectedItemId(firstCourse?.id || '');
+      setAmount(firstCourse?.price || 0);
+    } else {
+      const firstBook = books[0];
+      setSelectedItemId(firstBook?.id || '');
+      setAmount(firstBook ? (firstBook.pdfPrice || firstBook.hardcoverPrice || 0) : 0);
+    }
+  };
+
+  const handleItemSelect = (id: string) => {
+    setSelectedItemId(id);
+    if (itemType === 'course') {
+      const c = courses.find(x => x.id === id);
+      if (c) setAmount(c.price);
+    } else {
+      const b = books.find(x => x.id === id);
+      if (b) setAmount(b.pdfPrice || b.hardcoverPrice || 0);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userName.trim()) {
+      alert('শিক্ষার্থীর নাম লিখুন');
+      return;
+    }
+    if (!selectedItemId) {
+      alert('একটি কোর্স বা বই নির্বাচন করুন');
+      return;
+    }
+
+    onSave({
+      userName: userName.trim(),
+      userEmail: userEmail.trim().toLowerCase(),
+      userPhone: userPhone.trim(),
+      itemType,
+      itemId: selectedItemId,
+      itemTitle: selectedItem ? (selectedItem as any).titleBn || (selectedItem as any).title : 'কোর্স',
+      amount: Number(amount) || 0,
+      paymentMethod,
+      trxId: trxId.trim() || `MANUAL-${Math.floor(1000 + Math.random() * 9000)}`,
+      status,
+      shippingAddress: shippingAddress.trim() || undefined
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-[#ece8e0] my-8 flex flex-col max-h-[92vh]">
+        {/* Header */}
+        <div className="bg-[#112734] p-6 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-[#17A2B8]/20 flex items-center justify-center text-[#17A2B8]">
+              <Plus size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-black font-anek">ম্যানুয়াল ভর্তি ও অর্ডার তৈরি</h3>
+              <p className="text-xs text-[#17A2B8]/80">অফলাইন পেমেন্ট বা উপহার হিসেবে ছাত্রকে কোর্স এক্সেস দিন</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl bg-[#23626F] text-white hover:bg-[#23626F]">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 text-xs">
+          {/* Type Selector */}
+          <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => handleItemTypeChange('course')}
+              className={`flex-1 py-2 rounded-xl font-bold transition-all ${
+                itemType === 'course' ? 'bg-white text-[#112734] shadow-sm' : 'text-slate-600'
+              }`}
+            >
+              🎓 কোর্স এনরোলমেন্ট
+            </button>
+            <button
+              type="button"
+              onClick={() => handleItemTypeChange('book')}
+              className={`flex-1 py-2 rounded-xl font-bold transition-all ${
+                itemType === 'book' ? 'bg-white text-[#112734] shadow-sm' : 'text-slate-600'
+              }`}
+            >
+              📘 কিতাব / বই
+            </button>
+          </div>
+
+          {/* Select Course / Book */}
+          <div>
+            <label className="block font-bold text-[#2c3e50] mb-1">
+              {itemType === 'course' ? 'কোর্স নির্বাচন করুন *' : 'বই নির্বাচন করুন *'}
+            </label>
+            <select
+              value={selectedItemId}
+              onChange={(e) => handleItemSelect(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] font-tiro font-bold bg-white text-xs"
+            >
+              {itemType === 'course' && courses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.titleBn} (ফি: ৳{c.price})
+                </option>
+              ))}
+              {itemType === 'book' && books.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.titleBn || b.title} (মূল্য: ৳{b.pdfPrice || b.hardcoverPrice || 0})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Student Name */}
+          <div>
+            <label className="block font-bold text-[#2c3e50] mb-1">শিক্ষার্থীর নাম *</label>
+            <input
+              type="text"
+              required
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="যেমন: হাফেজ মাওলানা আব্দুর রহমান"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] bg-[#fdfcf9] font-tiro text-xs"
+            />
+          </div>
+
+          {/* Phone & Email */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-[#2c3e50] mb-1">মোবাইল নম্বর</label>
+              <input
+                type="tel"
+                value={userPhone}
+                onChange={(e) => setUserPhone(e.target.value)}
+                placeholder="017XXXXXXXX"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] bg-[#fdfcf9] font-mono text-xs"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-[#2c3e50] mb-1">ইমেইল এড্রেস</label>
+              <input
+                type="email"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
+                placeholder="student@example.com"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] bg-[#fdfcf9] text-xs"
+              />
+            </div>
+          </div>
+
+          {/* Amount, Method, Trx */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block font-bold text-[#2c3e50] mb-1">ফি (টাকা)</label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] bg-[#fdfcf9] font-bold text-xs"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-[#2c3e50] mb-1">পেমেন্ট মেথড</label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value as any)}
+                className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] bg-white font-bold text-xs"
+              >
+                <option value="bkash">bKash (বিকাশ)</option>
+                <option value="nagad">Nagad (নগদ)</option>
+                <option value="rocket">Rocket (রকেট)</option>
+                <option value="card">Card / Bank (কার্ড / ব্যাংক)</option>
+                <option value="cod">Cash on Delivery (ক্যাশ অন ডেলিভারি)</option>
+                <option value="manual">Manual / Offline (ম্যানুয়াল / নগদ)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-bold text-[#2c3e50] mb-1">TrxID</label>
+              <input
+                type="text"
+                value={trxId}
+                onChange={(e) => setTrxId(e.target.value)}
+                placeholder="ঐচ্ছিক"
+                className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] bg-[#fdfcf9] font-mono text-xs"
+              />
+            </div>
+          </div>
+
+          {/* Status & Auto-Approve */}
+          <div className="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200 flex items-center justify-between">
+            <div>
+              <span className="font-extrabold text-emerald-950 block">সরাসরি ভর্তি ও কোর্স এক্সেস নিশ্চিতকরণ</span>
+              <span className="text-[10px] text-emerald-800">অর্ডার তৈরির সাথে সাথেই শিক্ষার্থী কোর্স এক্সেস পাবে</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={status === 'approved'}
+              onChange={(e) => setStatus(e.target.checked ? 'approved' : 'pending')}
+              className="w-5 h-5 accent-[#17A2B8] rounded"
+            />
+          </div>
+
+          {/* Modal Footer */}
+          <div className="pt-4 flex items-center justify-end gap-2 border-t border-[#ece8e0]">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold font-tiro"
+            >
+              বাতিল
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-[#112734] hover:bg-[#23626F] text-white rounded-xl font-extrabold font-tiro shadow-md flex items-center gap-1.5"
+            >
+              <CheckCircle size={15} />
+              <span>ভর্তি সম্পন্ন করুন</span>
             </button>
           </div>
         </form>

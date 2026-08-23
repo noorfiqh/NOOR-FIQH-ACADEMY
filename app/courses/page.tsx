@@ -2,31 +2,67 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { AppStore, INITIAL_COURSES } from '@/lib/store';
-import { Course } from '@/lib/types';
+import Image from 'next/image';
+import { AppStore, INITIAL_COURSES, DEFAULT_COURSE_CATEGORIES, DEFAULT_SETTINGS } from '@/lib/store';
+import { Course, CourseCategory, SiteSettings, CoursesPageSettings } from '@/lib/types';
 import { CourseCard } from '@/components/CourseCard';
 import { PaymentModal } from '@/components/PaymentModal';
-import { Search, Filter, BookOpen, Sparkles } from 'lucide-react';
+import { Search, Filter, BookOpen, Sparkles, CheckCircle2, ShieldCheck, GraduationCap, Award, Compass } from 'lucide-react';
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
+  const [categories, setCategories] = useState<CourseCategory[]>(DEFAULT_COURSE_CATEGORIES);
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   useEffect(() => {
     setCourses(AppStore.getCourses());
-    const handleUpdate = () => setCourses(AppStore.getCourses());
+    setCategories(AppStore.getCourseCategories());
+    setSettings(AppStore.getSettings());
+
+    const handleUpdate = () => {
+      setCourses(AppStore.getCourses());
+      setCategories(AppStore.getCourseCategories());
+      setSettings(AppStore.getSettings());
+    };
+
     window.addEventListener('storage', handleUpdate);
-    return () => window.removeEventListener('storage', handleUpdate);
+    window.addEventListener('noorfiqh_settings_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('noorfiqh_settings_updated', handleUpdate);
+    };
   }, []);
 
-  const categories = [
+  const coursesPageSettings: CoursesPageSettings = settings.coursesPage || {
+    badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+    titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+    subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান। অভিজ্ঞ মুফতীগণের তত্ত্বাবধানে সহিহ ইলম অর্জন করুন।',
+    heroImage: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80',
+    showHeroImage: true,
+    heroImagePosition: 'right',
+    searchPlaceholder: 'কোর্সের নাম বা বিষয় খুঁজুন...',
+    highlight1: 'সহিহ সুন্নাহ ও দলীলভিত্তিক পাঠ্যক্রম',
+    highlight2: 'অভিজ্ঞ মুফতী ও স্কলারদের সরাসরি তত্ত্বাবধান',
+    highlight3: 'ভেরিফায়েড প্রফেশনাল সনদপত্র'
+  };
+
+  const badgeText = coursesPageSettings.badgeText || 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ';
+  const titleBn = coursesPageSettings.titleBn || 'নূর ফিকহ একাডেমি কোর্সসমূহ';
+  const subtitleBn = coursesPageSettings.subtitleBn || 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।';
+  const heroImage = coursesPageSettings.heroImage || '';
+  const showHeroImage = coursesPageSettings.showHeroImage !== false && !!heroImage;
+  const heroImagePosition = coursesPageSettings.heroImagePosition || 'right';
+  const searchPlaceholder = coursesPageSettings.searchPlaceholder || 'কোর্সের নাম বা বিষয় খুঁজুন...';
+  const highlight1 = coursesPageSettings.highlight1 || 'সহিহ সুন্নাহ ও দলীলভিত্তিক পাঠ্যক্রম';
+  const highlight2 = coursesPageSettings.highlight2 || 'অভিজ্ঞ মুফতী ও স্কলারদের সরাসরি তত্ত্বাবধান';
+  const highlight3 = coursesPageSettings.highlight3 || 'ভেরিফায়েড প্রফেশনাল সনদপত্র';
+
+  const allCategories = [
     { id: 'all', label: 'সকল কোর্স' },
-    { id: 'ibadat', label: 'ইবাদত ও তাহরাত' },
-    { id: 'muamalat', label: 'মুয়ামালাত ও ফাইন্যান্স' },
-    { id: 'family', label: 'পারিবারিক ও নিকাহ' },
-    { id: 'usul', label: 'উসূলে ফিকহ' }
+    ...categories
   ];
 
   const filteredCourses = courses.filter((c) => {
@@ -39,22 +75,158 @@ export default function CoursesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#fdfcf9] py-12 px-4 sm:px-8 font-sans text-[#2c3e50]">
+    <div className="min-h-screen bg-[#fdfcf9] py-8 sm:py-12 px-4 sm:px-8 font-sans text-[#2c3e50]">
       <div className="max-w-7xl mx-auto space-y-10">
         
-        {/* Page Header */}
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#17A2B8]/10 text-[#112734] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
-            <Sparkles size={14} className="text-amber-500" />
-            <span>প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ</span>
+        {/* Dynamic Hero Section */}
+        {heroImagePosition === 'background' && showHeroImage ? (
+          /* Background Overlay Hero */
+          <div className="relative rounded-3xl overflow-hidden p-8 sm:p-14 text-white shadow-xl border border-[#23626F] bg-[#112734]">
+            <div 
+              className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-30 pointer-events-none"
+              style={{ backgroundImage: `url(${heroImage})` }}
+            />
+            <div className="relative z-10 max-w-3xl space-y-4">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/40">
+                <Sparkles size={14} className="text-amber-400" />
+                <span>{badgeText}</span>
+              </div>
+              <h1 className="text-3xl sm:text-5xl font-black font-anek tracking-tight leading-tight">
+                {titleBn}
+              </h1>
+              <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-tiro">
+                {subtitleBn}
+              </p>
+
+              {/* Highlights */}
+              <div className="flex flex-wrap gap-2.5 pt-3">
+                {highlight1 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-medium backdrop-blur-sm border border-white/15">
+                    <CheckCircle2 size={13} className="text-emerald-400" />
+                    <span>{highlight1}</span>
+                  </span>
+                )}
+                {highlight2 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-medium backdrop-blur-sm border border-white/15">
+                    <GraduationCap size={13} className="text-amber-400" />
+                    <span>{highlight2}</span>
+                  </span>
+                )}
+                {highlight3 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-medium backdrop-blur-sm border border-white/15">
+                    <Award size={13} className="text-[#17A2B8]" />
+                    <span>{highlight3}</span>
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black text-[#112734] tracking-tight">
-            নূর ফিকহ একাডেমি কোর্সসমূহ
-          </h1>
-          <p className="text-sm sm:text-base text-[#5a524d] leading-relaxed">
-            দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।
-          </p>
-        </div>
+        ) : showHeroImage ? (
+          /* Split Grid Hero with Image */
+          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#ece8e0] shadow-sm overflow-hidden">
+            <div className={`grid grid-cols-1 lg:grid-cols-12 gap-8 items-center ${heroImagePosition === 'left' ? 'lg:flex-row-reverse' : ''}`}>
+              
+              {/* Text Side */}
+              <div className={`space-y-4 ${heroImagePosition === 'left' ? 'lg:col-span-7 lg:order-2' : 'lg:col-span-7'}`}>
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/10 text-[#112734] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                  <Sparkles size={14} className="text-amber-500" />
+                  <span>{badgeText}</span>
+                </div>
+                
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#112734] tracking-tight leading-[1.15] font-anek">
+                  {titleBn}
+                </h1>
+                
+                <p className="text-sm sm:text-base text-[#5a524d] leading-relaxed font-tiro">
+                  {subtitleBn}
+                </p>
+
+                {/* Highlights Pills */}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {highlight1 && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fdfcf9] text-[#2c3e50] text-xs font-bold border border-[#ece8e0]">
+                      <CheckCircle2 size={14} className="text-emerald-600" />
+                      <span>{highlight1}</span>
+                    </span>
+                  )}
+                  {highlight2 && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fdfcf9] text-[#2c3e50] text-xs font-bold border border-[#ece8e0]">
+                      <GraduationCap size={14} className="text-[#17A2B8]" />
+                      <span>{highlight2}</span>
+                    </span>
+                  )}
+                  {highlight3 && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fdfcf9] text-[#2c3e50] text-xs font-bold border border-[#ece8e0]">
+                      <Award size={14} className="text-amber-600" />
+                      <span>{highlight3}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Image Side */}
+              <div className={`${heroImagePosition === 'left' ? 'lg:col-span-5 lg:order-1' : 'lg:col-span-5'}`}>
+                <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-[#ece8e0] shadow-lg group bg-[#112734]">
+                  <div className="aspect-[16/10] w-full relative">
+                    <img
+                      src={heroImage}
+                      alt={titleBn}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  </div>
+                  
+                  {/* Image Badge overlay */}
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                    <span className="px-3 py-1 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold rounded-xl border border-white/20">
+                      🎓 নূর ফিকহ একাডেমি
+                    </span>
+                    <span className="px-3 py-1 bg-emerald-600 text-white text-[11px] font-bold rounded-xl shadow">
+                      ভর্তি চলছে
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        ) : (
+          /* Centered Typography Hero (No Image) */
+          <div className="text-center space-y-4 max-w-3xl mx-auto py-4">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/10 text-[#112734] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+              <Sparkles size={14} className="text-amber-500" />
+              <span>{badgeText}</span>
+            </div>
+            <h1 className="text-3xl sm:text-5xl font-black text-[#112734] tracking-tight leading-tight font-anek">
+              {titleBn}
+            </h1>
+            <p className="text-sm sm:text-base text-[#5a524d] leading-relaxed font-tiro max-w-2xl mx-auto">
+              {subtitleBn}
+            </p>
+
+            {/* Highlights */}
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+              {highlight1 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-[#2c3e50] text-xs font-bold border border-[#ece8e0] shadow-sm">
+                  <CheckCircle2 size={14} className="text-emerald-600" />
+                  <span>{highlight1}</span>
+                </span>
+              )}
+              {highlight2 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-[#2c3e50] text-xs font-bold border border-[#ece8e0] shadow-sm">
+                  <GraduationCap size={14} className="text-[#17A2B8]" />
+                  <span>{highlight2}</span>
+                </span>
+              )}
+              {highlight3 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-[#2c3e50] text-xs font-bold border border-[#ece8e0] shadow-sm">
+                  <Award size={14} className="text-amber-600" />
+                  <span>{highlight3}</span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Filter & Search Toolbar */}
         <div className="bg-white p-4 sm:p-6 rounded-3xl border border-[#ece8e0] card-natural-shadow space-y-4">
@@ -64,7 +236,7 @@ export default function CoursesPage() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8a817c]" size={18} />
               <input
                 type="text"
-                placeholder="কোর্সের নাম বা বিষয় খুঁজুন..."
+                placeholder={searchPlaceholder}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 rounded-2xl border border-[#ece8e0] bg-[#fdfcf9] text-sm focus:outline-none focus:border-[#112734] font-medium"
@@ -79,7 +251,7 @@ export default function CoursesPage() {
 
           {/* Category Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-2">
-            {categories.map((cat) => (
+            {allCategories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}

@@ -1,6 +1,6 @@
 'use client';
 
-import { Course, Book, FatwaQuestion, LiveClass, Order, UserProgress, Certificate, SiteReview, HeroCardSettings, UserProfile, FacultyMember, SiteSettings } from './types';
+import { Course, Book, FatwaQuestion, LiveClass, Order, UserProgress, Certificate, SiteReview, HeroCardSettings, UserProfile, FacultyMember, SiteSettings, CourseCategory } from './types';
 import { INITIAL_COURSES, INITIAL_BOOKS, INITIAL_FATWAS, INITIAL_LIVE_CLASSES, INITIAL_REVIEWS } from './seed-data';
 import { formatImageUrl } from './utils';
 import { db, doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot, OperationType, handleFirestoreError } from './firebase';
@@ -129,6 +129,14 @@ export const INITIAL_USERS: UserProfile[] = [
 ];
 
 
+export const DEFAULT_COURSE_CATEGORIES: CourseCategory[] = [
+  { id: 'ibadat', label: 'তাহরাত, নামাজ ও রোজা' },
+  { id: 'muamalat', label: 'ব্যবসা ও আর্থিক লেনদেন' },
+  { id: 'family', label: 'বিবাহ, তালাক ও পরিবার' },
+  { id: 'usul', label: 'উসূলে ফিকহ ও ফতোয়া শাস্ত্র' },
+  { id: 'contemporary', label: 'চিকিৎসা ও আধুনিক ফিকহ' },
+];
+
 export const DEFAULT_SETTINGS: SiteSettings = {
   siteName: 'Noor Fiqh Academy',
   siteNameBn: 'নূর ফিকহ একাডেমি',
@@ -162,6 +170,51 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     buttonText: 'কোর্সে যুক্ত হোন',
     buttonLink: '/courses'
   },
+  coursesPage: {
+    badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+    titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+    subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান। অভিজ্ঞ মুফতীগণের তত্ত্বাবধানে সহিহ ইলম অর্জন করুন।',
+    heroImage: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80',
+    showHeroImage: true,
+    heroImagePosition: 'right',
+    searchPlaceholder: 'কোর্সের নাম বা বিষয় খুঁজুন...',
+    highlight1: 'সহিহ সুন্নাহ ও দলীলভিত্তিক পাঠ্যক্রম',
+    highlight2: 'অভিজ্ঞ মুফতী ও স্কলারদের সরাসরি তত্ত্বাবধান',
+    highlight3: 'ভেরিফায়েড প্রফেশনাল সনদপত্র'
+  },
+  booksPage: {
+    badgeText: 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি',
+    titleBn: 'ফিকহ কিতাব ও গবেষণাপত্র',
+    subtitleBn: 'দারুল ইফতা ও ফিকহ বোর্ড কর্তৃক রচিত প্রামাণ্য কিতাবের পিডিএফ ও হোম ডেলিভারি হার্ডকভার কপি সংগ্রহ করুন।',
+    heroImage: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1200&q=80',
+    showHeroImage: true,
+    heroImagePosition: 'right',
+    searchPlaceholder: 'কিতাবের নাম বা লেখক দিয়ে খুঁজুন...',
+    highlight1: 'দারুল ইফতা অনুমোদিত নির্ভরযোগ্য পাণ্ডুলিপি',
+    highlight2: 'সারাদেশে হোম ডেলিভারি ও দ্রুত পিডিএফ ডাউনলোড',
+    highlight3: 'প্রামাণ্য দলীল ও আরবী এবারতসহ সহজ তরজমা',
+    featuredTitle: 'সকল ফিকহ কিতাব ও প্রকাশনা তালিকা',
+    featuredSubtitle: 'বিষয়ভিত্তিক বাছাইকৃত কিতাবসমূহ এবং গবেষণাপত্র'
+  },
+  fatwaPage: {
+    badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+    titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+    subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
+    heroImage: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80',
+    showHeroImage: true,
+    heroImagePosition: 'right',
+    searchPlaceholder: 'ফতোয়া বা মাসআলা খুঁজুন...',
+    highlight1: 'প্রামাণ্য ফিকহী কিতাব ও দলীলভিত্তিক সমাধান',
+    highlight2: 'অভিজ্ঞ মুফতী বোর্ডের সরাসরি তত্ত্বাবধান',
+    highlight3: 'ব্যক্তিগত ও গোপনীয় প্রশ্ন ট্র্যাকিং সেবা',
+    askCardTitle: 'সরাসরি ফতোয়া বিভাগে প্রশ্ন পাঠান',
+    askCardSubtitle: 'মুফতী প্যানেল কর্তৃক ব্যক্তিগতভাবে যাচাই ও সমাধান করা হবে',
+    trackCardTitle: 'প্রশ্নের স্ট্যাটাস দেখুন',
+    trackCardSubtitle: 'ট্র্যাকিং কোড দিয়ে উত্তর জানুন',
+    archiveTitle: 'উন্মুক্ত ফতোয়া ও গবেষণা আর্কাইভ',
+    archiveSubtitle: 'মুফতীগণের স্বাক্ষরিত ও প্রামাণ্য গ্রন্থাবলি থেকে সংকলিত উত্তরসমূহ'
+  },
+  courseCategories: DEFAULT_COURSE_CATEGORIES,
   aboutPage: {
     titleBn: 'সহিহ সুন্নাহ ও নির্ভরযোগ্য ফিকহের আলোকবর্তিকা',
     subtitleBn: 'নূর ফিকহ একাডেমি অনলাইনে বিশুদ্ধ ইসলামী জ্ঞান বা \'ফরজে আইন ইলম\' অর্জনের একটি নির্ভরযোগ্য ও বিশ্বস্ত প্রতিষ্ঠান। বর্তমান ব্যস্ততার যুগে সর্বস্তরের মুসলিমদের জন্য ঘরে বসেেই শরীয়তের প্রয়োজনীয় জ্ঞান অর্জনের পথকে সুগম করার মহান ব্রত নিয়ে এই একাডেমির যাত্রা শুরু হয়েছে। প্রখ্যাত ইসলামী স্কলার মুফতী আম্মার বিন নূর-এর সুদক্ষ পরিচালনা ও প্রত্যক্ষ তত্ত্বাবধানে একাডেমিটি পরিচালিত হচ্ছে।\n\nআমরা বিশ্বাস করি, বিশুদ্ধ জ্ঞানই হলো আমলের পূর্বশর্ত। তাই কুরআন, সুন্নাহ এবং ফিকহী মাসায়েলের সঠিক ও নির্ভুল শিক্ষা অত্যন্ত সহজ ও সাবলীলভাবে সাধারণ মানুষের দোরগোড়ায় পৌঁছে দেওয়াই আমাদের মূল লক্ষ্য।',
@@ -242,10 +295,61 @@ function getLocal<T>(key: string, fallback: T): T {
   }
 }
 
+export function cleanDataForFirestore(obj: any): any {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj
+      .map(item => cleanDataForFirestore(item))
+      .filter(item => item !== undefined);
+  }
+  if (typeof obj === 'object') {
+    const cleaned: Record<string, any> = {};
+    Object.keys(obj).forEach((key) => {
+      const val = obj[key];
+      if (val !== undefined) {
+        cleaned[key] = cleanDataForFirestore(val);
+      }
+    });
+    return cleaned;
+  }
+  return obj;
+}
+
 function setLocal<T>(key: string, value: T): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    if (key === STORAGE_KEYS.COURSES) {
+      window.dispatchEvent(new Event('noorfiqh_courses_updated'));
+    }
+    if (key === STORAGE_KEYS.BOOKS) {
+      window.dispatchEvent(new Event('noorfiqh_books_updated'));
+    }
+    if (key === STORAGE_KEYS.ORDERS) {
+      window.dispatchEvent(new Event('noorfiqh_orders_updated'));
+    }
+    if (key === STORAGE_KEYS.FATWAS) {
+      window.dispatchEvent(new Event('noorfiqh_fatwas_updated'));
+    }
+    if (key === STORAGE_KEYS.LIVE_CLASSES) {
+      window.dispatchEvent(new Event('noorfiqh_live_updated'));
+    }
+    if (key === STORAGE_KEYS.PROGRESS) {
+      window.dispatchEvent(new Event('noorfiqh_progress_updated'));
+    }
+    if (key === STORAGE_KEYS.CERTIFICATES) {
+      window.dispatchEvent(new Event('noorfiqh_certificates_updated'));
+    }
+    if (key === STORAGE_KEYS.FACULTY) {
+      window.dispatchEvent(new Event('noorfiqh_faculty_updated'));
+    }
+    if (key === STORAGE_KEYS.USERS) {
+      window.dispatchEvent(new Event('noorfiqh_users_updated'));
+    }
+    if (key === STORAGE_KEYS.SETTINGS) {
+      window.dispatchEvent(new Event('noorfiqh_settings_updated'));
+    }
+    window.dispatchEvent(new Event('noorfiqh_store_updated'));
   } catch (e) {
     console.error('LocalStorage write error', e);
   }
@@ -554,8 +658,13 @@ export const AppStore = {
   getOrders: (): Order[] => {
     return getLocal<Order[]>(STORAGE_KEYS.ORDERS, []);
   },
-  getUserOrders: (userId: string): Order[] => {
-    return AppStore.getOrders().filter(o => o.userId === userId);
+  getUserOrders: (userId: string, userEmail?: string): Order[] => {
+    const list = AppStore.getOrders();
+    const cleanEmail = userEmail?.trim().toLowerCase();
+    return list.filter(o => 
+      o.userId === userId || 
+      (cleanEmail && o.userEmail && o.userEmail.trim().toLowerCase() === cleanEmail)
+    );
   },
   createOrder: (orderData: Omit<Order, 'id' | 'orderNumber' | 'createdAt' | 'status'>): Order => {
     const orders = AppStore.getOrders();
@@ -569,14 +678,39 @@ export const AppStore = {
     orders.unshift(newOrder);
     setLocal(STORAGE_KEYS.ORDERS, orders);
 
-    // Save to Firestore
+    // Save to Firestore with sanitize (stripping undefined)
     if (typeof window !== 'undefined') {
       try {
-        setDoc(doc(db, 'orders', newOrder.id), newOrder).catch(err => {
+        const firestorePayload = cleanDataForFirestore(newOrder);
+        setDoc(doc(db, 'orders', newOrder.id), firestorePayload).catch(err => {
           handleFirestoreError(err, OperationType.CREATE, `orders/${newOrder.id}`);
         });
       } catch (err) {
         console.warn('Firestore order save skipped:', err);
+      }
+    }
+
+    return newOrder;
+  },
+  createOrderAsync: async (orderData: Omit<Order, 'id' | 'orderNumber' | 'createdAt' | 'status'>): Promise<Order> => {
+    const orders = AppStore.getOrders();
+    const newOrder: Order = {
+      ...orderData,
+      id: 'ord-' + Date.now(),
+      orderNumber: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+    orders.unshift(newOrder);
+    setLocal(STORAGE_KEYS.ORDERS, orders);
+
+    if (typeof window !== 'undefined') {
+      try {
+        const firestorePayload = cleanDataForFirestore(newOrder);
+        await setDoc(doc(db, 'orders', newOrder.id), firestorePayload);
+      } catch (err) {
+        console.error('Firestore async order save error:', err);
+        handleFirestoreError(err, OperationType.CREATE, `orders/${newOrder.id}`);
       }
     }
 
@@ -608,6 +742,20 @@ export const AppStore = {
         } catch (err) {
           console.warn('Firestore order status update skipped:', err);
         }
+      }
+    }
+  },
+  deleteOrder: (orderId: string): void => {
+    const orders = AppStore.getOrders().filter(o => o.id !== orderId);
+    setLocal(STORAGE_KEYS.ORDERS, orders);
+
+    if (typeof window !== 'undefined') {
+      try {
+        deleteDoc(doc(db, 'orders', orderId)).catch(err => {
+          handleFirestoreError(err, OperationType.DELETE, `orders/${orderId}`);
+        });
+      } catch (err) {
+        console.warn('Firestore order delete skipped:', err);
       }
     }
   },
@@ -893,20 +1041,6 @@ export const AppStore = {
       }
     }
   },
-  deleteOrder: (id: string): void => {
-    const orders = AppStore.getOrders().filter(o => o.id !== id);
-    setLocal(STORAGE_KEYS.ORDERS, orders);
-
-    if (typeof window !== 'undefined') {
-      try {
-        deleteDoc(doc(db, 'orders', id)).catch(err => {
-          handleFirestoreError(err, OperationType.DELETE, `orders/${id}`);
-        });
-      } catch (err) {
-        console.warn('Firestore order delete skipped:', err);
-      }
-    }
-  },
 
   // Users & Roles Management
   getUsers: (): UserProfile[] => {
@@ -1030,7 +1164,21 @@ export const AppStore = {
     if (settings.heroCard) {
       settings.heroCard.iconImage = formatImageUrl(settings.heroCard.iconImage);
     }
+    if (!settings.courseCategories || settings.courseCategories.length === 0) {
+      settings.courseCategories = DEFAULT_COURSE_CATEGORIES;
+    }
     return settings;
+  },
+  getCourseCategories: (): CourseCategory[] => {
+    const settings = AppStore.getSettings();
+    return settings.courseCategories && settings.courseCategories.length > 0
+      ? settings.courseCategories
+      : DEFAULT_COURSE_CATEGORIES;
+  },
+  saveCourseCategories: (categories: CourseCategory[]): void => {
+    const settings = AppStore.getSettings();
+    settings.courseCategories = categories;
+    AppStore.saveSettings(settings);
   },
   saveSettings: (settings: SiteSettings): void => {
     const formatted: SiteSettings = {

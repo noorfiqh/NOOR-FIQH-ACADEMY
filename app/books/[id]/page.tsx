@@ -1,11 +1,7 @@
-import { INITIAL_BOOKS } from '@/lib/seed-data';
 import BookDetailClient from '@/components/BookDetailClient';
 
-export function generateStaticParams() {
-  return INITIAL_BOOKS.map((book) => ({
-    id: book.id,
-  }));
-}
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 export default async function BookDetailPage({
   params,

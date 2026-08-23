@@ -268,6 +268,61 @@ export interface FaqItem {
   a: string;
 }
 
+export interface CourseCategory {
+  id: string;
+  label: string;
+}
+
+export interface CoursesPageSettings {
+  badgeText?: string;
+  titleBn?: string;
+  subtitleBn?: string;
+  heroImage?: string;
+  showHeroImage?: boolean;
+  heroImagePosition?: 'right' | 'left' | 'top' | 'background';
+  heroBgGradient?: string;
+  searchPlaceholder?: string;
+  highlight1?: string;
+  highlight2?: string;
+  highlight3?: string;
+}
+
+export interface FatwaPageSettings {
+  badgeText?: string;
+  titleBn?: string;
+  subtitleBn?: string;
+  heroImage?: string;
+  showHeroImage?: boolean;
+  heroImagePosition?: 'right' | 'left' | 'top' | 'background';
+  searchPlaceholder?: string;
+  highlight1?: string;
+  highlight2?: string;
+  highlight3?: string;
+  askCardTitle?: string;
+  askCardSubtitle?: string;
+  trackCardTitle?: string;
+  trackCardSubtitle?: string;
+  archiveTitle?: string;
+  archiveSubtitle?: string;
+}
+
+export interface BooksPageSettings {
+  badgeText?: string;
+  titleBn?: string;
+  subtitleBn?: string;
+  heroImage?: string;
+  showHeroImage?: boolean;
+  heroImagePosition?: 'right' | 'left' | 'top' | 'background';
+  searchPlaceholder?: string;
+  highlight1?: string;
+  highlight2?: string;
+  highlight3?: string;
+  featuredTitle?: string;
+  featuredSubtitle?: string;
+  featuredSectionTitle?: string;
+  featuredSectionSubtitle?: string;
+}
+
 export interface SiteSettings {
   siteName: string;
   siteNameBn: string;
@@ -288,10 +343,14 @@ export interface SiteSettings {
   heroBgImage?: string;
   heroBgOpacity?: number;
   heroCard?: HeroCardSettings;
+  coursesPage?: CoursesPageSettings;
+  booksPage?: BooksPageSettings;
+  fatwaPage?: FatwaPageSettings;
   aboutPage?: AboutPageSettings;
   privacyPolicyText?: string;
   termsText?: string;
   faqs?: FaqItem[];
+  courseCategories?: CourseCategory[];
   metaPixelId?: string;
   gaMeasurementId?: string;
   gtmId?: string;

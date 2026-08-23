@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AppStore } from '@/lib/store';
 import { Course } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { CourseCard } from '@/components/CourseCard';
 import { PaymentModal } from '@/components/PaymentModal';
 import { TeacherContactButtons } from '@/components/TeacherContactButtons';
@@ -73,20 +75,78 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
   const router = useRouter();
   const courseId = id || (params?.id as string);
   
-  const course = AppStore.getCourseById(courseId);
-  const allCourses = AppStore.getCourses();
-  const otherCourses = allCourses.filter(c => c.id !== courseId);
-
+  const [course, setCourse] = useState<Course | null>(null);
+  const [otherCourses, setOtherCourses] = useState<Course[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedCourseForEnroll, setSelectedCourseForEnroll] = useState<Course | null>(null);
   const [faqs, setFaqs] = useState<any[]>([]);
 
   useEffect(() => {
+    let isSubscribed = true;
+
+    // 1. Initial local lookup
+    const currentCourse = AppStore.getCourseById(courseId) || null;
+    const all = AppStore.getCourses();
+    setCourse(currentCourse);
+    setOtherCourses(all.filter(c => c.id !== courseId));
+    setIsLoaded(true);
+
     const settings = AppStore.getSettings();
     if (settings.faqs) {
       setFaqs(settings.faqs);
     }
-  }, []);
+
+    // 2. Direct Firestore fallback if not in local store yet
+    if (!currentCourse && courseId) {
+      getDoc(doc(db, 'courses', courseId)).then(docSnap => {
+        if (docSnap.exists() && isSubscribed) {
+          const fetched = { id: docSnap.id, ...docSnap.data() } as Course;
+          setCourse(fetched);
+          AppStore.saveCourse(fetched);
+        }
+      }).catch(err => {
+        console.warn('Direct firestore course fetch error:', err);
+      });
+    }
+
+    // 3. Realtime snapshot listener for this course
+    let unsubSnapshot: (() => void) | null = null;
+    if (courseId) {
+      try {
+        unsubSnapshot = onSnapshot(doc(db, 'courses', courseId), (docSnap) => {
+          if (docSnap.exists() && isSubscribed) {
+            const liveCourse = { id: docSnap.id, ...docSnap.data() } as Course;
+            setCourse(liveCourse);
+            AppStore.saveCourse(liveCourse);
+          }
+        }, (err) => {
+          console.warn('Course snapshot listener error:', err);
+        });
+      } catch (e) {
+        console.warn('Failed to attach course snapshot listener:', e);
+      }
+    }
+
+    const handleUpdate = () => {
+      if (!isSubscribed) return;
+      const updatedCourse = AppStore.getCourseById(courseId) || null;
+      const allUpdated = AppStore.getCourses();
+      setCourse(updatedCourse);
+      setOtherCourses(allUpdated.filter(c => c.id !== courseId));
+      const s = AppStore.getSettings();
+      if (s.faqs) setFaqs(s.faqs);
+    };
+
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('noorfiqh_courses_updated', handleUpdate);
+    return () => {
+      isSubscribed = false;
+      if (unsubSnapshot) unsubSnapshot();
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('noorfiqh_courses_updated', handleUpdate);
+    };
+  }, [courseId]);
   
   // Auto-play video on load if video URL is present
   const [isPlayingHeroVideo, setIsPlayingHeroVideo] = useState(true);
@@ -107,6 +167,14 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
   };
 
   if (!course) {
+    if (!isLoaded) {
+      return (
+        <div className="min-h-screen bg-[#fdfcf9] flex flex-col items-center justify-center p-6 text-center font-noto">
+          <div className="w-10 h-10 border-4 border-[#17A2B8] border-t-transparent rounded-full animate-spin mb-3" />
+          <p className="text-xs font-bold text-[#112734]">কোর্স লোড হচ্ছে...</p>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-[#fdfcf9] flex flex-col items-center justify-center p-6 text-center font-noto">
         <h2 className="text-2xl font-bold text-[#2c3e50] mb-2 font-anek">কোর্সটি খুঁজে পাওয়া যায়নি</h2>
@@ -119,7 +187,7 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
   }
 
   // Resolve video URL from previewVideoUrl or first available lesson videoUrl
-  const effectiveVideoUrl = course.previewVideoUrl || course.lessons.find(l => l.videoUrl)?.videoUrl || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+  const effectiveVideoUrl = course.previewVideoUrl || (course.lessons || []).find(l => l.videoUrl)?.videoUrl || 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
   const heroEmbed = getEmbedInfo(effectiveVideoUrl, true);
   const modalEmbed = activeVideoModalUrl ? getEmbedInfo(activeVideoModalUrl, true) : null;
 
@@ -274,22 +342,24 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
         <div className="lg:col-span-8 space-y-10">
           
           {/* Objectives */}
-          <div className="bg-white p-7 rounded-3xl border border-[#ece8e0] card-natural-shadow space-y-4">
-            <h3 className="text-xl font-extrabold text-[#112734] flex items-center gap-2 font-anek">
-              <CheckCircle2 size={20} className="text-amber-600" />
-              এই কোর্সে যা যা শিখবেন
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-sm text-[#5a524d] font-noto">
-              {course.objectives.map((obj, i) => (
-                <div key={i} className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-[#17A2B8]/10 text-[#112734] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 font-anek">
-                    ✓
-                  </span>
-                  <span className="leading-relaxed font-noto">{obj}</span>
-                </div>
-              ))}
+          {(course.objectives && course.objectives.length > 0) && (
+            <div className="bg-white p-7 rounded-3xl border border-[#ece8e0] card-natural-shadow space-y-4">
+              <h3 className="text-xl font-extrabold text-[#112734] flex items-center gap-2 font-anek">
+                <CheckCircle2 size={20} className="text-amber-600" />
+                এই কোর্সে যা যা শিখবেন
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-sm text-[#5a524d] font-noto">
+                {course.objectives.map((obj, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-[#17A2B8]/10 text-[#112734] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5 font-anek">
+                      ✓
+                    </span>
+                    <span className="leading-relaxed font-noto">{obj}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Full Course Description */}
           <div className="bg-white p-7 rounded-3xl border border-[#ece8e0] card-natural-shadow space-y-4">
@@ -297,7 +367,7 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
               কোর্স পরিচিতি ও বিস্তারিত বিষয়াবলি
             </h3>
             <div className="text-sm sm:text-base text-[#5a524d] leading-relaxed whitespace-pre-line font-noto">
-              {course.description}
+              {course.description || course.shortDescription || 'কোর্সের বিস্তারিত তথ্য শীঘ্রই যুক্ত করা হচ্ছে।'}
             </div>
           </div>
 
@@ -309,47 +379,53 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
                 কোর্স কারিকুলাম ও লেকচার তালিকা
               </h3>
               <span className="text-xs text-[#8a817c] font-bold font-noto">
-                {course.lessons.length} টি পাঠ
+                {(course.lessons || []).length} টি পাঠ
               </span>
             </div>
 
             <div className="divide-y divide-[#ece8e0]">
-              {course.lessons.map((lesson, idx) => (
-                <div key={lesson.id} className="py-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-slate-100 text-[#112734] font-bold text-xs flex items-center justify-center shrink-0 font-anek">
-                      {idx + 1}
+              {(course.lessons && course.lessons.length > 0) ? (
+                course.lessons.map((lesson, idx) => (
+                  <div key={lesson.id || idx} className="py-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-slate-100 text-[#112734] font-bold text-xs flex items-center justify-center shrink-0 font-anek">
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-[#2c3e50] font-noto">{lesson.title}</h4>
+                        <span className="text-[11px] text-[#8a817c] font-noto">{lesson.duration}</span>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-[#2c3e50] font-noto">{lesson.title}</h4>
-                      <span className="text-[11px] text-[#8a817c] font-noto">{lesson.duration}</span>
-                    </div>
-                  </div>
 
-                  <div>
-                    {lesson.isFreePreview ? (
-                      <button
-                        onClick={() => {
-                          if (lesson.videoUrl) {
-                            setActiveVideoModalUrl(lesson.videoUrl);
-                          } else {
-                            setIsPlayingHeroVideo(true);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }
-                        }}
-                        className="text-xs font-bold text-[#23626F] hover:text-[#112734] bg-[#17A2B8]/10 hover:bg-[#17A2B8]/15 px-3 py-1 rounded-lg border border-[#17A2B8]/30 flex items-center gap-1 font-tiro transition-colors"
-                      >
-                        <PlayCircle size={14} />
-                        <span>ফ্রি প্রিভিউ</span>
-                      </button>
-                    ) : (
-                      <span className="text-xs text-slate-400 font-tiro flex items-center gap-1">
-                        লকড পাঠ
-                      </span>
-                    )}
+                    <div>
+                      {lesson.isFreePreview ? (
+                        <button
+                          onClick={() => {
+                            if (lesson.videoUrl) {
+                              setActiveVideoModalUrl(lesson.videoUrl);
+                            } else {
+                              setIsPlayingHeroVideo(true);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+                          }}
+                          className="text-xs font-bold text-[#23626F] hover:text-[#112734] bg-[#17A2B8]/10 hover:bg-[#17A2B8]/15 px-3 py-1 rounded-lg border border-[#17A2B8]/30 flex items-center gap-1 font-tiro transition-colors"
+                        >
+                          <PlayCircle size={14} />
+                          <span>ফ্রি প্রিভিউ</span>
+                        </button>
+                      ) : (
+                        <span className="text-xs text-slate-400 font-tiro flex items-center gap-1">
+                          লকড পাঠ
+                        </span>
+                      )}
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="py-6 text-center text-xs text-[#8a817c]">
+                  শীঘ্রই পাঠ্যসূচি ও লেকচার তালিকা উন্মুক্ত করা হবে।
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
@@ -364,24 +440,24 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
             </h4>
             <div className="flex items-center gap-4">
               <img
-                src={course.instructor.avatar}
-                alt={course.instructor.nameBn}
+                src={course.instructor?.avatar || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150'}
+                alt={course.instructor?.nameBn || 'মুফতী আম্মার বিন নূর'}
                 className="w-16 h-16 rounded-full object-cover border-2 border-[#17A2B8]"
               />
               <div>
-                <h5 className="font-extrabold text-base text-[#2c3e50] font-anek">{course.instructor.nameBn}</h5>
-                <p className="text-xs text-[#112734] font-bold font-noto">{course.instructor.title}</p>
-                <p className="text-[11px] text-[#8a817c] mt-0.5 font-noto">{course.instructor.roleBn}</p>
+                <h5 className="font-extrabold text-base text-[#2c3e50] font-anek">{course.instructor?.nameBn || 'মুফতী আম্মার বিন নূর'}</h5>
+                <p className="text-xs text-[#112734] font-bold font-noto">{course.instructor?.title || 'মুহাদ্দিস ও ফকিহ'}</p>
+                <p className="text-[11px] text-[#8a817c] mt-0.5 font-noto">{course.instructor?.roleBn || 'প্রধান প্রশিক্ষক'}</p>
               </div>
             </div>
             <p className="text-xs text-[#5a524d] leading-relaxed pt-2 border-t border-[#ece8e0] font-noto">
-              {course.instructor.bio}
+              {course.instructor?.bio || 'নূর ফিকহ একাডেমির সিনিয়র ফ্যাকাল্টি সদস্য।'}
             </p>
 
             <div className="pt-2 border-t border-slate-100 space-y-1.5">
               <span className="text-[10px] text-[#8a817c] font-tiro block">ইন্সট্রাক্টরের সাথে সরাসরি যোগাযোগ:</span>
               <TeacherContactButtons
-                name={course.instructor.nameBn}
+                name={course.instructor?.nameBn || 'মুফতী আম্মার বিন নূর'}
                 phone="+8801855905185"
                 email="noorfiqhaca@gmail.com"
               />

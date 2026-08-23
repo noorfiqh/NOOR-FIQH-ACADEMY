@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AppStore } from '@/lib/store';
+import { Book } from '@/lib/types';
 import { PaymentModal } from '@/components/PaymentModal';
 import { 
   BookOpen, 
@@ -25,12 +26,39 @@ interface BookDetailClientProps {
 export default function BookDetailClient({ id }: BookDetailClientProps) {
   const params = useParams();
   const bookId = id || (params?.id as string);
-  const book = AppStore.getBookById(bookId);
+  const [book, setBook] = useState<Book | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    const current = AppStore.getBookById(bookId) || null;
+    setBook(current);
+    setIsLoaded(true);
+
+    const handleUpdate = () => {
+      const updated = AppStore.getBookById(bookId) || null;
+      setBook(updated);
+    };
+
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('noorfiqh_books_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('noorfiqh_books_updated', handleUpdate);
+    };
+  }, [bookId]);
 
   const [buyType, setBuyType] = useState<'pdf' | 'hardcover' | null>(null);
   const [showPdfReader, setShowPdfReader] = useState(false);
 
   if (!book) {
+    if (!isLoaded) {
+      return (
+        <div className="min-h-screen bg-[#fdfcf9] flex flex-col items-center justify-center p-6 text-center font-sans">
+          <div className="w-10 h-10 border-4 border-[#17A2B8] border-t-transparent rounded-full animate-spin mb-3" />
+          <p className="text-xs font-bold text-[#112734]">কিতাব লোড হচ্ছে...</p>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-[#fdfcf9] flex flex-col items-center justify-center p-6 text-center">
         <h2 className="text-2xl font-bold text-[#2c3e50] mb-2">কিতাবটি খুঁজে পাওয়া যায়নি</h2>

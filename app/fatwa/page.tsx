@@ -2,33 +2,51 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AppStore, INITIAL_FATWAS } from '@/lib/store';
-import { FatwaQuestion } from '@/lib/types';
-import { db, collection, onSnapshot, handleFirestoreError, OperationType } from '@/lib/firebase';
+import { AppStore, INITIAL_FATWAS, DEFAULT_SETTINGS } from '@/lib/store';
+import { FatwaQuestion, SiteSettings } from '@/lib/types';
+import { db, collection, onSnapshot, handleFirestoreError, OperationType, doc } from '@/lib/firebase';
 import { 
   HelpCircle, 
   Search, 
   Send, 
   CheckCircle, 
+  CheckCircle2,
   ShieldCheck, 
   Sparkles, 
   ChevronDown, 
-  ChevronUp 
+  ChevronUp,
+  BookOpen,
+  Lock
 } from 'lucide-react';
 
 function FatwaContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams?.get('q') || '';
 
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [fatwas, setFatwas] = useState<FatwaQuestion[]>(INITIAL_FATWAS);
   const [search, setSearch] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
+    setSiteSettings(AppStore.getSettings());
     setFatwas(AppStore.getFatwas());
-    const handleUpdate = () => setFatwas(AppStore.getFatwas());
+    const handleUpdate = () => {
+      setSiteSettings(AppStore.getSettings());
+      setFatwas(AppStore.getFatwas());
+    };
     window.addEventListener('storage', handleUpdate);
+
+    // Sync site settings from Firestore
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'site_config'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data() as SiteSettings;
+        setSiteSettings(data);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'settings');
+    });
 
     // Sync fatwas live from Firestore
     const unsubscribe = onSnapshot(collection(db, 'fatwas'), (snapshot) => {
@@ -51,6 +69,7 @@ function FatwaContent() {
 
     return () => {
       window.removeEventListener('storage', handleUpdate);
+      unsubSettings();
       unsubscribe();
     };
   }, []);
@@ -135,25 +154,167 @@ function FatwaContent() {
     return refs;
   };
 
+  const fp = siteSettings.fatwaPage || {
+    badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+    titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+    subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
+    heroImage: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80',
+    showHeroImage: true,
+    heroImagePosition: 'right',
+    highlight1: 'প্রামাণ্য ফিকহী কিতাব ও দলীলভিত্তিক সমাধান',
+    highlight2: 'অভিজ্ঞ মুফতী বোর্ডের সরাসরি তত্ত্বাবধান',
+    highlight3: 'ব্যক্তিগত ও গোপনীয় প্রশ্ন ট্র্যাকিং সেবা',
+    askCardTitle: 'সরাসরি ফতোয়া বিভাগে প্রশ্ন পাঠান',
+    askCardSubtitle: 'মুফতী প্যানেল কর্তৃক ব্যক্তিগতভাবে যাচাই ও সমাধান করা হবে',
+    trackCardTitle: 'প্রশ্নের স্ট্যাটাস দেখুন',
+    trackCardSubtitle: 'ট্র্যাকিং কোড দিয়ে উত্তর জানুন',
+    archiveTitle: 'উন্মুক্ত ফতোয়া ও গবেষণা আর্কাইভ',
+    archiveSubtitle: 'মুফতীগণের স্বাক্ষরিত ও প্রামাণ্য গ্রন্থাবলি থেকে সংকলিত উত্তরসমূহ'
+  };
+
   return (
     <div className="min-h-screen bg-[#fdfcf9] font-sans text-[#2c3e50] py-12 px-4 sm:px-8">
       <div className="max-w-7xl mx-auto space-y-12">
         
         {/* Page Hero Header */}
-        <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/10 text-[#112734] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
-            <Sparkles size={14} className="text-amber-500" />
-            <span>দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY</span>
+        {fp.heroImagePosition === 'background' && fp.showHeroImage !== false && fp.heroImage ? (
+          <div className="relative rounded-3xl overflow-hidden min-h-[280px] sm:min-h-[340px] p-8 sm:p-14 flex items-center justify-center text-center shadow-xl border border-[#23626F]">
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${fp.heroImage})` }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-900/80 to-slate-950/85" />
+            
+            <div className="relative z-10 space-y-4 max-w-3xl mx-auto">
+              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-teal-500/20 text-teal-200 text-xs font-bold uppercase tracking-wider border border-teal-400/40 backdrop-blur-sm">
+                <Sparkles size={14} className="text-amber-400" />
+                <span>{fp.badgeText || 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY'}</span>
+              </div>
+
+              <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+                {fp.titleBn || 'অনলাইন ইফতা ও ফতোয়া সেবা'}
+              </h1>
+
+              <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-tiro max-w-2xl mx-auto">
+                {fp.subtitleBn || 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।'}
+              </p>
+
+              {/* Highlights */}
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                {fp.highlight1 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-teal-100 text-xs font-semibold backdrop-blur-sm border border-white/15">
+                    <CheckCircle2 size={13} className="text-teal-400" />
+                    <span>{fp.highlight1}</span>
+                  </span>
+                )}
+                {fp.highlight2 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-teal-100 text-xs font-semibold backdrop-blur-sm border border-white/15">
+                    <ShieldCheck size={13} className="text-amber-400" />
+                    <span>{fp.highlight2}</span>
+                  </span>
+                )}
+                {fp.highlight3 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-teal-100 text-xs font-semibold backdrop-blur-sm border border-white/15">
+                    <Lock size={13} className="text-emerald-400" />
+                    <span>{fp.highlight3}</span>
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
+        ) : fp.showHeroImage !== false && fp.heroImage ? (
+          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#ece8e0] shadow-sm">
+            <div className={`grid grid-cols-1 lg:grid-cols-12 gap-8 items-center ${fp.heroImagePosition === 'left' ? 'lg:flex-row-reverse' : ''}`}>
+              
+              {/* Text Area */}
+              <div className={`space-y-4 ${fp.heroImagePosition === 'left' ? 'lg:col-span-7 lg:order-2' : 'lg:col-span-7'}`}>
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/10 text-[#112734] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                  <Sparkles size={14} className="text-amber-500" />
+                  <span>{fp.badgeText || 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY'}</span>
+                </div>
 
-          <h1 className="text-3xl sm:text-5xl font-black text-[#112734] tracking-tight">
-            অনলাইন ইফতা ও ফতোয়া সেবা
-          </h1>
+                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-[#112734] tracking-tight leading-tight">
+                  {fp.titleBn || 'অনলাইন ইফতা ও ফতোয়া সেবা'}
+                </h1>
 
-          <p className="text-sm sm:text-base text-[#5a524d] leading-relaxed">
-            দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।
-          </p>
-        </div>
+                <p className="text-sm sm:text-base text-[#5a524d] leading-relaxed font-tiro">
+                  {fp.subtitleBn || 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।'}
+                </p>
+
+                {/* Highlights */}
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  {fp.highlight1 && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-teal-50 text-teal-800 text-xs font-semibold border border-teal-100">
+                      <CheckCircle2 size={13} className="text-teal-600" />
+                      <span>{fp.highlight1}</span>
+                    </span>
+                  )}
+                  {fp.highlight2 && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 text-amber-900 text-xs font-semibold border border-amber-100">
+                      <ShieldCheck size={13} className="text-amber-600" />
+                      <span>{fp.highlight2}</span>
+                    </span>
+                  )}
+                  {fp.highlight3 && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 text-emerald-900 text-xs font-semibold border border-emerald-100">
+                      <Lock size={13} className="text-emerald-600" />
+                      <span>{fp.highlight3}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Hero Image */}
+              <div className={`${fp.heroImagePosition === 'left' ? 'lg:col-span-5 lg:order-1' : 'lg:col-span-5'}`}>
+                <div className="relative rounded-2xl overflow-hidden border border-[#ece8e0] shadow-md aspect-[16/10] bg-slate-100 group">
+                  <img
+                    src={fp.heroImage}
+                    alt={fp.titleBn || 'Fatwa Page Hero Banner'}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                </div>
+              </div>
+
+            </div>
+          </div>
+        ) : (
+          <div className="text-center space-y-4 max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/10 text-[#112734] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+              <Sparkles size={14} className="text-amber-500" />
+              <span>{fp.badgeText || 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY'}</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-5xl font-black text-[#112734] tracking-tight">
+              {fp.titleBn || 'অনলাইন ইফতা ও ফতোয়া সেবা'}
+            </h1>
+
+            <p className="text-sm sm:text-base text-[#5a524d] leading-relaxed font-tiro">
+              {fp.subtitleBn || 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।'}
+            </p>
+
+            {/* Highlights */}
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+              {fp.highlight1 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-teal-50 text-teal-800 text-xs font-semibold border border-teal-100">
+                  <CheckCircle2 size={13} className="text-teal-600" />
+                  <span>{fp.highlight1}</span>
+                </span>
+              )}
+              {fp.highlight2 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 text-amber-900 text-xs font-semibold border border-amber-100">
+                  <ShieldCheck size={13} className="text-amber-600" />
+                  <span>{fp.highlight2}</span>
+                </span>
+              )}
+              {fp.highlight3 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 text-emerald-900 text-xs font-semibold border border-emerald-100">
+                  <Lock size={13} className="text-emerald-600" />
+                  <span>{fp.highlight3}</span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Section 1: Ask Mas'ala & Track Question side by side */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8" id="ask">
@@ -166,9 +327,9 @@ function FatwaContent() {
               </div>
               <div>
                 <h2 className="text-xl font-black text-[#112734]">
-                  সরাসরি ফতোয়া বিভাগে প্রশ্ন পাঠান
+                  {fp.askCardTitle || 'সরাসরি ফতোয়া বিভাগে প্রশ্ন পাঠান'}
                 </h2>
-                <p className="text-xs text-[#8a817c]">মুফতী প্যানেল কর্তৃক ব্যক্তিগতভাবে যাচাই ও সমাধান করা হবে</p>
+                <p className="text-xs text-[#8a817c]">{fp.askCardSubtitle || 'মুফতী প্যানেল কর্তৃক ব্যক্তিগতভাবে যাচাই ও সমাধান করা হবে'}</p>
               </div>
             </div>
 
@@ -289,8 +450,8 @@ function FatwaContent() {
                 <Search size={20} />
               </div>
               <div>
-                <h3 className="font-extrabold text-base text-[#2c3e50]">প্রশ্নের স্ট্যাটাস দেখুন</h3>
-                <p className="text-xs text-[#8a817c]">ট্র্যাকিং কোড দিয়ে উত্তর জানুন</p>
+                <h3 className="font-extrabold text-base text-[#2c3e50]">{fp.trackCardTitle || 'প্রশ্নের স্ট্যাটাস দেখুন'}</h3>
+                <p className="text-xs text-[#8a817c]">{fp.trackCardSubtitle || 'ট্র্যাকিং কোড দিয়ে উত্তর জানুন'}</p>
               </div>
             </div>
 
@@ -350,9 +511,9 @@ function FatwaContent() {
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-[#112734]">
-                উন্মুক্ত ফতোয়া ও গবেষণা আর্কাইভ
+                {fp.archiveTitle || 'উন্মুক্ত ফতোয়া ও গবেষণা আর্কাইভ'}
               </h2>
-              <p className="text-xs text-[#8a817c]">মুফতীগণের স্বাক্ষরিত ও প্রামাণ্য গ্রন্থাবলি থেকে সংকলিত উত্তরসমূহ</p>
+              <p className="text-xs text-[#8a817c]">{fp.archiveSubtitle || 'মুফতীগণের স্বাক্ষরিত ও প্রামাণ্য গ্রন্থাবলি থেকে সংকলিত উত্তরসমূহ'}</p>
             </div>
 
             {/* Archive Search Bar */}

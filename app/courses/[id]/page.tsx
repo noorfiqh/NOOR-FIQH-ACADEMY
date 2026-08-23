@@ -1,11 +1,7 @@
-import { INITIAL_COURSES } from '@/lib/seed-data';
 import CourseDetailClient from '@/components/CourseDetailClient';
 
-export function generateStaticParams() {
-  return INITIAL_COURSES.map((course) => ({
-    id: course.id,
-  }));
-}
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
 export default async function CourseDetailPage({
   params,

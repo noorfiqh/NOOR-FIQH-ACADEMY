@@ -92,11 +92,11 @@ export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalP
     setLoading(true);
 
     try {
-      const order = AppStore.createOrder({
+      const order = await AppStore.createOrderAsync({
         userId: currentUserId,
-        userName: shippingName || currentUserName,
-        userEmail: currentUserEmail,
-        userPhone: shippingPhone || currentUserPhone,
+        userName: (shippingName || currentUserName || 'শিক্ষার্থী').trim(),
+        userEmail: (currentUserEmail || 'student@noorfiqh.com').trim().toLowerCase(),
+        userPhone: (shippingPhone || currentUserPhone || '').trim(),
         itemType: item.type,
         itemId: item.id,
         itemTitle: item.titleBn || item.title,
@@ -104,8 +104,8 @@ export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalP
         purchaseType: item.purchaseType || 'full_access',
         paymentMethod: method,
         trxId: method === 'card' ? `CARD-${Date.now()}` : (method === 'cod' ? 'CASH-ON-DELIVERY' : trxId.trim()),
-        paymentPhone: senderPhone || currentUserPhone,
-        shippingAddress: item.purchaseType === 'hardcover' ? `${shippingName || currentUserName}, ${shippingPhone || currentUserPhone}, ${shippingAddress}` : undefined
+        paymentPhone: (senderPhone || currentUserPhone || '').trim(),
+        shippingAddress: item.purchaseType === 'hardcover' ? `${shippingName || currentUserName}, ${shippingPhone || currentUserPhone}, ${shippingAddress}`.trim() : undefined
       });
 
       // If user paid via Card or it's free, auto approve
