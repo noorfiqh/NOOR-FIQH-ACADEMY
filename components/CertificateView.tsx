@@ -20,6 +20,7 @@ import confetti from 'canvas-confetti';
 import { jsPDF } from 'jspdf';
 import { AppStore, DEFAULT_SETTINGS } from '@/lib/store';
 import { SiteSettings } from '@/lib/types';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
 
 interface CertificateViewProps {
   userName: string;
@@ -799,10 +800,12 @@ export function CertificateView({
               
               {/* High Quality Background Catalog Template Image */}
               <img
-                src={activeImageUrl}
+                src={formatImageUrl(activeImageUrl)}
                 alt="Certificate Template"
                 className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none z-0 block"
+                referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
+                onError={(e) => handleImageError(e, activeImageUrl)}
                 loading="eager"
               />
 
@@ -905,8 +908,11 @@ export function CertificateView({
                 {siteSettings.logoType === 'image' && siteSettings.logoImageUrl ? (
                   <div className="flex justify-center pb-1">
                     <img
-                      src={siteSettings.logoImageUrl}
+                      src={formatImageUrl(siteSettings.logoImageUrl)}
                       alt={siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'}
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
+                      onError={(e) => handleImageError(e, siteSettings.logoImageUrl)}
                       className="max-h-10 sm:max-h-12 w-auto object-contain mx-auto"
                     />
                   </div>

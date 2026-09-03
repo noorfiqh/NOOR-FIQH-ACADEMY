@@ -23,6 +23,7 @@ import { useAuth } from '@/lib/auth-context';
 import { LoginModal } from '@/components/LoginModal';
 import { AppStore, DEFAULT_SETTINGS } from '@/lib/store';
 import { SiteSettings } from '@/lib/types';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
 
 export function Navbar() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -158,8 +159,11 @@ export function Navbar() {
             {siteSettings.logoType === 'image' && siteSettings.logoImageUrl ? (
               <div className="h-12 sm:h-14 flex items-center py-1 group-hover:opacity-90 transition-opacity">
                 <img
-                  src={siteSettings.logoImageUrl}
+                  src={formatImageUrl(siteSettings.logoImageUrl)}
                   alt={siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'}
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
+                  onError={(e) => handleImageError(e, siteSettings.logoImageUrl)}
                   className="max-h-11 sm:max-h-13 w-auto max-w-[190px] sm:max-w-[260px] object-contain drop-shadow-sm"
                 />
               </div>

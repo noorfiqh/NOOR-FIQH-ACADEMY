@@ -6,6 +6,7 @@ import { AppStore, INITIAL_BOOKS, DEFAULT_SETTINGS } from '@/lib/store';
 import { Book, SiteSettings } from '@/lib/types';
 import { BookCard } from '@/components/BookCard';
 import { PaymentModal } from '@/components/PaymentModal';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
 import { db, collection, onSnapshot, handleFirestoreError, OperationType, doc } from '@/lib/firebase';
 import { 
   Search, 
@@ -36,15 +37,16 @@ export default function BooksPage() {
       setBooks(AppStore.getBooks());
     };
     window.addEventListener('storage', handleUpdate);
+    window.addEventListener('noorfiqh_settings_updated', handleUpdate);
 
     // Sync site settings from Firestore
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'site_config'), (snapshot) => {
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'general'), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data() as SiteSettings;
         setSiteSettings(data);
       }
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'settings');
+      handleFirestoreError(error, OperationType.GET, 'settings/general');
     });
 
     // Sync books live from Firestore
@@ -57,11 +59,12 @@ export default function BooksPage() {
         setBooks(fbBooks);
       }
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'books');
+      handleFirestoreError(error, OperationType.LIST, 'books');
     });
 
     return () => {
       window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('noorfiqh_settings_updated', handleUpdate);
       unsubSettings();
       unsubBooks();
     };
@@ -100,25 +103,155 @@ export default function BooksPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#fdfcf9] py-12 px-4 sm:px-8 font-sans text-[#2c3e50]">
-      <div className="max-w-7xl mx-auto space-y-12">
-        
-        {/* Page Hero Banner */}
-        {bp.heroImagePosition === 'background' && bp.showHeroImage !== false && bp.heroImage ? (
-          <div className="relative rounded-3xl overflow-hidden min-h-[280px] sm:min-h-[340px] p-8 sm:p-14 flex items-center justify-center text-center shadow-xl border border-amber-900/30">
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url(${bp.heroImage})` }}
+    <div className="min-h-screen bg-[#fdfcf9] font-sans text-[#2c3e50] space-y-0 pb-16">
+      
+      {/* 1. EDGE-TO-EDGE HERO SECTION */}
+      <section className="relative w-full overflow-hidden bg-[#112734] text-white py-12 sm:py-16 lg:py-20 border-b border-[#23626F]">
+        {/* Background image if set as background */}
+        {bp.heroImagePosition === 'background' && bp.showHeroImage !== false && bp.heroImage && (
+          <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+            <img
+              src={formatImageUrl(bp.heroImage)}
+              alt="Books Background Hero"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+              onError={(e) => handleImageError(e, bp.heroImage)}
+              style={{ opacity: (bp.heroImageOpacity ?? 35) / 100 }}
+              className="w-full h-full object-cover object-center scale-105 transition-all duration-700"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#112734]/95 via-[#112734]/80 to-[#112734]/85" />
-            
-            <div className="relative z-10 space-y-4 max-w-3xl mx-auto">
-              <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-500/20 text-amber-200 text-xs font-bold uppercase tracking-wider border border-amber-400/40 backdrop-blur-sm">
+            <div 
+              className="absolute inset-0 bg-gradient-to-r from-[#112734] via-[#112734]/85 to-[#112734]/70 transition-opacity" 
+              style={{ opacity: (bp.heroOverlayOpacity ?? 80) / 100 }}
+            />
+            <div 
+              className="absolute inset-0 bg-gradient-to-t from-[#112734] via-transparent to-[#112734]/40 transition-opacity" 
+              style={{ opacity: (bp.heroOverlayOpacity ?? 80) / 100 }}
+            />
+          </div>
+        )}
+
+        {/* Ambient Dark Gradient & Glows */}
+        {bp.heroImagePosition !== 'background' && (
+          <div className="absolute inset-0 bg-gradient-to-t from-[#112734] via-[#112734]/90 to-[#112734]/95 pointer-events-none" />
+        )}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {bp.heroImagePosition === 'background' && bp.showHeroImage !== false && bp.heroImage ? (
+            /* Full Background Hero Layout */
+            <div className="max-w-3xl space-y-4 text-left">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/20 text-amber-200 text-xs font-bold uppercase tracking-wider border border-amber-400/40 backdrop-blur-sm">
                 <Sparkles size={14} className="text-amber-400" />
                 <span>{bp.badgeText || 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি'}</span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+              <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight font-anek">
+                {bp.titleBn || 'ফিকহ কিতাব ও গবেষণাপত্র'}
+              </h1>
+
+              <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-tiro max-w-2xl">
+                {bp.subtitleBn || 'দারুল ইফতা ও ফিকহ বোর্ড কর্তৃক রচিত প্রামাণ্য কিতাবের পিডিএফ ও হোম ডেলিভারি হার্ডকভার কপি সংগ্রহ করুন।'}
+              </p>
+
+              {/* Highlights */}
+              <div className="flex flex-wrap gap-2.5 pt-3">
+                {bp.highlight1 && (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 text-amber-100 text-xs font-semibold backdrop-blur-sm border border-white/15">
+                    <CheckCircle2 size={14} className="text-amber-400" />
+                    <span>{bp.highlight1}</span>
+                  </span>
+                )}
+                {bp.highlight2 && (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 text-amber-100 text-xs font-semibold backdrop-blur-sm border border-white/15">
+                    <Truck size={14} className="text-teal-400" />
+                    <span>{bp.highlight2}</span>
+                  </span>
+                )}
+                {bp.highlight3 && (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 text-amber-100 text-xs font-semibold backdrop-blur-sm border border-white/15">
+                    <BookOpen size={14} className="text-emerald-400" />
+                    <span>{bp.highlight3}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : bp.showHeroImage !== false && bp.heroImage ? (
+            /* Split Grid Hero with Image */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+              
+              {/* Text Area */}
+              <div className={`space-y-4 ${bp.heroImagePosition === 'left' ? 'lg:col-span-7 lg:order-2' : 'lg:col-span-7'}`}>
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider border border-amber-400/30">
+                  <Library size={14} className="text-amber-400" />
+                  <span>{bp.badgeText || 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি'}</span>
+                </div>
+
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.2] font-anek">
+                  {bp.titleBn || 'ফিকহ কিতাব ও গবেষণাপত্র'}
+                </h1>
+
+                <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-tiro max-w-2xl">
+                  {bp.subtitleBn || 'দারুল ইফতা ও ফিকহ বোর্ড কর্তৃক রচিত প্রামাণ্য কিতাবের পিডিএফ ও হোম ডেলিভারি হার্ডকভার কপি সংগ্রহ করুন।'}
+                </p>
+
+                {/* Highlights */}
+                <div className="flex flex-wrap gap-2.5 pt-3">
+                  {bp.highlight1 && (
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/15 backdrop-blur-xs">
+                      <CheckCircle2 size={14} className="text-amber-400" />
+                      <span>{bp.highlight1}</span>
+                    </span>
+                  )}
+                  {bp.highlight2 && (
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/15 backdrop-blur-xs">
+                      <Truck size={14} className="text-teal-400" />
+                      <span>{bp.highlight2}</span>
+                    </span>
+                  )}
+                  {bp.highlight3 && (
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/15 backdrop-blur-xs">
+                      <BookOpen size={14} className="text-emerald-400" />
+                      <span>{bp.highlight3}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Hero Image */}
+              <div className={`${bp.heroImagePosition === 'left' ? 'lg:col-span-5 lg:order-1' : 'lg:col-span-5'} flex justify-center`}>
+                <div className="w-full max-w-lg relative rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-white/20 shadow-2xl group bg-[#0b1b24]">
+                  <div className="aspect-[16/10] w-full relative">
+                    <img
+                      src={formatImageUrl(bp.heroImage)}
+                      alt={bp.titleBn || 'Books Hero Banner'}
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
+                      onError={(e) => handleImageError(e, bp.heroImage)}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+                  </div>
+                  <div className="absolute bottom-3.5 left-3.5 right-3.5 flex items-center justify-between pointer-events-none">
+                    <span className="px-3 py-1 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold rounded-xl border border-white/20 font-tiro">
+                      📚 নূর ফিকহ কুতুবখানা
+                    </span>
+                    <span className="px-3 py-1 bg-amber-500 text-[#0b1b24] text-[11px] font-black rounded-xl shadow font-tiro">
+                      অর্ডার গ্রহণ চলছে
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          ) : (
+            <div className="text-center space-y-4 max-w-3xl mx-auto py-4">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider border border-amber-400/30">
+                <Library size={14} className="text-amber-400" />
+                <span>{bp.badgeText || 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি'}</span>
+              </div>
+
+              <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight font-anek">
                 {bp.titleBn || 'ফিকহ কিতাব ও গবেষণাপত্র'}
               </h1>
 
@@ -129,120 +262,31 @@ export default function BooksPage() {
               {/* Highlights */}
               <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                 {bp.highlight1 && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-amber-100 text-xs font-semibold backdrop-blur-sm border border-white/15">
-                    <CheckCircle2 size={13} className="text-amber-400" />
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/15">
+                    <CheckCircle2 size={14} className="text-amber-400" />
                     <span>{bp.highlight1}</span>
                   </span>
                 )}
                 {bp.highlight2 && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-amber-100 text-xs font-semibold backdrop-blur-sm border border-white/15">
-                    <Truck size={13} className="text-teal-400" />
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/15">
+                    <Truck size={14} className="text-teal-400" />
                     <span>{bp.highlight2}</span>
                   </span>
                 )}
                 {bp.highlight3 && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-amber-100 text-xs font-semibold backdrop-blur-sm border border-white/15">
-                    <BookOpen size={13} className="text-emerald-400" />
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/15">
+                    <BookOpen size={14} className="text-emerald-400" />
                     <span>{bp.highlight3}</span>
                   </span>
                 )}
               </div>
             </div>
-          </div>
-        ) : bp.showHeroImage !== false && bp.heroImage ? (
-          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#ece8e0] shadow-sm">
-            <div className={`grid grid-cols-1 lg:grid-cols-12 gap-8 items-center ${bp.heroImagePosition === 'left' ? 'lg:flex-row-reverse' : ''}`}>
-              
-              {/* Text Area */}
-              <div className={`space-y-4 ${bp.heroImagePosition === 'left' ? 'lg:col-span-7 lg:order-2' : 'lg:col-span-7'}`}>
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-50 text-amber-900 text-xs font-bold uppercase tracking-wider border border-amber-200">
-                  <Library size={14} className="text-amber-600" />
-                  <span>{bp.badgeText || 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি'}</span>
-                </div>
+          )}
+        </div>
+      </section>
 
-                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black text-[#112734] tracking-tight leading-tight">
-                  {bp.titleBn || 'ফিকহ কিতাব ও গবেষণাপত্র'}
-                </h1>
-
-                <p className="text-sm sm:text-base text-[#5a524d] leading-relaxed font-tiro">
-                  {bp.subtitleBn || 'দারুল ইফতা ও ফিকহ বোর্ড কর্তৃক রচিত প্রামাণ্য কিতাবের পিডিএফ ও হোম ডেলিভারি হার্ডকভার কপি সংগ্রহ করুন।'}
-                </p>
-
-                {/* Highlights */}
-                <div className="flex flex-wrap items-center gap-2 pt-2">
-                  {bp.highlight1 && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 text-amber-900 text-xs font-semibold border border-amber-100">
-                      <CheckCircle2 size={13} className="text-amber-600" />
-                      <span>{bp.highlight1}</span>
-                    </span>
-                  )}
-                  {bp.highlight2 && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-teal-50 text-teal-800 text-xs font-semibold border border-teal-100">
-                      <Truck size={13} className="text-teal-600" />
-                      <span>{bp.highlight2}</span>
-                    </span>
-                  )}
-                  {bp.highlight3 && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 text-emerald-900 text-xs font-semibold border border-emerald-100">
-                      <BookOpen size={13} className="text-emerald-600" />
-                      <span>{bp.highlight3}</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Hero Image */}
-              <div className={`${bp.heroImagePosition === 'left' ? 'lg:col-span-5 lg:order-1' : 'lg:col-span-5'}`}>
-                <div className="relative rounded-2xl overflow-hidden border border-[#ece8e0] shadow-md aspect-[16/10] bg-slate-100 group">
-                  <img
-                    src={bp.heroImage}
-                    alt={bp.titleBn || 'Books Hero Banner'}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-              </div>
-
-            </div>
-          </div>
-        ) : (
-          <div className="text-center space-y-4 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-50 text-amber-900 text-xs font-bold uppercase tracking-wider border border-amber-200">
-              <Library size={14} className="text-amber-600" />
-              <span>{bp.badgeText || 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি'}</span>
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl font-black text-[#112734] tracking-tight">
-              {bp.titleBn || 'ফিকহ কিতাব ও গবেষণাপত্র'}
-            </h1>
-
-            <p className="text-sm sm:text-base text-[#5a524d] leading-relaxed font-tiro">
-              {bp.subtitleBn || 'দারুল ইফতা ও ফিকহ বোর্ড কর্তৃক রচিত প্রামাণ্য কিতাবের পিডিএফ ও হোম ডেলিভারি হার্ডকভার কপি সংগ্রহ করুন।'}
-            </p>
-
-            {/* Highlights */}
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-              {bp.highlight1 && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-50 text-amber-900 text-xs font-semibold border border-amber-100">
-                  <CheckCircle2 size={13} className="text-amber-600" />
-                  <span>{bp.highlight1}</span>
-                </span>
-              )}
-              {bp.highlight2 && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-teal-50 text-teal-800 text-xs font-semibold border border-teal-100">
-                  <Truck size={13} className="text-teal-600" />
-                  <span>{bp.highlight2}</span>
-                </span>
-              )}
-              {bp.highlight3 && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 text-emerald-900 text-xs font-semibold border border-emerald-100">
-                  <BookOpen size={13} className="text-emerald-600" />
-                  <span>{bp.highlight3}</span>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
+      {/* 2. CATALOG & FILTERS */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-12 space-y-12">
         {/* Search & Category Filter */}
         <div className="bg-white p-4 sm:p-6 rounded-3xl border border-[#ece8e0] shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">

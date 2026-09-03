@@ -6,6 +6,7 @@ import { AppStore, DEFAULT_SETTINGS } from '@/lib/store';
 import { Certificate, SiteSettings } from '@/lib/types';
 import { CertificateView } from '@/components/CertificateView';
 import { Search, CheckCircle2, ShieldCheck, AlertCircle } from 'lucide-react';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
 
 function VerifyCertificateContent() {
   const searchParams = useSearchParams();
@@ -46,8 +47,11 @@ function VerifyCertificateContent() {
           <div className="flex flex-col items-center justify-center pt-2">
             {siteSettings.logoType === 'image' && siteSettings.logoImageUrl ? (
               <img
-                src={siteSettings.logoImageUrl}
+                src={formatImageUrl(siteSettings.logoImageUrl)}
                 alt={siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'}
+                referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
+                onError={(e) => handleImageError(e, siteSettings.logoImageUrl)}
                 className="h-16 sm:h-20 w-auto max-w-[300px] object-contain drop-shadow-sm mb-2"
               />
             ) : (

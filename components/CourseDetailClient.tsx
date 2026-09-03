@@ -10,6 +10,7 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { CourseCard } from '@/components/CourseCard';
 import { PaymentModal } from '@/components/PaymentModal';
 import { TeacherContactButtons } from '@/components/TeacherContactButtons';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
 import { 
   Clock, 
   BookOpen, 
@@ -283,8 +284,11 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
                 ) : (
                   <>
                     <img
-                      src={course.thumbnail}
+                      src={formatImageUrl(course.thumbnail)}
                       alt={course.titleBn}
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
+                      onError={(e) => handleImageError(e, course.thumbnail)}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col justify-between p-3.5">
@@ -440,8 +444,11 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
             </h4>
             <div className="flex items-center gap-4">
               <img
-                src={course.instructor?.avatar || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150'}
+                src={formatImageUrl(course.instructor?.avatar || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150')}
                 alt={course.instructor?.nameBn || 'মুফতী আম্মার বিন নূর'}
+                referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
+                onError={(e) => handleImageError(e, course.instructor?.avatar)}
                 className="w-16 h-16 rounded-full object-cover border-2 border-[#17A2B8]"
               />
               <div>

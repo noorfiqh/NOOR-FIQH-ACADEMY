@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Book } from '@/lib/types';
 import { BookOpen, Download, ShoppingBag, Star, FileText } from 'lucide-react';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
 
 interface BookCardProps {
   book: Book;
@@ -17,8 +18,11 @@ export function BookCard({ book, onBuy }: BookCardProps) {
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100 p-4 flex items-center justify-center">
         <div className="relative w-full h-full rounded-xl overflow-hidden shadow-md group-hover:scale-105 transition-transform duration-500">
           <img
-            src={book.coverImage}
+            src={formatImageUrl(book.coverImage)}
             alt={book.titleBn || book.title}
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
+            onError={(e) => handleImageError(e, book.coverImage)}
             className="w-full h-full object-cover"
             loading="lazy"
           />

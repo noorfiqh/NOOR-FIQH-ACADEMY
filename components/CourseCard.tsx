@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Course } from '@/lib/types';
 import { Clock, BookOpen, Star, PlayCircle } from 'lucide-react';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
 
 interface CourseCardProps {
   course: Course;
@@ -39,8 +40,11 @@ export function CourseCard({ course, onEnroll }: CourseCardProps) {
           />
         ) : (
           <img
-            src={course.thumbnail}
+            src={formatImageUrl(course.thumbnail)}
             alt={course.titleBn || course.title}
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
+            onError={(e) => handleImageError(e, course.thumbnail)}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
           />

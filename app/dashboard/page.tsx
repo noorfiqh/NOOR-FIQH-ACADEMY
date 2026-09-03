@@ -33,6 +33,7 @@ import {
 import { LiveClassCard } from '@/components/LiveClassCard';
 import { PaymentModal } from '@/components/PaymentModal';
 import { LiveClass } from '@/lib/types';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
 import { db, collection, query, where, onSnapshot, handleFirestoreError, OperationType } from '@/lib/firebase';
 
 export default function DashboardPage() {
@@ -434,10 +435,12 @@ export default function DashboardPage() {
             <div className="w-14 h-14 rounded-2xl bg-[#17A2B8] text-slate-950 flex items-center justify-center text-xl font-bold overflow-hidden shadow-md">
               {user.avatar ? (
                 <img
-                  src={user.avatar}
+                  src={formatImageUrl(user.avatar)}
                   alt={user.name || 'User Profile'}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
+                  onError={(e) => handleImageError(e, user.avatar)}
                 />
               ) : (
                 <span>{user.name.charAt(0)}</span>
@@ -622,8 +625,11 @@ export default function DashboardPage() {
                         <div>
                           <div className="relative aspect-video rounded-2xl overflow-hidden mb-3">
                             <img
-                              src={course.thumbnail}
+                              src={formatImageUrl(course.thumbnail)}
                               alt={course.titleBn}
+                              referrerPolicy="no-referrer"
+                              crossOrigin="anonymous"
+                              onError={(e) => handleImageError(e, course.thumbnail)}
                               className="w-full h-full object-cover"
                             />
                             {isFinished && (
@@ -745,7 +751,14 @@ export default function DashboardPage() {
                   <div key={book.id} className="bg-white p-5 rounded-3xl border border-[#ece8e0] card-natural-shadow flex flex-col justify-between relative overflow-hidden group">
                     <div className="flex gap-4 mb-4">
                       <div className="w-20 aspect-[3/4] rounded-xl overflow-hidden shadow-md shrink-0 border border-slate-100 bg-slate-50">
-                        <img src={book.coverImage} alt={book.titleBn} className="w-full h-full object-cover" />
+                        <img 
+                          src={formatImageUrl(book.coverImage)} 
+                          alt={book.titleBn} 
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          onError={(e) => handleImageError(e, book.coverImage)}
+                          className="w-full h-full object-cover" 
+                        />
                       </div>
                       <div className="space-y-1.5 flex-grow min-w-0">
                         <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#17A2B8]/10 text-[#23626F] text-[9px] font-black uppercase rounded-md border border-[#17A2B8]/20">

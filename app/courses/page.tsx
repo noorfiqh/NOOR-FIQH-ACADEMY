@@ -7,6 +7,8 @@ import { AppStore, INITIAL_COURSES, DEFAULT_COURSE_CATEGORIES, DEFAULT_SETTINGS 
 import { Course, CourseCategory, SiteSettings, CoursesPageSettings } from '@/lib/types';
 import { CourseCard } from '@/components/CourseCard';
 import { PaymentModal } from '@/components/PaymentModal';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { db, collection, onSnapshot, handleFirestoreError, OperationType, doc } from '@/lib/firebase';
 import { Search, Filter, BookOpen, Sparkles, CheckCircle2, ShieldCheck, GraduationCap, Award, Compass } from 'lucide-react';
 
 export default function CoursesPage() {
@@ -30,9 +32,35 @@ export default function CoursesPage() {
 
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('noorfiqh_settings_updated', handleUpdate);
+
+    // Sync site settings live from Firestore
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'general'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data() as SiteSettings;
+        setSettings(data);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'settings/general');
+    });
+
+    // Sync courses live from Firestore
+    const unsubCourses = onSnapshot(collection(db, 'courses'), (snapshot) => {
+      if (!snapshot.empty) {
+        const fbCourses: Course[] = [];
+        snapshot.forEach((docSnap) => {
+          fbCourses.push({ id: docSnap.id, ...docSnap.data() } as Course);
+        });
+        setCourses(fbCourses);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'courses');
+    });
+
     return () => {
       window.removeEventListener('storage', handleUpdate);
       window.removeEventListener('noorfiqh_settings_updated', handleUpdate);
+      unsubSettings();
+      unsubCourses();
     };
   }, []);
 
@@ -55,6 +83,8 @@ export default function CoursesPage() {
   const heroImage = coursesPageSettings.heroImage || '';
   const showHeroImage = coursesPageSettings.showHeroImage !== false && !!heroImage;
   const heroImagePosition = coursesPageSettings.heroImagePosition || 'right';
+  const heroImageOpacity = coursesPageSettings.heroImageOpacity ?? 35;
+  const heroOverlayOpacity = coursesPageSettings.heroOverlayOpacity ?? 80;
   const searchPlaceholder = coursesPageSettings.searchPlaceholder || 'কোর্সের নাম বা বিষয় খুঁজুন...';
   const highlight1 = coursesPageSettings.highlight1 || 'সহিহ সুন্নাহ ও দলীলভিত্তিক পাঠ্যক্রম';
   const highlight2 = coursesPageSettings.highlight2 || 'অভিজ্ঞ মুফতী ও স্কলারদের সরাসরি তত্ত্বাবধান';
@@ -75,23 +105,49 @@ export default function CoursesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#fdfcf9] py-8 sm:py-12 px-4 sm:px-8 font-sans text-[#2c3e50]">
-      <div className="max-w-7xl mx-auto space-y-10">
-        
-        {/* Dynamic Hero Section */}
-        {heroImagePosition === 'background' && showHeroImage ? (
-          /* Background Overlay Hero */
-          <div className="relative rounded-3xl overflow-hidden p-8 sm:p-14 text-white shadow-xl border border-[#23626F] bg-[#112734]">
-            <div 
-              className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-30 pointer-events-none"
-              style={{ backgroundImage: `url(${heroImage})` }}
+    <div className="min-h-screen bg-[#fdfcf9] font-sans text-[#2c3e50] space-y-0 pb-16">
+      
+      {/* 1. EDGE-TO-EDGE HERO SECTION */}
+      <section className="relative w-full overflow-hidden bg-[#112734] text-white py-12 sm:py-16 lg:py-20 border-b border-[#23626F]">
+        {/* Full Viewport Background Image (if background position or ambient) */}
+        {heroImagePosition === 'background' && showHeroImage && (
+          <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+            <img
+              src={formatImageUrl(heroImage)}
+              alt="Background Hero"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+              onError={(e) => handleImageError(e, heroImage)}
+              style={{ opacity: heroImageOpacity / 100 }}
+              className="w-full h-full object-cover object-center scale-105 transition-all duration-700"
             />
-            <div className="relative z-10 max-w-3xl space-y-4">
+            <div 
+              className="absolute inset-0 bg-gradient-to-r from-[#112734] via-[#112734]/85 to-[#112734]/70 transition-opacity" 
+              style={{ opacity: heroOverlayOpacity / 100 }}
+            />
+            <div 
+              className="absolute inset-0 bg-gradient-to-t from-[#112734] via-transparent to-[#112734]/40 transition-opacity" 
+              style={{ opacity: heroOverlayOpacity / 100 }}
+            />
+          </div>
+        )}
+
+        {/* Ambient Glow / Islamic Pattern */}
+        {heroImagePosition !== 'background' && (
+          <div className="absolute inset-0 bg-gradient-to-t from-[#112734] via-[#112734]/90 to-[#112734]/95 pointer-events-none" />
+        )}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#17A2B8]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {heroImagePosition === 'background' && showHeroImage ? (
+            /* Background Overlay Hero (Centered content within max-width) */
+            <div className="max-w-3xl space-y-4 text-left">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/40">
                 <Sparkles size={14} className="text-amber-400" />
                 <span>{badgeText}</span>
               </div>
-              <h1 className="text-3xl sm:text-5xl font-black font-anek tracking-tight leading-tight">
+              <h1 className="text-3xl sm:text-5xl font-black font-anek tracking-tight leading-tight text-white">
                 {titleBn}
               </h1>
               <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-tiro">
@@ -101,63 +157,61 @@ export default function CoursesPage() {
               {/* Highlights */}
               <div className="flex flex-wrap gap-2.5 pt-3">
                 {highlight1 && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-medium backdrop-blur-sm border border-white/15">
-                    <CheckCircle2 size={13} className="text-emerald-400" />
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 text-white text-xs font-medium backdrop-blur-sm border border-white/15">
+                    <CheckCircle2 size={14} className="text-emerald-400" />
                     <span>{highlight1}</span>
                   </span>
                 )}
                 {highlight2 && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-medium backdrop-blur-sm border border-white/15">
-                    <GraduationCap size={13} className="text-amber-400" />
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 text-white text-xs font-medium backdrop-blur-sm border border-white/15">
+                    <GraduationCap size={14} className="text-amber-400" />
                     <span>{highlight2}</span>
                   </span>
                 )}
                 {highlight3 && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-medium backdrop-blur-sm border border-white/15">
-                    <Award size={13} className="text-[#17A2B8]" />
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 text-white text-xs font-medium backdrop-blur-sm border border-white/15">
+                    <Award size={14} className="text-[#17A2B8]" />
                     <span>{highlight3}</span>
                   </span>
                 )}
               </div>
             </div>
-          </div>
-        ) : showHeroImage ? (
-          /* Split Grid Hero with Image */
-          <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#ece8e0] shadow-sm overflow-hidden">
-            <div className={`grid grid-cols-1 lg:grid-cols-12 gap-8 items-center ${heroImagePosition === 'left' ? 'lg:flex-row-reverse' : ''}`}>
+          ) : showHeroImage ? (
+            /* Split Grid Hero with Image */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
               
               {/* Text Side */}
               <div className={`space-y-4 ${heroImagePosition === 'left' ? 'lg:col-span-7 lg:order-2' : 'lg:col-span-7'}`}>
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/10 text-[#112734] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
-                  <Sparkles size={14} className="text-amber-500" />
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                  <Sparkles size={14} className="text-amber-400" />
                   <span>{badgeText}</span>
                 </div>
                 
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#112734] tracking-tight leading-[1.15] font-anek">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.2] font-anek">
                   {titleBn}
                 </h1>
                 
-                <p className="text-sm sm:text-base text-[#5a524d] leading-relaxed font-tiro">
+                <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-tiro max-w-2xl">
                   {subtitleBn}
                 </p>
 
                 {/* Highlights Pills */}
-                <div className="flex flex-wrap gap-2 pt-2">
+                <div className="flex flex-wrap gap-2.5 pt-3">
                   {highlight1 && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fdfcf9] text-[#2c3e50] text-xs font-bold border border-[#ece8e0]">
-                      <CheckCircle2 size={14} className="text-emerald-600" />
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/15 backdrop-blur-xs">
+                      <CheckCircle2 size={14} className="text-emerald-400" />
                       <span>{highlight1}</span>
                     </span>
                   )}
                   {highlight2 && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fdfcf9] text-[#2c3e50] text-xs font-bold border border-[#ece8e0]">
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/15 backdrop-blur-xs">
                       <GraduationCap size={14} className="text-[#17A2B8]" />
                       <span>{highlight2}</span>
                     </span>
                   )}
                   {highlight3 && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#fdfcf9] text-[#2c3e50] text-xs font-bold border border-[#ece8e0]">
-                      <Award size={14} className="text-amber-600" />
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/15 backdrop-blur-xs">
+                      <Award size={14} className="text-amber-400" />
                       <span>{highlight3}</span>
                     </span>
                   )}
@@ -165,23 +219,26 @@ export default function CoursesPage() {
               </div>
 
               {/* Image Side */}
-              <div className={`${heroImagePosition === 'left' ? 'lg:col-span-5 lg:order-1' : 'lg:col-span-5'}`}>
-                <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-[#ece8e0] shadow-lg group bg-[#112734]">
+              <div className={`${heroImagePosition === 'left' ? 'lg:col-span-5 lg:order-1' : 'lg:col-span-5'} flex justify-center`}>
+                <div className="w-full max-w-lg relative rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-white/20 shadow-2xl group bg-[#0b1b24]">
                   <div className="aspect-[16/10] w-full relative">
                     <img
-                      src={heroImage}
+                      src={formatImageUrl(heroImage)}
                       alt={titleBn}
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
+                      onError={(e) => handleImageError(e, heroImage)}
                       className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
                   </div>
                   
                   {/* Image Badge overlay */}
-                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                    <span className="px-3 py-1 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold rounded-xl border border-white/20">
+                  <div className="absolute bottom-3.5 left-3.5 right-3.5 flex items-center justify-between pointer-events-none">
+                    <span className="px-3 py-1 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold rounded-xl border border-white/20 font-tiro">
                       🎓 নূর ফিকহ একাডেমি
                     </span>
-                    <span className="px-3 py-1 bg-emerald-600 text-white text-[11px] font-bold rounded-xl shadow">
+                    <span className="px-3 py-1 bg-emerald-500 text-[#0b1b24] text-[11px] font-black rounded-xl shadow-md font-tiro">
                       ভর্তি চলছে
                     </span>
                   </div>
@@ -189,44 +246,48 @@ export default function CoursesPage() {
               </div>
 
             </div>
-          </div>
-        ) : (
-          /* Centered Typography Hero (No Image) */
-          <div className="text-center space-y-4 max-w-3xl mx-auto py-4">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/10 text-[#112734] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
-              <Sparkles size={14} className="text-amber-500" />
-              <span>{badgeText}</span>
-            </div>
-            <h1 className="text-3xl sm:text-5xl font-black text-[#112734] tracking-tight leading-tight font-anek">
-              {titleBn}
-            </h1>
-            <p className="text-sm sm:text-base text-[#5a524d] leading-relaxed font-tiro max-w-2xl mx-auto">
-              {subtitleBn}
-            </p>
+          ) : (
+            /* Centered Typography Hero (No Image) */
+            <div className="text-center space-y-4 max-w-3xl mx-auto py-4">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                <Sparkles size={14} className="text-amber-400" />
+                <span>{badgeText}</span>
+              </div>
+              <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight font-anek">
+                {titleBn}
+              </h1>
+              <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-tiro max-w-2xl mx-auto">
+                {subtitleBn}
+              </p>
 
-            {/* Highlights */}
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-              {highlight1 && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-[#2c3e50] text-xs font-bold border border-[#ece8e0] shadow-sm">
-                  <CheckCircle2 size={14} className="text-emerald-600" />
-                  <span>{highlight1}</span>
-                </span>
-              )}
-              {highlight2 && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-[#2c3e50] text-xs font-bold border border-[#ece8e0] shadow-sm">
-                  <GraduationCap size={14} className="text-[#17A2B8]" />
-                  <span>{highlight2}</span>
-                </span>
-              )}
-              {highlight3 && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white text-[#2c3e50] text-xs font-bold border border-[#ece8e0] shadow-sm">
-                  <Award size={14} className="text-amber-600" />
-                  <span>{highlight3}</span>
-                </span>
-              )}
+              {/* Highlights */}
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                {highlight1 && (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/15">
+                    <CheckCircle2 size={14} className="text-emerald-400" />
+                    <span>{highlight1}</span>
+                  </span>
+                )}
+                {highlight2 && (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/15">
+                    <GraduationCap size={14} className="text-[#17A2B8]" />
+                    <span>{highlight2}</span>
+                  </span>
+                )}
+                {highlight3 && (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-bold border border-white/15">
+                    <Award size={14} className="text-amber-400" />
+                    <span>{highlight3}</span>
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      </section>
+
+      {/* 2. COURSES CATALOG & FILTER SECTION */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-12 space-y-10">
 
         {/* Filter & Search Toolbar */}
         <div className="bg-white p-4 sm:p-6 rounded-3xl border border-[#ece8e0] card-natural-shadow space-y-4">

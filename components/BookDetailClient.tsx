@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { AppStore } from '@/lib/store';
 import { Book } from '@/lib/types';
 import { PaymentModal } from '@/components/PaymentModal';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
 import { 
   BookOpen, 
   Download, 
@@ -94,10 +95,13 @@ export default function BookDetailClient({ id }: BookDetailClientProps) {
         {/* Left Column: Book Preview Image & Quick Buy */}
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white p-6 rounded-3xl border border-[#ece8e0] card-natural-shadow flex flex-col items-center text-center">
-            <div className="w-48 aspect-[3/4] rounded-2xl overflow-hidden shadow-xl mb-6">
+            <div className="w-48 aspect-[3/4] rounded-2xl overflow-hidden shadow-xl mb-6 bg-slate-100">
               <img
-                src={book.coverImage}
+                src={formatImageUrl(book.coverImage)}
                 alt={book.titleBn}
+                referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
+                onError={(e) => handleImageError(e, book.coverImage)}
                 className="w-full h-full object-cover"
               />
             </div>

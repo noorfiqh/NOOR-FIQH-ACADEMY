@@ -5,6 +5,7 @@ import { Video, Users, CheckCircle, Clock, ExternalLink, AlertCircle } from 'luc
 import { LiveClass } from '@/lib/types';
 import { AppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
 
 interface LiveClassCardProps {
   liveClass: LiveClass;
@@ -80,10 +81,12 @@ export function LiveClassCard({ liveClass, onSelectPayment }: LiveClassCardProps
       {liveClass.thumbnail && (
         <div className="relative h-52 w-full overflow-hidden bg-slate-100">
           <img 
-            src={liveClass.thumbnail} 
+            src={formatImageUrl(liveClass.thumbnail)} 
             alt={liveClass.titleBn} 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
+            onError={(e) => handleImageError(e, liveClass.thumbnail)}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
           

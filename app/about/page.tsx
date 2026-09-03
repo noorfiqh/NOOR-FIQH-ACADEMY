@@ -17,6 +17,7 @@ import {
 import { AppStore, DEFAULT_SETTINGS, INITIAL_FACULTY } from '@/lib/store';
 import { FacultyMember, SiteSettings } from '@/lib/types';
 import { TeacherContactButtons } from '@/components/TeacherContactButtons';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
 
 export default function AboutPage() {
   const [faculty, setFaculty] = useState<FacultyMember[]>(INITIAL_FACULTY);
@@ -76,30 +77,128 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-[#fdfcf9] font-sans text-[#2c3e50] pb-20">
-      {/* Hero Banner */}
-      <div className="bg-[#112734] text-white py-16 px-4 sm:px-8 text-center">
-        <div className="max-w-4xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-normal uppercase tracking-wider border border-[#17A2B8]/30">
-            <Sparkles size={14} />
-            <span>নূর ফিকহ একাডেমি পরিচিতি • NOOR FIQH ACADEMY</span>
+      {/* 1. EDGE-TO-EDGE HERO SECTION */}
+      <section className="relative w-full overflow-hidden bg-[#112734] text-white py-12 sm:py-16 lg:py-20 border-b border-[#23626F]">
+        {/* Full Background Image */}
+        {aboutData.heroImagePosition === 'background' && aboutData.showHeroImage !== false && aboutData.heroImage && (
+          <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+            <img
+              src={formatImageUrl(aboutData.heroImage)}
+              alt="About Hero Background"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+              onError={(e) => handleImageError(e, aboutData.heroImage)}
+              style={{ opacity: (aboutData.heroImageOpacity ?? 35) / 100 }}
+              className="w-full h-full object-cover object-center scale-105 transition-all duration-700"
+            />
+            <div 
+              className="absolute inset-0 bg-gradient-to-r from-[#112734] via-[#112734]/85 to-[#112734]/70 transition-opacity" 
+              style={{ opacity: (aboutData.heroOverlayOpacity ?? 80) / 100 }}
+            />
+            <div 
+              className="absolute inset-0 bg-gradient-to-t from-[#112734] via-transparent to-[#112734]/40 transition-opacity" 
+              style={{ opacity: (aboutData.heroOverlayOpacity ?? 80) / 100 }}
+            />
           </div>
+        )}
 
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight font-anek">
-            {aboutData.titleBn}
-          </h1>
+        {/* Ambient Glows & Gradients */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#112734] via-[#112734]/90 to-[#112734]/95 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#17A2B8]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="max-w-2xl mx-auto space-y-4">
-            {(aboutData.subtitleBn || '').split(/\r?\n\s*\r?\n/).filter(Boolean).map((para, idx) => (
-              <p key={idx} className="text-sm sm:text-base text-emerald-100/95 leading-relaxed font-noto text-justify">
-                {para}
-              </p>
-            ))}
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {aboutData.heroImagePosition === 'background' && aboutData.showHeroImage !== false && aboutData.heroImage ? (
+            /* Full Background Hero Layout */
+            <div className="max-w-4xl mx-auto text-center space-y-4">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                <Sparkles size={14} className="text-amber-400" />
+                <span>{aboutData.badgeText || 'নূর ফিকহ একাডেমি পরিচিতি • NOOR FIQH ACADEMY'}</span>
+              </div>
+
+              <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight font-anek">
+                {aboutData.titleBn}
+              </h1>
+
+              <div className="max-w-2xl mx-auto space-y-3 pt-1">
+                {(aboutData.subtitleBn || '').split(/\r?\n\s*\r?\n/).filter(Boolean).map((para, idx) => (
+                  <p key={idx} className="text-sm sm:text-base text-slate-200 leading-relaxed font-tiro">
+                    {para}
+                  </p>
+                ))}
+              </div>
+            </div>
+          ) : aboutData.showHeroImage !== false && aboutData.heroImage ? (
+            /* Split Grid Hero with Image */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+              <div className={`space-y-4 ${aboutData.heroImagePosition === 'left' ? 'lg:col-span-7 lg:order-2' : 'lg:col-span-7'}`}>
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>{aboutData.badgeText || 'নূর ফিকহ একাডেমি পরিচিতি • NOOR FIQH ACADEMY'}</span>
+                </div>
+
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.2] font-anek">
+                  {aboutData.titleBn}
+                </h1>
+
+                <div className="space-y-3 pt-1">
+                  {(aboutData.subtitleBn || '').split(/\r?\n\s*\r?\n/).filter(Boolean).map((para, idx) => (
+                    <p key={idx} className="text-sm sm:text-base text-slate-200 leading-relaxed font-tiro max-w-2xl">
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`${aboutData.heroImagePosition === 'left' ? 'lg:col-span-5 lg:order-1' : 'lg:col-span-5'} flex justify-center`}>
+                <div className="w-full max-w-lg relative rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-white/20 shadow-2xl group bg-[#0b1b24]">
+                  <div className="aspect-[16/10] w-full relative">
+                    <img
+                      src={formatImageUrl(aboutData.heroImage)}
+                      alt={aboutData.titleBn}
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
+                      onError={(e) => handleImageError(e, aboutData.heroImage)}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+                  </div>
+                  <div className="absolute bottom-3.5 left-3.5 right-3.5 flex items-center justify-between pointer-events-none">
+                    <span className="px-3 py-1 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold rounded-xl border border-white/20 font-tiro">
+                      🏛️ নূর ফিকহ একাডেমি
+                    </span>
+                    <span className="px-3 py-1 bg-teal-500 text-[#0b1b24] text-[11px] font-black rounded-xl shadow font-tiro">
+                      পরিচিতি ও লক্ষ্য
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center space-y-4 max-w-4xl mx-auto py-4">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                <Sparkles size={14} className="text-amber-400" />
+                <span>{aboutData.badgeText || 'নূর ফিকহ একাডেমি পরিচিতি • NOOR FIQH ACADEMY'}</span>
+              </div>
+
+              <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight font-anek">
+                {aboutData.titleBn}
+              </h1>
+
+              <div className="max-w-2xl mx-auto space-y-3">
+                {(aboutData.subtitleBn || '').split(/\r?\n\s*\r?\n/).filter(Boolean).map((para, idx) => (
+                  <p key={idx} className="text-sm sm:text-base text-slate-200 leading-relaxed font-tiro">
+                    {para}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      </section>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-16 space-y-20">
+      {/* 2. MAIN CONTENT (CARDS & FACULTY) */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-20">
         
         {/* Dynamic Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -137,8 +236,11 @@ export default function AboutPage() {
                   <div className="space-y-4">
                     <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-[#17A2B8] mx-auto shadow-inner bg-slate-50">
                       <img
-                        src={member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'}
+                        src={formatImageUrl(member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80')}
                         alt={member.nameBn || member.name}
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
+                        onError={(e) => handleImageError(e, member.avatar)}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                       />
                     </div>
@@ -188,8 +290,11 @@ export default function AboutPage() {
                   <div className="space-y-4">
                     <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-emerald-500 mx-auto shadow-inner bg-slate-50">
                       <img
-                        src={member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'}
+                        src={formatImageUrl(member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80')}
                         alt={member.nameBn || member.name}
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
+                        onError={(e) => handleImageError(e, member.avatar)}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                       />
                     </div>
@@ -239,8 +344,11 @@ export default function AboutPage() {
                   <div className="space-y-4">
                     <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-purple-400 mx-auto shadow-inner bg-slate-50">
                       <img
-                        src={member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'}
+                        src={formatImageUrl(member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80')}
                         alt={member.nameBn || member.name}
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
+                        onError={(e) => handleImageError(e, member.avatar)}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                       />
                     </div>

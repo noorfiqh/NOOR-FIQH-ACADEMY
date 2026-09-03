@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",
-    "build": "cross-env NODE_ENV=production next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint ."
   },
@@ -13,7 +13,7 @@
     "@tailwindcss/postcss": "^4.0.0",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
-    "firebase": "^12.18.0",
+    "firebase": "^10.14.0",
     "framer-motion": "^12.4.7",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
@@ -31,7 +31,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "cross-env": "^10.1.0",
+    "cross-env": "^7.0.3",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
     "postcss": "^8",

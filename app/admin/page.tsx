@@ -55,6 +55,7 @@ import {
 } from 'lucide-react';
 import { CertificateView } from '@/components/CertificateView';
 import { sendTestNotificationEmail } from '@/lib/email-service';
+import { formatImageUrl, handleImageError } from '@/lib/utils';
 import { db, collection, onSnapshot, handleFirestoreError, OperationType } from '@/lib/firebase';
 
 type AdminTab = 'overview' | 'courses' | 'orders' | 'fatwas' | 'books' | 'live_classes' | 'certificates' | 'reviews' | 'users' | 'faculty' | 'settings';
@@ -1021,8 +1022,11 @@ export default function AdminDashboardPage() {
                     <div>
                       <div className="h-44 w-full relative bg-slate-100 overflow-hidden">
                         <img 
-                          src={course.thumbnail} 
+                          src={formatImageUrl(course.thumbnail)} 
                           alt={course.titleBn} 
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          onError={(e) => handleImageError(e, course.thumbnail)}
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute top-3 left-3 bg-[#112734] text-[#17A2B8] text-[10px] font-extrabold px-3 py-1 rounded-full">
@@ -1640,7 +1644,14 @@ export default function AdminDashboardPage() {
                   <div key={book.id} className="bg-white rounded-3xl border border-[#ece8e0] card-natural-shadow p-5 flex flex-col justify-between space-y-4">
                     <div className="flex gap-4">
                       <div className="w-20 h-28 rounded-xl bg-slate-100 overflow-hidden shrink-0 border relative">
-                        <img src={book.coverImage} alt={book.titleBn} className="w-full h-full object-cover" />
+                        <img 
+                          src={formatImageUrl(book.coverImage)} 
+                          alt={book.titleBn} 
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          onError={(e) => handleImageError(e, book.coverImage)}
+                          className="w-full h-full object-cover" 
+                        />
                         {book.hasPdf && (
                           <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-[#23626F]/90 text-[#17A2B8] text-[8px] font-black rounded">
                             PDF
@@ -2524,7 +2535,14 @@ export default function AdminDashboardPage() {
                   <div key={rev.id} className="bg-white p-6 rounded-3xl border border-[#ece8e0] card-natural-shadow space-y-3 flex flex-col justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center gap-3">
-                        <img src={rev.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'} alt={rev.name} className="w-10 h-10 rounded-full object-cover border" />
+                        <img 
+                          src={formatImageUrl(rev.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80')} 
+                          alt={rev.name} 
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          onError={(e) => handleImageError(e, rev.avatar)}
+                          className="w-10 h-10 rounded-full object-cover border" 
+                        />
                         <div>
                           <h4 className="font-extrabold text-sm text-[#2c3e50]">{rev.name}</h4>
                           <p className="text-[10px] text-[#8a817c]">{rev.role} • {rev.location}</p>
@@ -3014,8 +3032,11 @@ export default function AdminDashboardPage() {
                           {siteSettings.logoType === 'image' && siteSettings.logoImageUrl ? (
                             <div className="h-12 flex items-center justify-center py-0.5">
                               <img
-                                src={siteSettings.logoImageUrl}
+                                src={formatImageUrl(siteSettings.logoImageUrl)}
                                 alt="Logo Preview"
+                                referrerPolicy="no-referrer"
+                                crossOrigin="anonymous"
+                                onError={(e) => handleImageError(e, siteSettings.logoImageUrl)}
                                 className="max-h-11 w-auto max-w-[220px] object-contain drop-shadow-sm"
                               />
                             </div>
@@ -3582,8 +3603,11 @@ export default function AdminDashboardPage() {
                           <div className="w-12 h-12 bg-[#112734] rounded-full mx-auto flex items-center justify-center text-[#17A2B8] shadow overflow-hidden border-2 border-[#17A2B8]/40">
                             {siteSettings.heroCard?.iconImage ? (
                               <img
-                                src={siteSettings.heroCard.iconImage}
+                                src={formatImageUrl(siteSettings.heroCard.iconImage)}
                                 alt="Icon"
+                                referrerPolicy="no-referrer"
+                                crossOrigin="anonymous"
+                                onError={(e) => handleImageError(e, siteSettings.heroCard?.iconImage)}
                                 className="w-full h-full object-cover"
                               />
                             ) : (
@@ -3820,6 +3844,84 @@ export default function AdminDashboardPage() {
                             ))}
                           </div>
                         </div>
+
+                        {/* Banner Opacity & Dark Overlay Transparency Controls */}
+                        <div className="pt-3 border-t border-[#ece8e0]/70 space-y-3 bg-[#f8faf7] p-3 rounded-xl border border-[#ece8e0]">
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[11px] font-bold text-[#2c3e50] flex items-center gap-1.5">
+                                <Sliders size={13} className="text-indigo-600" />
+                                <span>ব্যানার ছবির স্বচ্ছতা/দৃশ্যমানতা (Image Opacity): {siteSettings.coursesPage?.heroImageOpacity ?? 35}%</span>
+                              </label>
+                              <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200">
+                                {siteSettings.coursesPage?.heroImageOpacity ?? 35}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={5}
+                              max={100}
+                              step={5}
+                              value={siteSettings.coursesPage?.heroImageOpacity ?? 35}
+                              onChange={(e) => {
+                                const curr = siteSettings.coursesPage || {
+                                  badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                  titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                                  subtitleBn: '',
+                                  heroImage: ''
+                                };
+                                setSiteSettings({
+                                  ...siteSettings,
+                                  coursesPage: { ...curr, heroImageOpacity: Number(e.target.value) }
+                                });
+                              }}
+                              className="w-full accent-[#112734] cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[10px] text-[#8a817c] mt-0.5">
+                              <span>সূক্ষ্ম আবছা (৫%)</span>
+                              <span>প্রস্তাবিত ব্যালেন্স (৩৫%)</span>
+                              <span>সম্পূর্ণ স্পষ্ট (১০০%)</span>
+                            </div>
+                          </div>
+
+                          {/* Dark Overlay Gradient Slider */}
+                          <div className="pt-2 border-t border-dashed border-[#ece8e0]">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[11px] font-bold text-[#2c3e50] flex items-center gap-1.5">
+                                <Sparkles size={13} className="text-[#17A2B8]" />
+                                <span>ডার্ক কালার ওভারলে তীব্রতা (Dark Gradient Tint): {siteSettings.coursesPage?.heroOverlayOpacity ?? 80}%</span>
+                              </label>
+                              <span className="text-[10px] font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-[#ece8e0]">
+                                {siteSettings.coursesPage?.heroOverlayOpacity ?? 80}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={10}
+                              max={100}
+                              step={5}
+                              value={siteSettings.coursesPage?.heroOverlayOpacity ?? 80}
+                              onChange={(e) => {
+                                const curr = siteSettings.coursesPage || {
+                                  badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                  titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
+                                  subtitleBn: '',
+                                  heroImage: ''
+                                };
+                                setSiteSettings({
+                                  ...siteSettings,
+                                  coursesPage: { ...curr, heroOverlayOpacity: Number(e.target.value) }
+                                });
+                              }}
+                              className="w-full accent-[#112734] cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[10px] text-[#8a817c] mt-0.5">
+                              <span>হালকা টিন্ট (১০%)</span>
+                              <span>স্ট্যান্ডার্ড ডিপ (৮০%)</span>
+                              <span>ঘন অন্ধকার (১০০%)</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -4020,9 +4122,18 @@ export default function AdminDashboardPage() {
                         {/* Mock Hero Container */}
                         {siteSettings.coursesPage?.heroImagePosition === 'background' && siteSettings.coursesPage?.showHeroImage !== false && siteSettings.coursesPage?.heroImage ? (
                           <div className="relative rounded-xl overflow-hidden p-4 text-white bg-[#112734] border border-[#23626F] shadow-sm">
+                            <img
+                              src={formatImageUrl(siteSettings.coursesPage?.heroImage)}
+                              alt="Courses Hero Preview"
+                              referrerPolicy="no-referrer"
+                              crossOrigin="anonymous"
+                              onError={(e) => handleImageError(e, siteSettings.coursesPage?.heroImage)}
+                              style={{ opacity: (siteSettings.coursesPage?.heroImageOpacity ?? 35) / 100 }}
+                              className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity"
+                            />
                             <div 
-                              className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-35"
-                              style={{ backgroundImage: `url(${siteSettings.coursesPage?.heroImage})` }}
+                              className="absolute inset-0 bg-gradient-to-t from-[#112734] via-[#112734]/80 to-[#112734]/60 pointer-events-none transition-opacity" 
+                              style={{ opacity: (siteSettings.coursesPage?.heroOverlayOpacity ?? 80) / 100 }}
                             />
                             <div className="relative z-10 space-y-2">
                               <span className="inline-block px-2 py-0.5 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-[9px] font-bold border border-[#17A2B8]/40">
@@ -4052,8 +4163,11 @@ export default function AdminDashboardPage() {
                               </div>
                               <div className="w-24 h-16 rounded-lg overflow-hidden border border-[#ece8e0] shrink-0 bg-slate-100">
                                 <img
-                                  src={siteSettings.coursesPage?.heroImage}
+                                  src={formatImageUrl(siteSettings.coursesPage?.heroImage)}
                                   alt="Course Hero Preview"
+                                  referrerPolicy="no-referrer"
+                                  crossOrigin="anonymous"
+                                  onError={(e) => handleImageError(e, siteSettings.coursesPage?.heroImage)}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
@@ -4246,8 +4360,11 @@ export default function AdminDashboardPage() {
                             <div className="flex items-center gap-2.5">
                               <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#ece8e0] bg-slate-100 shrink-0">
                                 <img
-                                  src={siteSettings.booksPage.heroImage}
+                                  src={formatImageUrl(siteSettings.booksPage.heroImage)}
                                   alt="Books Hero Banner"
+                                  referrerPolicy="no-referrer"
+                                  crossOrigin="anonymous"
+                                  onError={(e) => handleImageError(e, siteSettings.booksPage?.heroImage)}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
@@ -4357,6 +4474,84 @@ export default function AdminDashboardPage() {
                                 {pos.label}
                               </button>
                             ))}
+                          </div>
+                        </div>
+
+                        {/* Banner Opacity & Dark Overlay Transparency Controls */}
+                        <div className="pt-3 border-t border-[#ece8e0]/70 space-y-3 bg-[#fdfcf9] p-3 rounded-xl border border-amber-200/60">
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[11px] font-bold text-[#2c3e50] flex items-center gap-1.5">
+                                <Sliders size={13} className="text-amber-600" />
+                                <span>ব্যানার ছবির স্বচ্ছতা/দৃশ্যমানতা (Image Opacity): {siteSettings.booksPage?.heroImageOpacity ?? 35}%</span>
+                              </label>
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                                {siteSettings.booksPage?.heroImageOpacity ?? 35}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={5}
+                              max={100}
+                              step={5}
+                              value={siteSettings.booksPage?.heroImageOpacity ?? 35}
+                              onChange={(e) => {
+                                const curr = siteSettings.booksPage || {
+                                  badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                  titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                  subtitleBn: '',
+                                  heroImage: ''
+                                };
+                                setSiteSettings({
+                                  ...siteSettings,
+                                  booksPage: { ...curr, heroImageOpacity: Number(e.target.value) }
+                                });
+                              }}
+                              className="w-full accent-[#112734] cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[10px] text-[#8a817c] mt-0.5">
+                              <span>সূক্ষ্ম আবছা (৫%)</span>
+                              <span>প্রস্তাবিত ব্যালেন্স (৩৫%)</span>
+                              <span>সম্পূর্ণ স্পষ্ট (১০০%)</span>
+                            </div>
+                          </div>
+
+                          {/* Dark Overlay Gradient Slider */}
+                          <div className="pt-2 border-t border-dashed border-[#ece8e0]">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[11px] font-bold text-[#2c3e50] flex items-center gap-1.5">
+                                <Sparkles size={13} className="text-amber-600" />
+                                <span>ডার্ক কালার ওভারলে তীব্রতা (Dark Gradient Tint): {siteSettings.booksPage?.heroOverlayOpacity ?? 80}%</span>
+                              </label>
+                              <span className="text-[10px] font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-[#ece8e0]">
+                                {siteSettings.booksPage?.heroOverlayOpacity ?? 80}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={10}
+                              max={100}
+                              step={5}
+                              value={siteSettings.booksPage?.heroOverlayOpacity ?? 80}
+                              onChange={(e) => {
+                                const curr = siteSettings.booksPage || {
+                                  badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                  titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
+                                  subtitleBn: '',
+                                  heroImage: ''
+                                };
+                                setSiteSettings({
+                                  ...siteSettings,
+                                  booksPage: { ...curr, heroOverlayOpacity: Number(e.target.value) }
+                                });
+                              }}
+                              className="w-full accent-[#112734] cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[10px] text-[#8a817c] mt-0.5">
+                              <span>হালকা টিন্ট (১০%)</span>
+                              <span>স্ট্যান্ডার্ড ডিপ (৮০%)</span>
+                              <span>ঘন অন্ধকার (১০০%)</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -4623,13 +4818,25 @@ export default function AdminDashboardPage() {
                         <div className="p-4 bg-gradient-to-b from-[#f8f9fa] to-white relative overflow-hidden space-y-3.5">
                           {/* Background image preview if background mode */}
                           {siteSettings.booksPage?.heroImage && siteSettings.booksPage?.heroImagePosition === 'background' && siteSettings.booksPage?.showHeroImage !== false && (
-                            <div className="absolute inset-0 opacity-15 pointer-events-none">
+                            <div 
+                              className="absolute inset-0 pointer-events-none transition-opacity"
+                              style={{ opacity: (siteSettings.booksPage?.heroImageOpacity ?? 35) / 100 }}
+                            >
                               <img
-                                src={siteSettings.booksPage.heroImage}
+                                src={formatImageUrl(siteSettings.booksPage.heroImage)}
                                 alt="bg"
+                                referrerPolicy="no-referrer"
+                                crossOrigin="anonymous"
+                                onError={(e) => handleImageError(e, siteSettings.booksPage?.heroImage)}
                                 className="w-full h-full object-cover"
                               />
                             </div>
+                          )}
+                          {siteSettings.booksPage?.heroImage && siteSettings.booksPage?.heroImagePosition === 'background' && siteSettings.booksPage?.showHeroImage !== false && (
+                            <div 
+                              className="absolute inset-0 bg-[#112734] pointer-events-none transition-opacity"
+                              style={{ opacity: (siteSettings.booksPage?.heroOverlayOpacity ?? 80) / 100 }}
+                            />
                           )}
 
                           {/* Top Badge */}
@@ -4670,8 +4877,11 @@ export default function AdminDashboardPage() {
                             {siteSettings.booksPage?.heroImage && siteSettings.booksPage?.showHeroImage !== false && siteSettings.booksPage?.heroImagePosition !== 'background' && (
                               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden border-2 border-white shadow-md bg-slate-100 shrink-0">
                                 <img
-                                  src={siteSettings.booksPage.heroImage}
+                                  src={formatImageUrl(siteSettings.booksPage.heroImage)}
                                   alt="Preview"
+                                  referrerPolicy="no-referrer"
+                                  crossOrigin="anonymous"
+                                  onError={(e) => handleImageError(e, siteSettings.booksPage?.heroImage)}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
@@ -4849,8 +5059,11 @@ export default function AdminDashboardPage() {
                             <div className="flex items-center gap-2.5">
                               <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#ece8e0] bg-slate-100 shrink-0">
                                 <img
-                                  src={siteSettings.fatwaPage.heroImage}
+                                  src={formatImageUrl(siteSettings.fatwaPage.heroImage)}
                                   alt="Fatwa Hero Banner"
+                                  referrerPolicy="no-referrer"
+                                  crossOrigin="anonymous"
+                                  onError={(e) => handleImageError(e, siteSettings.fatwaPage?.heroImage)}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
@@ -4970,6 +5183,84 @@ export default function AdminDashboardPage() {
                                 {pos.label}
                               </button>
                             ))}
+                          </div>
+                        </div>
+
+                        {/* Banner Opacity & Dark Overlay Transparency Controls */}
+                        <div className="pt-3 border-t border-[#ece8e0]/70 space-y-3 bg-[#f8faf7] p-3 rounded-xl border border-teal-200/70">
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[11px] font-bold text-[#2c3e50] flex items-center gap-1.5">
+                                <Sliders size={13} className="text-teal-600" />
+                                <span>ব্যানার ছবির স্বচ্ছতা/দৃশ্যমানতা (Image Opacity): {siteSettings.fatwaPage?.heroImageOpacity ?? 35}%</span>
+                              </label>
+                              <span className="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
+                                {siteSettings.fatwaPage?.heroImageOpacity ?? 35}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={5}
+                              max={100}
+                              step={5}
+                              value={siteSettings.fatwaPage?.heroImageOpacity ?? 35}
+                              onChange={(e) => {
+                                const curr = siteSettings.fatwaPage || {
+                                  badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                  titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                  subtitleBn: '',
+                                  heroImage: ''
+                                };
+                                setSiteSettings({
+                                  ...siteSettings,
+                                  fatwaPage: { ...curr, heroImageOpacity: Number(e.target.value) }
+                                });
+                              }}
+                              className="w-full accent-[#112734] cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[10px] text-[#8a817c] mt-0.5">
+                              <span>সূক্ষ্ম আবছা (৫%)</span>
+                              <span>প্রস্তাবিত ব্যালেন্স (৩৫%)</span>
+                              <span>সম্পূর্ণ স্পষ্ট (১০০%)</span>
+                            </div>
+                          </div>
+
+                          {/* Dark Overlay Gradient Slider */}
+                          <div className="pt-2 border-t border-dashed border-[#ece8e0]">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-[11px] font-bold text-[#2c3e50] flex items-center gap-1.5">
+                                <Sparkles size={13} className="text-teal-600" />
+                                <span>ডার্ক কালার ওভারলে তীব্রতা (Dark Gradient Tint): {siteSettings.fatwaPage?.heroOverlayOpacity ?? 80}%</span>
+                              </label>
+                              <span className="text-[10px] font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-[#ece8e0]">
+                                {siteSettings.fatwaPage?.heroOverlayOpacity ?? 80}%
+                              </span>
+                            </div>
+                            <input
+                              type="range"
+                              min={10}
+                              max={100}
+                              step={5}
+                              value={siteSettings.fatwaPage?.heroOverlayOpacity ?? 80}
+                              onChange={(e) => {
+                                const curr = siteSettings.fatwaPage || {
+                                  badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                  titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
+                                  subtitleBn: '',
+                                  heroImage: ''
+                                };
+                                setSiteSettings({
+                                  ...siteSettings,
+                                  fatwaPage: { ...curr, heroOverlayOpacity: Number(e.target.value) }
+                                });
+                              }}
+                              className="w-full accent-[#112734] cursor-pointer"
+                            />
+                            <div className="flex justify-between text-[10px] text-[#8a817c] mt-0.5">
+                              <span>হালকা টিন্ট (১০%)</span>
+                              <span>স্ট্যান্ডার্ড ডিপ (৮০%)</span>
+                              <span>ঘন অন্ধকার (১০০%)</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -5294,12 +5585,20 @@ export default function AdminDashboardPage() {
 
                         {/* Hero Section Preview Rendering */}
                         {siteSettings.fatwaPage?.heroImagePosition === 'background' && siteSettings.fatwaPage?.showHeroImage !== false && siteSettings.fatwaPage?.heroImage ? (
-                          <div className="relative rounded-2xl overflow-hidden min-h-[160px] p-5 flex items-center justify-center text-center shadow-inner border border-[#23626F]">
-                            <div
-                              className="absolute inset-0 bg-cover bg-center"
-                              style={{ backgroundImage: `url(${siteSettings.fatwaPage.heroImage})` }}
+                          <div className="relative rounded-2xl overflow-hidden min-h-[160px] p-5 flex items-center justify-center text-center shadow-inner border border-[#23626F] bg-[#112734]">
+                            <img
+                              src={formatImageUrl(siteSettings.fatwaPage?.heroImage)}
+                              alt="Fatwa Hero Preview"
+                              referrerPolicy="no-referrer"
+                              crossOrigin="anonymous"
+                              onError={(e) => handleImageError(e, siteSettings.fatwaPage?.heroImage)}
+                              style={{ opacity: (siteSettings.fatwaPage?.heroImageOpacity ?? 35) / 100 }}
+                              className="absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/70 to-slate-950/80" />
+                            <div 
+                              className="absolute inset-0 bg-gradient-to-t from-[#112734] via-[#112734]/80 to-[#112734]/60 pointer-events-none transition-opacity" 
+                              style={{ opacity: (siteSettings.fatwaPage?.heroOverlayOpacity ?? 80) / 100 }}
+                            />
                             
                             <div className="relative z-10 space-y-2">
                               <span className="inline-block px-2 py-0.5 rounded-full bg-teal-400/20 text-teal-300 text-[9px] font-bold border border-teal-400/40">
@@ -5329,8 +5628,11 @@ export default function AdminDashboardPage() {
                               </div>
                               <div className="w-24 h-16 rounded-lg overflow-hidden border border-[#ece8e0] shrink-0 bg-slate-100">
                                 <img
-                                  src={siteSettings.fatwaPage?.heroImage}
+                                  src={formatImageUrl(siteSettings.fatwaPage?.heroImage)}
                                   alt="Fatwa Hero Preview"
+                                  referrerPolicy="no-referrer"
+                                  crossOrigin="anonymous"
+                                  onError={(e) => handleImageError(e, siteSettings.fatwaPage?.heroImage)}
                                   className="w-full h-full object-cover"
                                 />
                               </div>
@@ -5616,6 +5918,24 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <div className="space-y-4 text-xs">
+                    {/* Badge */}
+                    <div>
+                      <label className="block font-bold text-[#2c3e50] mb-1">শীর্ষ ব্যাজ টেক্সট (Top Badge)</label>
+                      <input
+                        type="text"
+                        value={siteSettings.aboutPage?.badgeText || ''}
+                        onChange={(e) => {
+                          const currentAbout = siteSettings.aboutPage || { titleBn: '', subtitleBn: '', cards: [] };
+                          setSiteSettings({
+                            ...siteSettings,
+                            aboutPage: { ...currentAbout, badgeText: e.target.value }
+                          });
+                        }}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0]"
+                        placeholder="যেমন: নূর ফিকহ একাডেমি পরিচিতি • NOOR FIQH ACADEMY"
+                      />
+                    </div>
+
                     <div>
                       <label className="block font-bold text-[#2c3e50] mb-1">পরিচিতি পেজ হিরো শিরোনাম (Title)</label>
                       <input
@@ -5648,6 +5968,152 @@ export default function AdminDashboardPage() {
                         className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0]"
                         placeholder="বিস্তারিত বর্ণনা..."
                       />
+                    </div>
+
+                    {/* Hero Image Settings for About Page */}
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-[#ece8e0] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[#112734] flex items-center gap-1.5">
+                          <ImageIcon size={14} className="text-[#0f8293]" />
+                          <span>পরিচিতি পেজ হিরো ব্যানার বা ছবি (Hero Image)</span>
+                        </span>
+                        <label className="flex items-center gap-2 cursor-pointer text-[11px] font-bold text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={siteSettings.aboutPage?.showHeroImage !== false}
+                            onChange={(e) => {
+                              const currentAbout = siteSettings.aboutPage || { titleBn: '', subtitleBn: '', cards: [] };
+                              setSiteSettings({
+                                ...siteSettings,
+                                aboutPage: { ...currentAbout, showHeroImage: e.target.checked }
+                              });
+                            }}
+                            className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                          />
+                          <span>ছবি প্রদর্শন করুন</span>
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* Direct Upload */}
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">কম্পিউটার/মোবাইল থেকে আপলোড</label>
+                          <label className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-white border border-dashed border-[#ece8e0] hover:border-teal-500 rounded-xl cursor-pointer text-xs text-slate-600 transition-colors">
+                            <Upload size={14} className="text-teal-600" />
+                            <span>ছবি আপলোড করুন</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    const result = reader.result as string;
+                                    if (result) {
+                                      const currentAbout = siteSettings.aboutPage || { titleBn: '', subtitleBn: '', cards: [] };
+                                      setSiteSettings({
+                                        ...siteSettings,
+                                        aboutPage: { ...currentAbout, heroImage: result, showHeroImage: true }
+                                      });
+                                    }
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+
+                        {/* Image URL / Google Drive */}
+                        <div>
+                          <label className="block text-[11px] font-semibold text-[#5a524d] mb-1">অথবা ইমেজ ইউআরএল বা গুগল ড্রাইভ লিংক</label>
+                          <input
+                            type="text"
+                            placeholder="https://drive.google.com/... বা https://example.com/image.jpg"
+                            value={siteSettings.aboutPage?.heroImage || ''}
+                            onChange={(e) => {
+                              const currentAbout = siteSettings.aboutPage || { titleBn: '', subtitleBn: '', cards: [] };
+                              setSiteSettings({
+                                ...siteSettings,
+                                aboutPage: { ...currentAbout, heroImage: e.target.value }
+                              });
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] focus:outline-none focus:border-teal-600 text-xs font-mono bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Image Preview */}
+                      {siteSettings.aboutPage?.heroImage && (
+                        <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-[#ece8e0]">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#ece8e0] bg-slate-100 shrink-0">
+                              <img
+                                src={formatImageUrl(siteSettings.aboutPage.heroImage)}
+                                alt="About Hero Banner"
+                                referrerPolicy="no-referrer"
+                                crossOrigin="anonymous"
+                                onError={(e) => handleImageError(e, siteSettings.aboutPage?.heroImage)}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div>
+                              <span className="block font-bold text-slate-800 text-[11px]">বর্তমান ছবি</span>
+                              <span className="block text-[10px] text-slate-400 truncate max-w-[200px] sm:max-w-xs font-mono">
+                                {siteSettings.aboutPage.heroImage}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentAbout = siteSettings.aboutPage || { titleBn: '', subtitleBn: '', cards: [] };
+                              setSiteSettings({
+                                ...siteSettings,
+                                aboutPage: { ...currentAbout, heroImage: '' }
+                              });
+                            }}
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors font-bold flex items-center gap-1 text-[11px]"
+                          >
+                            <Trash2 size={13} />
+                            <span>মুছুন</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Layout Position */}
+                      <div className="pt-2 border-t border-[#ece8e0]/70">
+                        <label className="block text-[11px] font-bold text-[#5a524d] mb-1.5">ছবির অবস্থান (Position)</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { id: 'right', label: 'ডান পাশে ছবি (Right)' },
+                            { id: 'left', label: 'বাম পাশে ছবি (Left)' },
+                            { id: 'background', label: 'ব্যাকগ্রাউন্ড ব্যানার (Full)' }
+                          ].map((pos) => (
+                            <button
+                              key={pos.id}
+                              type="button"
+                              onClick={() => {
+                                const currentAbout = siteSettings.aboutPage || { titleBn: '', subtitleBn: '', cards: [] };
+                                setSiteSettings({
+                                  ...siteSettings,
+                                  aboutPage: { ...currentAbout, heroImagePosition: pos.id as any }
+                                });
+                              }}
+                              className={`py-2 px-2.5 rounded-xl text-[11px] font-bold transition-all text-center ${
+                                (siteSettings.aboutPage?.heroImagePosition || 'right') === pos.id
+                                  ? 'bg-[#112734] text-white shadow-sm'
+                                  : 'bg-white text-slate-700 border border-[#ece8e0] hover:bg-slate-50'
+                              }`}
+                            >
+                              {pos.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="space-y-3 pt-2">
@@ -6320,8 +6786,11 @@ export default function AdminDashboardPage() {
                           <div className="relative">
                             <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[#17A2B8]/20 shadow-inner bg-slate-50">
                               <img
-                                src={member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80'}
+                                src={formatImageUrl(member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80')}
                                 alt={member.nameBn || member.name}
+                                referrerPolicy="no-referrer"
+                                crossOrigin="anonymous"
+                                onError={(e) => handleImageError(e, member.avatar)}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                               />
                             </div>
@@ -7593,8 +8062,11 @@ function FacultyEditorModal({ faculty, isNew, onClose, onSave }: FacultyEditorMo
           <div className="bg-[#fdfcf9] p-4 rounded-2xl border border-[#ece8e0] flex flex-col sm:flex-row items-center gap-5">
             <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-[#17A2B8] bg-white shrink-0 shadow-inner">
               <img
-                src={formData.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'}
+                src={formatImageUrl(formData.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80')}
                 alt="Avatar preview"
+                referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
+                onError={(e) => handleImageError(e, formData.avatar)}
                 className="w-full h-full object-cover"
               />
             </div>

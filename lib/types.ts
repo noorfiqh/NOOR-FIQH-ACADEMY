@@ -257,8 +257,17 @@ export interface AboutCard {
 }
 
 export interface AboutPageSettings {
+  badgeText?: string;
   titleBn: string;
   subtitleBn: string;
+  heroImage?: string;
+  showHeroImage?: boolean;
+  heroImagePosition?: 'right' | 'left' | 'top' | 'background';
+  heroImageOpacity?: number;
+  heroOverlayOpacity?: number;
+  highlight1?: string;
+  highlight2?: string;
+  highlight3?: string;
   cards: AboutCard[];
 }
 
@@ -280,6 +289,8 @@ export interface CoursesPageSettings {
   heroImage?: string;
   showHeroImage?: boolean;
   heroImagePosition?: 'right' | 'left' | 'top' | 'background';
+  heroImageOpacity?: number;
+  heroOverlayOpacity?: number;
   heroBgGradient?: string;
   searchPlaceholder?: string;
   highlight1?: string;
@@ -294,6 +305,8 @@ export interface FatwaPageSettings {
   heroImage?: string;
   showHeroImage?: boolean;
   heroImagePosition?: 'right' | 'left' | 'top' | 'background';
+  heroImageOpacity?: number;
+  heroOverlayOpacity?: number;
   searchPlaceholder?: string;
   highlight1?: string;
   highlight2?: string;
@@ -313,6 +326,8 @@ export interface BooksPageSettings {
   heroImage?: string;
   showHeroImage?: boolean;
   heroImagePosition?: 'right' | 'left' | 'top' | 'background';
+  heroImageOpacity?: number;
+  heroOverlayOpacity?: number;
   searchPlaceholder?: string;
   highlight1?: string;
   highlight2?: string;

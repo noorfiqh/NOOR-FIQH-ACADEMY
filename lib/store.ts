@@ -177,6 +177,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     heroImage: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80',
     showHeroImage: true,
     heroImagePosition: 'right',
+    heroImageOpacity: 35,
+    heroOverlayOpacity: 80,
     searchPlaceholder: 'কোর্সের নাম বা বিষয় খুঁজুন...',
     highlight1: 'সহিহ সুন্নাহ ও দলীলভিত্তিক পাঠ্যক্রম',
     highlight2: 'অভিজ্ঞ মুফতী ও স্কলারদের সরাসরি তত্ত্বাবধান',
@@ -189,6 +191,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     heroImage: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1200&q=80',
     showHeroImage: true,
     heroImagePosition: 'right',
+    heroImageOpacity: 35,
+    heroOverlayOpacity: 80,
     searchPlaceholder: 'কিতাবের নাম বা লেখক দিয়ে খুঁজুন...',
     highlight1: 'দারুল ইফতা অনুমোদিত নির্ভরযোগ্য পাণ্ডুলিপি',
     highlight2: 'সারাদেশে হোম ডেলিভারি ও দ্রুত পিডিএফ ডাউনলোড',
@@ -203,6 +207,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     heroImage: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80',
     showHeroImage: true,
     heroImagePosition: 'right',
+    heroImageOpacity: 35,
+    heroOverlayOpacity: 80,
     searchPlaceholder: 'ফতোয়া বা মাসআলা খুঁজুন...',
     highlight1: 'প্রামাণ্য ফিকহী কিতাব ও দলীলভিত্তিক সমাধান',
     highlight2: 'অভিজ্ঞ মুফতী বোর্ডের সরাসরি তত্ত্বাবধান',
@@ -218,6 +224,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   aboutPage: {
     titleBn: 'সহিহ সুন্নাহ ও নির্ভরযোগ্য ফিকহের আলোকবর্তিকা',
     subtitleBn: 'নূর ফিকহ একাডেমি অনলাইনে বিশুদ্ধ ইসলামী জ্ঞান বা \'ফরজে আইন ইলম\' অর্জনের একটি নির্ভরযোগ্য ও বিশ্বস্ত প্রতিষ্ঠান। বর্তমান ব্যস্ততার যুগে সর্বস্তরের মুসলিমদের জন্য ঘরে বসেেই শরীয়তের প্রয়োজনীয় জ্ঞান অর্জনের পথকে সুগম করার মহান ব্রত নিয়ে এই একাডেমির যাত্রা শুরু হয়েছে। প্রখ্যাত ইসলামী স্কলার মুফতী আম্মার বিন নূর-এর সুদক্ষ পরিচালনা ও প্রত্যক্ষ তত্ত্বাবধানে একাডেমিটি পরিচালিত হচ্ছে।\n\nআমরা বিশ্বাস করি, বিশুদ্ধ জ্ঞানই হলো আমলের পূর্বশর্ত। তাই কুরআন, সুন্নাহ এবং ফিকহী মাসায়েলের সঠিক ও নির্ভুল শিক্ষা অত্যন্ত সহজ ও সাবলীলভাবে সাধারণ মানুষের দোরগোড়ায় পৌঁছে দেওয়াই আমাদের মূল লক্ষ্য।',
+    heroImageOpacity: 35,
+    heroOverlayOpacity: 80,
     cards: [
       {
         id: 'card-1',
@@ -1164,6 +1172,18 @@ export const AppStore = {
     if (settings.heroCard) {
       settings.heroCard.iconImage = formatImageUrl(settings.heroCard.iconImage);
     }
+    if (settings.coursesPage) {
+      settings.coursesPage.heroImage = formatImageUrl(settings.coursesPage.heroImage);
+    }
+    if (settings.booksPage) {
+      settings.booksPage.heroImage = formatImageUrl(settings.booksPage.heroImage);
+    }
+    if (settings.fatwaPage) {
+      settings.fatwaPage.heroImage = formatImageUrl(settings.fatwaPage.heroImage);
+    }
+    if (settings.aboutPage) {
+      settings.aboutPage.heroImage = formatImageUrl(settings.aboutPage.heroImage);
+    }
     if (!settings.courseCategories || settings.courseCategories.length === 0) {
       settings.courseCategories = DEFAULT_COURSE_CATEGORIES;
     }
@@ -1188,7 +1208,23 @@ export const AppStore = {
       heroCard: settings.heroCard ? {
         ...settings.heroCard,
         iconImage: formatImageUrl(settings.heroCard.iconImage)
-      } : settings.heroCard
+      } : settings.heroCard,
+      coursesPage: settings.coursesPage ? {
+        ...settings.coursesPage,
+        heroImage: formatImageUrl(settings.coursesPage.heroImage)
+      } : settings.coursesPage,
+      booksPage: settings.booksPage ? {
+        ...settings.booksPage,
+        heroImage: formatImageUrl(settings.booksPage.heroImage)
+      } : settings.booksPage,
+      fatwaPage: settings.fatwaPage ? {
+        ...settings.fatwaPage,
+        heroImage: formatImageUrl(settings.fatwaPage.heroImage)
+      } : settings.fatwaPage,
+      aboutPage: settings.aboutPage ? {
+        ...settings.aboutPage,
+        heroImage: formatImageUrl(settings.aboutPage.heroImage)
+      } : settings.aboutPage
     };
     setLocal(STORAGE_KEYS.SETTINGS, formatted);
     if (typeof window !== 'undefined') {
