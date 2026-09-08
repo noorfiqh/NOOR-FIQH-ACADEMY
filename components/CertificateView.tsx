@@ -159,7 +159,7 @@ export function CertificateView({
         const img = new Image();
         if (crossOrigin) img.crossOrigin = crossOrigin;
         img.onload = () => resolve(img);
-        img.onerror = (err) => reject(err);
+        img.onerror = () => reject(new Error(`Failed to load image: ${imgSrc}`));
         img.src = imgSrc;
       });
     };

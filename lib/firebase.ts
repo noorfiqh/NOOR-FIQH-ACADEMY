@@ -21,8 +21,7 @@ import {
   collection, 
   query, 
   where, 
-  onSnapshot, 
-  getDocFromServer 
+  onSnapshot 
 } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -105,10 +104,4 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   return errInfo;
 }
 
-// Validate connection on boot
-if (typeof window !== 'undefined') {
-  getDocFromServer(doc(db, 'test', 'connection')).catch(() => {
-    // Non-blocking connection check
-  });
-}
 

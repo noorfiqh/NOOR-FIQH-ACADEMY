@@ -75,8 +75,20 @@ export function formatImageUrl(url?: string): string {
 }
 
 export function handleImageError(e: React.SyntheticEvent<HTMLImageElement, Event>, originalUrl?: string) {
+  try {
+    e.stopPropagation();
+    e.preventDefault();
+  } catch {
+    // Ignore synthetic event errors
+  }
+
   const target = e.currentTarget;
   if (!target) return;
+
+  // Prevent infinite loops if fallback fails
+  if (target.dataset.fallbackApplied === 'true') {
+    return;
+  }
 
   const currentSrc = target.src || '';
   const gdriveId = extractGoogleDriveId(originalUrl || currentSrc);
@@ -92,4 +104,8 @@ export function handleImageError(e: React.SyntheticEvent<HTMLImageElement, Event
       return;
     }
   }
+
+  // Set fallback flag and apply clean neutral placeholder SVG
+  target.dataset.fallbackApplied = 'true';
+  target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23f1f5f9" width="100" height="100"/><text fill="%2394a3b8" x="50" y="55" font-family="sans-serif" font-size="12" text-anchor="middle">No Image</text></svg>';
 }
