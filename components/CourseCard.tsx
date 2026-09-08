@@ -87,7 +87,7 @@ export function CourseCard({ course, onEnroll }: CourseCardProps) {
 
       {/* Body Content */}
       <div className="p-5 flex flex-col flex-grow">
-        <Link href={`/courses/${course.id}`} className="group-hover:text-[#112734] transition-colors">
+        <Link href={`/courses/detail?id=${encodeURIComponent(course.id)}`} className="group-hover:text-[#112734] transition-colors">
           <h3 className="font-extrabold text-base sm:text-lg text-[#112734] leading-snug line-clamp-2 mb-1.5 font-anek">
             {course.titleBn || course.title}
           </h3>
@@ -117,7 +117,7 @@ export function CourseCard({ course, onEnroll }: CourseCardProps) {
         {/* Action Buttons: বিস্তারিত & আবেদন করুন */}
         <div className="grid grid-cols-2 gap-2.5">
           <Link
-            href={`/courses/${course.id}`}
+            href={`/courses/detail?id=${encodeURIComponent(course.id)}`}
             className="w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm text-[#112734] bg-[#e6f7f2] hover:bg-[#d2f3e7] text-center border border-[#17A2B8]/30/80 transition-all font-tiro shadow-xs flex items-center justify-center"
           >
             বিস্তারিত
@@ -133,7 +133,7 @@ export function CourseCard({ course, onEnroll }: CourseCardProps) {
             </button>
           ) : (
             <Link
-              href={`/courses/${course.id}`}
+              href={`/courses/detail?id=${encodeURIComponent(course.id)}`}
               className="w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm text-white bg-[#112734] hover:bg-[#23626F] text-center shadow-md transition-all font-tiro flex items-center justify-center"
             >
               আবেদন করুন

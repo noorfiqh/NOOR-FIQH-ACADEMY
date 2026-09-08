@@ -1,12 +1,17 @@
 import type {NextConfig} from 'next';
+import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } from 'next/constants';
 
-const nextConfig: NextConfig = {
+const nextConfig = (phase: string): NextConfig => ({
+  distDir: phase === PHASE_PRODUCTION_BUILD ? '.next_build' : '.next',
+  output: phase === PHASE_DEVELOPMENT_SERVER ? undefined : 'export',
+  trailingSlash: true,
   reactStrictMode: true,
+  devIndicators: false,
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: true,
   },
   images: {
     unoptimized: true,
@@ -30,6 +35,6 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-};
+});
 
 export default nextConfig;

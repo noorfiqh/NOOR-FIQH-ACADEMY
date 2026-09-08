@@ -363,15 +363,56 @@ function setLocal<T>(key: string, value: T): void {
   }
 }
 
+const DELETED_COURSES_KEY = 'nfa_deleted_course_ids';
+
+function getDeletedCourseIds(): string[] {
+  return getLocal<string[]>(DELETED_COURSES_KEY, []);
+}
+
+function addDeletedCourseId(id: string): void {
+  const ids = getDeletedCourseIds();
+  if (!ids.includes(id)) {
+    ids.push(id);
+    setLocal(DELETED_COURSES_KEY, ids);
+  }
+}
+
+function removeDeletedCourseId(id: string): void {
+  const ids = getDeletedCourseIds().filter(x => x !== id);
+  setLocal(DELETED_COURSES_KEY, ids);
+}
+
+const DELETED_BOOKS_KEY = 'nfa_deleted_book_ids';
+
+function getDeletedBookIds(): string[] {
+  return getLocal<string[]>(DELETED_BOOKS_KEY, []);
+}
+
+function addDeletedBookId(id: string): void {
+  const ids = getDeletedBookIds();
+  if (!ids.includes(id)) {
+    ids.push(id);
+    setLocal(DELETED_BOOKS_KEY, ids);
+  }
+}
+
+function removeDeletedBookId(id: string): void {
+  const ids = getDeletedBookIds().filter(x => x !== id);
+  setLocal(DELETED_BOOKS_KEY, ids);
+}
+
 export const AppStore = {
   // Courses
   getCourses: (): Course[] => {
+    const deletedIds = getDeletedCourseIds();
     const list = getLocal<Course[]>(STORAGE_KEYS.COURSES, INITIAL_COURSES);
-    return list.map(c => ({
-      ...c,
-      thumbnail: formatImageUrl(c.thumbnail),
-      instructor: c.instructor ? { ...c.instructor, avatar: formatImageUrl(c.instructor.avatar) } : c.instructor
-    }));
+    return list
+      .filter(c => !deletedIds.includes(c.id))
+      .map(c => ({
+        ...c,
+        thumbnail: formatImageUrl(c.thumbnail),
+        instructor: c.instructor ? { ...c.instructor, avatar: formatImageUrl(c.instructor.avatar) } : c.instructor
+      }));
   },
   getCourseById: (id: string): Course | undefined => {
     const courses = AppStore.getCourses();
@@ -383,6 +424,7 @@ export const AppStore = {
       thumbnail: formatImageUrl(course.thumbnail),
       instructor: course.instructor ? { ...course.instructor, avatar: formatImageUrl(course.instructor.avatar) } : course.instructor
     };
+    removeDeletedCourseId(formatted.id);
     const courses = AppStore.getCourses();
     const index = courses.findIndex(c => c.id === course.id);
     if (index >= 0) {
@@ -413,6 +455,7 @@ export const AppStore = {
       rating: courseData.rating || 4.9,
       totalStudents: courseData.totalStudents || 120
     };
+    removeDeletedCourseId(newCourse.id);
     courses.unshift(newCourse);
     setLocal(STORAGE_KEYS.COURSES, courses);
 
@@ -430,13 +473,15 @@ export const AppStore = {
     return newCourse;
   },
   deleteCourse: (id: string): void => {
-    const courses = AppStore.getCourses().filter(c => c.id !== id);
-    setLocal(STORAGE_KEYS.COURSES, courses);
+    addDeletedCourseId(id);
+    const currentCourses = getLocal<Course[]>(STORAGE_KEYS.COURSES, INITIAL_COURSES);
+    const filtered = currentCourses.filter(c => c.id !== id);
+    setLocal(STORAGE_KEYS.COURSES, filtered);
 
     if (typeof window !== 'undefined') {
       try {
         deleteDoc(doc(db, 'courses', id)).catch(err => {
-          handleFirestoreError(err, OperationType.DELETE, `courses/${id}`);
+          console.warn('Firestore delete error/skipped:', err);
         });
       } catch (err) {
         console.warn('Firestore course delete skipped:', err);
@@ -446,12 +491,15 @@ export const AppStore = {
 
   // Books
   getBooks: (): Book[] => {
+    const deletedIds = getDeletedBookIds();
     const list = getLocal<Book[]>(STORAGE_KEYS.BOOKS, INITIAL_BOOKS);
-    return list.map(b => ({
-      ...b,
-      coverImage: formatImageUrl(b.coverImage),
-      gallery: b.gallery?.map(g => formatImageUrl(g))
-    }));
+    return list
+      .filter(b => !deletedIds.includes(b.id))
+      .map(b => ({
+        ...b,
+        coverImage: formatImageUrl(b.coverImage),
+        gallery: b.gallery?.map(g => formatImageUrl(g))
+      }));
   },
   getBookById: (id: string): Book | undefined => {
     return AppStore.getBooks().find(b => b.id === id);
@@ -462,6 +510,7 @@ export const AppStore = {
       coverImage: formatImageUrl(book.coverImage),
       gallery: book.gallery?.map(g => formatImageUrl(g))
     };
+    removeDeletedBookId(formatted.id);
     const books = AppStore.getBooks();
     const index = books.findIndex(b => b.id === book.id);
     if (index >= 0) {
@@ -483,13 +532,14 @@ export const AppStore = {
     }
   },
   deleteBook: (id: string): void => {
-    const books = AppStore.getBooks().filter(b => b.id !== id);
+    addDeletedBookId(id);
+    const books = getLocal<Book[]>(STORAGE_KEYS.BOOKS, INITIAL_BOOKS).filter(b => b.id !== id);
     setLocal(STORAGE_KEYS.BOOKS, books);
 
     if (typeof window !== 'undefined') {
       try {
         deleteDoc(doc(db, 'books', id)).catch(err => {
-          handleFirestoreError(err, OperationType.DELETE, `books/${id}`);
+          console.warn('Firestore book delete error/skipped:', err);
         });
       } catch (err) {
         console.warn('Firestore book delete skipped:', err);
@@ -1325,14 +1375,15 @@ export const AppStore = {
       // 1. Courses Realtime Sync
       const unsubCourses = onSnapshot(collection(db, 'courses'), (snapshot) => {
         if (!snapshot.empty) {
+          const deletedIds = getDeletedCourseIds();
           const list: Course[] = [];
           snapshot.forEach((d) => {
-            list.push({ id: d.id, ...d.data() } as Course);
+            if (!deletedIds.includes(d.id)) {
+              list.push({ id: d.id, ...d.data() } as Course);
+            }
           });
-          if (list.length > 0) {
-            setLocal(STORAGE_KEYS.COURSES, list);
-            triggerLocalUpdate('noorfiqh_courses_updated', list);
-          }
+          setLocal(STORAGE_KEYS.COURSES, list);
+          triggerLocalUpdate('noorfiqh_courses_updated', list);
         }
       }, (err) => console.warn('Firestore courses sync error:', err));
       unsubs.push(unsubCourses);
@@ -1340,14 +1391,15 @@ export const AppStore = {
       // 2. Books Realtime Sync
       const unsubBooks = onSnapshot(collection(db, 'books'), (snapshot) => {
         if (!snapshot.empty) {
+          const deletedIds = getDeletedBookIds();
           const list: Book[] = [];
           snapshot.forEach((d) => {
-            list.push({ id: d.id, ...d.data() } as Book);
+            if (!deletedIds.includes(d.id)) {
+              list.push({ id: d.id, ...d.data() } as Book);
+            }
           });
-          if (list.length > 0) {
-            setLocal(STORAGE_KEYS.BOOKS, list);
-            triggerLocalUpdate('noorfiqh_books_updated', list);
-          }
+          setLocal(STORAGE_KEYS.BOOKS, list);
+          triggerLocalUpdate('noorfiqh_books_updated', list);
         }
       }, (err) => console.warn('Firestore books sync error:', err));
       unsubs.push(unsubBooks);

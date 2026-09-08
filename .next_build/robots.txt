@@ -1,0 +1,19 @@
+User-Agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /api/*
+Disallow: /private/*
+
+User-Agent: Googlebot
+Allow: /
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /api/*
+
+Host: https://noorfiqhacademy.com
+Sitemap: https://noorfiqhacademy.com/sitemap.xml

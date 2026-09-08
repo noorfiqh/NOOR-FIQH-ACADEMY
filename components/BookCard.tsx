@@ -41,7 +41,7 @@ export function BookCard({ book, onBuy }: BookCardProps) {
           <span className="text-[#8a817c] font-normal">• {book.pages} পৃষ্ঠা</span>
         </div>
 
-        <Link href={`/books/${book.id}`} className="group-hover:text-[#112734] transition-colors">
+        <Link href={`/books/detail?id=${encodeURIComponent(book.id)}`} className="group-hover:text-[#112734] transition-colors">
           <h3 className="font-extrabold text-base text-[#2c3e50] leading-snug line-clamp-2 mb-1">
             {book.titleBn || book.title}
           </h3>
@@ -75,7 +75,7 @@ export function BookCard({ book, onBuy }: BookCardProps) {
 
           <div className="flex gap-2 pt-1">
             <Link
-              href={`/books/${book.id}`}
+              href={`/books/detail?id=${encodeURIComponent(book.id)}`}
               className="font-tiro flex-1 py-2 text-center text-xs font-bold text-[#112734] bg-[#17A2B8]/10 hover:bg-[#17A2B8]/15 rounded-xl transition-colors border border-[#17A2B8]/30"
             >
               বিস্তারিত দেখুন

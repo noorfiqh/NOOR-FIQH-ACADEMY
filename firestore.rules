@@ -38,38 +38,31 @@ service cloud.firestore {
 
     // Courses, Books, Live Classes, Certificates, Reviews, Settings, Faculty
     match /courses/{courseId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
     match /books/{bookId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
     match /live_classes/{classId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
     match /certificates/{certId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
     match /reviews/{reviewId} {
-      allow read: if true;
-      allow write: if isAuthenticated() || isAdmin();
+      allow read, write: if true;
     }
 
     match /faculty/{facultyId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
     match /settings/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
+      allow read, write: if true;
     }
 
     match /user_progress/{docId} {

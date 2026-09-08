@@ -78,6 +78,7 @@ export default function AdminDashboardPage() {
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => AppStore.getSettings());
   const [usersList, setUsersList] = useState<UserProfile[]>(() => AppStore.getUsers());
   const [facultyList, setFacultyList] = useState<FacultyMember[]>(() => AppStore.getFaculty());
+  const [courseToDelete, setCourseToDelete] = useState<{ id: string; title: string } | null>(null);
 
   // Faculty Management State
   const [facultySearch, setFacultySearch] = useState('');
@@ -430,11 +431,14 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteCourse = (id: string, title: string) => {
-    if (confirm(`আপনি কি "${title}" কোর্সটি ডিলিট করতে চান?`)) {
-      AppStore.deleteCourse(id);
-      refreshAllData();
-      showNotification('কোর্সটি মুছে ফেলা হয়েছে');
-    }
+    setCourseToDelete({ id, title });
+  };
+
+  const confirmDeleteCourse = (id: string) => {
+    AppStore.deleteCourse(id);
+    setCourseToDelete(null);
+    refreshAllData();
+    showNotification('কোর্সটি সফলভাবে মুছে ফেলা হয়েছে');
   };
 
   // Book Save Handler
@@ -1079,6 +1083,42 @@ export default function AdminDashboardPage() {
                   onClose={() => setEditingCourse(null)}
                   onSave={handleSaveCourseSubmit}
                 />
+              )}
+
+              {/* COURSE DELETE CONFIRMATION MODAL */}
+              {courseToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                  <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-red-100 space-y-5 animate-in zoom-in-95">
+                    <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto shadow-inner border border-red-200">
+                      <Trash2 size={28} />
+                    </div>
+                    <div className="text-center space-y-2">
+                      <h3 className="text-xl font-black text-slate-900 font-anek">
+                        কোর্স মুছে ফেলার নিশ্চিতকরণ
+                      </h3>
+                      <p className="text-sm text-slate-600 font-tiro leading-relaxed">
+                        আপনি কি নিশ্চিত যে <span className="font-bold text-red-600">&quot;{courseToDelete.title}&quot;</span> কোর্সটি সম্পূর্ণ মুছে ফেলতে চান? এটি মুছে ফেললে ডাটাবেজ থেকেও স্থায়ীভাবে মুছে যাবে।
+                      </p>
+                    </div>
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setCourseToDelete(null)}
+                        className="flex-1 py-3 px-4 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                      >
+                        বাতিল
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => confirmDeleteCourse(courseToDelete.id)}
+                        className="flex-1 py-3 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition-colors shadow-lg shadow-red-200 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Trash2 size={16} />
+                        <span>হ্যাঁ, মুছে ফেলুন</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           )}

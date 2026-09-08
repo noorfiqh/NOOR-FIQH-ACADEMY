@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AppStore } from '@/lib/store';
 import { Book } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { PaymentModal } from '@/components/PaymentModal';
 import { formatImageUrl, handleImageError } from '@/lib/utils';
 import { 
@@ -26,16 +28,78 @@ interface BookDetailClientProps {
 
 export default function BookDetailClient({ id }: BookDetailClientProps) {
   const params = useParams();
-  const bookId = id || (params?.id as string);
+  const rawId = id || (params?.id as string);
+  
+  const [activeBookId, setActiveBookId] = useState<string>(() => {
+    if (rawId && rawId !== '[id]' && rawId !== '%5Bid%5D' && rawId !== 'detail') return rawId;
+    if (typeof window !== 'undefined') {
+      const sId = new URLSearchParams(window.location.search).get('id');
+      if (sId) return sId;
+      const pId = window.location.pathname.replace(/\/+$/, '').split('/').pop() || '';
+      if (pId && pId !== 'detail' && pId !== 'books') return pId;
+    }
+    return '';
+  });
+
+  useEffect(() => {
+    if (!activeBookId && typeof window !== 'undefined') {
+      const sId = new URLSearchParams(window.location.search).get('id');
+      const pId = window.location.pathname.replace(/\/+$/, '').split('/').pop() || '';
+      const fallbackId = sId || (pId && pId !== 'detail' && pId !== 'books' ? pId : '');
+      if (fallbackId) {
+        setActiveBookId(fallbackId);
+      }
+    }
+  }, [activeBookId]);
+
+  const bookId = activeBookId;
+
   const [book, setBook] = useState<Book | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    let isSubscribed = true;
     const current = AppStore.getBookById(bookId) || null;
     setBook(current);
-    setIsLoaded(true);
+
+    if (!current && bookId) {
+      setIsLoaded(false);
+      getDoc(doc(db, 'books', bookId)).then(docSnap => {
+        if (docSnap.exists() && isSubscribed) {
+          const fetched = { id: docSnap.id, ...docSnap.data() } as Book;
+          setBook(fetched);
+          AppStore.saveBook(fetched);
+        }
+      }).catch(err => {
+        console.warn('Direct firestore book fetch error:', err);
+      }).finally(() => {
+        if (isSubscribed) {
+          setIsLoaded(true);
+        }
+      });
+    } else {
+      setIsLoaded(true);
+    }
+
+    let unsubSnapshot: (() => void) | null = null;
+    if (bookId) {
+      try {
+        unsubSnapshot = onSnapshot(doc(db, 'books', bookId), (docSnap) => {
+          if (docSnap.exists() && isSubscribed) {
+            const liveBook = { id: docSnap.id, ...docSnap.data() } as Book;
+            setBook(liveBook);
+            AppStore.saveBook(liveBook);
+          }
+        }, (err) => {
+          console.warn('Book snapshot listener error:', err);
+        });
+      } catch (e) {
+        console.warn('Failed to attach book snapshot listener:', e);
+      }
+    }
 
     const handleUpdate = () => {
+      if (!isSubscribed) return;
       const updated = AppStore.getBookById(bookId) || null;
       setBook(updated);
     };
@@ -43,6 +107,8 @@ export default function BookDetailClient({ id }: BookDetailClientProps) {
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('noorfiqh_books_updated', handleUpdate);
     return () => {
+      isSubscribed = false;
+      if (unsubSnapshot) unsubSnapshot();
       window.removeEventListener('storage', handleUpdate);
       window.removeEventListener('noorfiqh_books_updated', handleUpdate);
     };

@@ -74,7 +74,31 @@ interface CourseDetailClientProps {
 export default function CourseDetailClient({ id }: CourseDetailClientProps) {
   const params = useParams();
   const router = useRouter();
-  const courseId = id || (params?.id as string);
+  const rawId = id || (params?.id as string);
+  
+  const [activeCourseId, setActiveCourseId] = useState<string>(() => {
+    if (rawId && rawId !== '[id]' && rawId !== '%5Bid%5D' && rawId !== 'detail') return rawId;
+    if (typeof window !== 'undefined') {
+      const sId = new URLSearchParams(window.location.search).get('id');
+      if (sId) return sId;
+      const pId = window.location.pathname.replace(/\/+$/, '').split('/').pop() || '';
+      if (pId && pId !== 'detail' && pId !== 'courses') return pId;
+    }
+    return '';
+  });
+
+  useEffect(() => {
+    if (!activeCourseId && typeof window !== 'undefined') {
+      const sId = new URLSearchParams(window.location.search).get('id');
+      const pId = window.location.pathname.replace(/\/+$/, '').split('/').pop() || '';
+      const fallbackId = sId || (pId && pId !== 'detail' && pId !== 'courses' ? pId : '');
+      if (fallbackId) {
+        setActiveCourseId(fallbackId);
+      }
+    }
+  }, [activeCourseId]);
+
+  const courseId = activeCourseId;
   
   const [course, setCourse] = useState<Course | null>(null);
   const [otherCourses, setOtherCourses] = useState<Course[]>([]);
@@ -91,7 +115,6 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
     const all = AppStore.getCourses();
     setCourse(currentCourse);
     setOtherCourses(all.filter(c => c.id !== courseId));
-    setIsLoaded(true);
 
     const settings = AppStore.getSettings();
     if (settings.faqs) {
@@ -100,6 +123,7 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
 
     // 2. Direct Firestore fallback if not in local store yet
     if (!currentCourse && courseId) {
+      setIsLoaded(false);
       getDoc(doc(db, 'courses', courseId)).then(docSnap => {
         if (docSnap.exists() && isSubscribed) {
           const fetched = { id: docSnap.id, ...docSnap.data() } as Course;
@@ -108,7 +132,13 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
         }
       }).catch(err => {
         console.warn('Direct firestore course fetch error:', err);
+      }).finally(() => {
+        if (isSubscribed) {
+          setIsLoaded(true);
+        }
       });
+    } else {
+      setIsLoaded(true);
     }
 
     // 3. Realtime snapshot listener for this course

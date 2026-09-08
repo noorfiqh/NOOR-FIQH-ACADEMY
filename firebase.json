@@ -30,6 +30,14 @@
     ],
     "rewrites": [
       {
+        "source": "/courses/**",
+        "destination": "/courses/detail/index.html"
+      },
+      {
+        "source": "/books/**",
+        "destination": "/books/detail/index.html"
+      },
+      {
         "source": "!@(/sitemap.xml|/robots.txt|/manifest.webmanifest|/favicon.ico|/icon.png)",
         "destination": "/index.html"
       }
