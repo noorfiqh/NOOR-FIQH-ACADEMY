@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3000",
-    "build": "cross-env NODE_ENV=production next build && rm -rf out && cp -r .next_build out",
+    "build": "cross-env NODE_ENV=production next build && node scripts/copy-build.mjs",
     "start": "next start",
     "lint": "eslint ."
   },
