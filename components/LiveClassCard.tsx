@@ -131,7 +131,7 @@ export function LiveClassCard({ liveClass, onSelectPayment }: LiveClassCardProps
           <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-center space-y-2">
             <div className="text-xs font-bold text-red-700 uppercase tracking-wider flex items-center justify-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-              {timeLeft.isLive ? '🔴 লাইভ ক্লাস শুরু হয়ে গেছে!' : 'লাইভ শুরু হতে বাকি রয়েছে:'}
+              {timeLeft.isLive ? '🔴 লাইভ ক্লাস শুরু হয়ে গেছে!' : 'লাইভ ক্লাস শুরু হতে বাকি রয়েছে:'}
             </div>
 
             {!timeLeft.isLive ? (

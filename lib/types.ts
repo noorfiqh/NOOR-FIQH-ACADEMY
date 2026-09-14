@@ -206,6 +206,9 @@ export interface SiteReview {
   rating: number;
   content: string;
   courseTitle?: string;
+  courseId?: string;
+  userId?: string;
+  userEmail?: string;
   createdAt?: string;
 }
 

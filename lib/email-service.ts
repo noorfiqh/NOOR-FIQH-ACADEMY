@@ -25,6 +25,7 @@ export function formatOrderForFormSubmit(order: Order, originUrl: string = ''): 
     bkash: 'বিকাশ (bKash Send Money)',
     nagad: 'নগদ (Nagad Send Money)',
     rocket: 'রকেট (Rocket Send Money)',
+    cellfin: 'সেলফিন (Cellfin Send Money)',
     card: 'অনলাইন কার্ড / গেটওয়ে',
     cod: 'ক্যাশ অন ডেলিভারি (COD)',
   };

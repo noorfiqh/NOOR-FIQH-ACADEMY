@@ -2,7 +2,6 @@ import type {NextConfig} from 'next';
 import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } from 'next/constants';
 
 const nextConfig = (phase: string): NextConfig => ({
-  distDir: phase === PHASE_PRODUCTION_BUILD ? '.next_build' : '.next',
   output: phase === PHASE_DEVELOPMENT_SERVER ? undefined : 'export',
   trailingSlash: true,
   reactStrictMode: true,

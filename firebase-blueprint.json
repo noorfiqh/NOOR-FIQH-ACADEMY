@@ -66,6 +66,11 @@
         "totalStudents": { "type": "number", "description": "Total enrolled students" },
         "hasCertificate": { "type": "boolean", "description": "Whether completion grants certificate" },
         "certificateTemplateUrl": { "type": "string", "description": "Custom certificate background URL" },
+        "objectives": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Learning objectives displayed in 'এই কোর্সে যা যা শিখবেন'"
+        },
         "status": { "type": "string", "enum": ["published", "draft"], "description": "Publish status" }
       },
       "required": ["id", "titleBn", "price"]

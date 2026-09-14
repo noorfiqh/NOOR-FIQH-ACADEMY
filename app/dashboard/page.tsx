@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { AppStore } from '@/lib/store';
-import { Course, Lesson, Order } from '@/lib/types';
+import { Course, Lesson, Order, SiteReview } from '@/lib/types';
 import { QuizModal } from '@/components/QuizModal';
 import { CertificateView } from '@/components/CertificateView';
 import { 
@@ -28,7 +28,11 @@ import {
   ExternalLink,
   CheckCircle,
   X,
-  Video
+  Video,
+  Star,
+  Send,
+  MessageSquare,
+  MapPin
 } from 'lucide-react';
 import { LiveClassCard } from '@/components/LiveClassCard';
 import { PaymentModal } from '@/components/PaymentModal';
@@ -38,7 +42,7 @@ import { db, collection, query, where, onSnapshot, handleFirestoreError, Operati
 
 export default function DashboardPage() {
   const { user, logout, login, loginWithGoogle } = useAuth();
-  const [activeTab, setActiveTab] = useState<'courses' | 'books' | 'orders' | 'certificates' | 'live_classes'>('courses');
+  const [activeTab, setActiveTab] = useState<'courses' | 'books' | 'orders' | 'certificates' | 'live_classes' | 'reviews'>('courses');
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showQuizModal, setShowQuizModal] = useState(false);
@@ -53,6 +57,17 @@ export default function DashboardPage() {
     certificateCopyUrl?: string;
     customPdfUrl?: string;
   } | null>(null);
+
+  // Review Modal State for enrolled courses
+  const [reviews, setReviews] = useState<SiteReview[]>(() => AppStore.getReviews());
+  const [reviewModalCourse, setReviewModalCourse] = useState<Course | null>(null);
+  const [reviewRating, setReviewRating] = useState<number>(5);
+  const [reviewHoverRating, setReviewHoverRating] = useState<number>(0);
+  const [reviewContent, setReviewContent] = useState<string>('');
+  const [reviewRole, setReviewRole] = useState<string>('কোর্স শিক্ষার্থী');
+  const [reviewLocation, setReviewLocation] = useState<string>('');
+  const [reviewSuccessMsg, setReviewSuccessMsg] = useState<string | null>(null);
+  const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false);
 
   // Sample quick login if not logged in
   const [loginEmail, setLoginEmail] = useState('');
@@ -109,6 +124,97 @@ export default function DashboardPage() {
       });
     }
   }, [user, orders]);
+
+  // Sync reviews with store
+  React.useEffect(() => {
+    const handleReviewsUpdate = () => {
+      setReviews(AppStore.getReviews());
+    };
+    window.addEventListener('noorfiqh_reviews_updated', handleReviewsUpdate);
+    window.addEventListener('storage', handleReviewsUpdate);
+    return () => {
+      window.removeEventListener('noorfiqh_reviews_updated', handleReviewsUpdate);
+      window.removeEventListener('storage', handleReviewsUpdate);
+    };
+  }, []);
+
+  const handleOpenReviewModal = (course: Course, existing?: SiteReview | null) => {
+    setReviewModalCourse(course);
+    setReviewSuccessMsg(null);
+    if (existing) {
+      setReviewRating(existing.rating || 5);
+      setReviewContent(existing.content || '');
+      setReviewRole(existing.role || 'কোর্স শিক্ষার্থী');
+      setReviewLocation(existing.location || '');
+    } else {
+      setReviewRating(5);
+      setReviewContent('');
+      setReviewRole('কোর্স শিক্ষার্থী');
+      setReviewLocation('');
+    }
+  };
+
+  const handleSaveReview = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!user) {
+      alert('অনুগ্রহ করে প্রথমে লগইন করুন');
+      return;
+    }
+    if (!reviewModalCourse) return;
+    if (!reviewContent.trim()) {
+      alert('অনুগ্রহ করে আপনার মূল্যবান মতামত বা অভিজ্ঞতা লিখুন');
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    try {
+      const existing = reviews.find(r => 
+        (r.userId === user.uid || (r.userEmail && r.userEmail.toLowerCase() === user.email.toLowerCase())) &&
+        (r.courseId === reviewModalCourse.id || (r.courseTitle && reviewModalCourse.titleBn && r.courseTitle.toLowerCase().includes(reviewModalCourse.titleBn.toLowerCase())))
+      );
+
+      const revId = existing ? existing.id : `rev-${Date.now()}`;
+      const newReview: SiteReview = {
+        id: revId,
+        name: user.name || 'শিক্ষার্থী',
+        nameBn: user.name || 'শিক্ষার্থী',
+        role: reviewRole.trim() || 'কোর্স শিক্ষার্থী',
+        location: reviewLocation.trim(),
+        rating: reviewRating,
+        content: reviewContent.trim(),
+        courseId: reviewModalCourse.id,
+        courseTitle: reviewModalCourse.titleBn,
+        userId: user.uid,
+        userEmail: user.email,
+        avatar: user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name || 'Student')}`,
+        createdAt: new Date().toLocaleDateString('bn-BD')
+      };
+
+      AppStore.saveReview(newReview);
+      setReviews(AppStore.getReviews());
+      setReviewSuccessMsg('মাশাআল্লাহ! আপনার কোর্স রিভিউ সফলভাবে সংরক্ষিত হয়েছে।');
+      setTimeout(() => {
+        setReviewSuccessMsg(null);
+        setReviewModalCourse(null);
+      }, 1500);
+    } catch (err) {
+      console.error('Failed to submit review:', err);
+      alert('রিভিউ সংরক্ষণ করতে সমস্যা হয়েছে, অনুগ্রহ করে আবার চেষ্টা করুন।');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const getRatingLabel = (stars: number) => {
+    switch (stars) {
+      case 5: return '৫/৫ - অসাধারণ ও সেরা অভিজ্ঞতা';
+      case 4: return '৪/৫ - খুব ভালো ও ফলপ্রসূ';
+      case 3: return '৩/৫ - সন্তোষজনক';
+      case 2: return '২/৫ - মোটামুটি মানের';
+      case 1: return '১/৫ - প্রত্যাশা অনুযায়ী নয়';
+      default: return `${stars}/৫`;
+    }
+  };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,6 +369,20 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const existingReview = reviews.find(r => 
+                  (r.userId === user.uid || (r.userEmail && r.userEmail.toLowerCase() === user.email.toLowerCase())) &&
+                  (r.courseId === selectedCourse.id || (r.courseTitle && selectedCourse.titleBn && r.courseTitle.toLowerCase().includes(selectedCourse.titleBn.toLowerCase())))
+                );
+                handleOpenReviewModal(selectedCourse, existingReview || null);
+              }}
+              className="px-3.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-400/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              title="এই কোর্সের জন্য রিভিউ লিখুন বা এডিট করুন"
+            >
+              <Star size={14} className="fill-amber-400 text-amber-400" />
+              <span>রিভিউ দিন ⭐</span>
+            </button>
             <button
               onClick={handleCompleteEntireCourse}
               className="px-3.5 py-1.5 bg-[#17A2B8] hover:bg-[#23626F] text-slate-950 hover:text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
@@ -528,6 +648,17 @@ export default function DashboardPage() {
             <Video size={14} />
             <span>লাইভ ক্লাস ({liveClasses.length})</span>
           </button>
+          <button
+            onClick={() => setActiveTab('reviews')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              activeTab === 'reviews'
+                ? 'bg-[#112734] text-white'
+                : 'bg-white text-[#5a524d] hover:bg-slate-50 border border-[#ece8e0]'
+            }`}
+          >
+            <Star size={14} className={activeTab === 'reviews' ? 'text-amber-400 fill-amber-400' : 'text-amber-500 fill-amber-500'} />
+            <span>আমার কোর্স রিভিউ ({reviews.filter(r => (r.userId === user.uid || (r.userEmail && r.userEmail.toLowerCase() === user.email.toLowerCase()))).length})</span>
+          </button>
         </div>
 
         {/* Tab 1: Enrolled Courses */}
@@ -683,6 +814,24 @@ export default function DashboardPage() {
                                 <span>সম্পূর্ণ চিহ্নিত করে সনদ নিন 🎓</span>
                               </button>
                             )}
+
+                            {/* Course Review Action Button */}
+                            {(() => {
+                              const existingReview = reviews.find(r => 
+                                (r.userId === user.uid || (r.userEmail && r.userEmail.toLowerCase() === user.email.toLowerCase())) &&
+                                (r.courseId === course.id || (r.courseTitle && course.titleBn && r.courseTitle.toLowerCase().includes(course.titleBn.toLowerCase())))
+                              );
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenReviewModal(course, existingReview || null)}
+                                  className="w-full py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                                >
+                                  <Star size={13} className="fill-amber-500 text-amber-500" />
+                                  <span>{existingReview ? 'আপনার কোর্স রিভিউ এডিট করুন' : 'কোর্স রিভিউ লিখুন ⭐'}</span>
+                                </button>
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -988,6 +1137,157 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Tab 6: My Course Reviews */}
+        {activeTab === 'reviews' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-extrabold text-lg sm:text-xl text-[#112734]">আমার কোর্স মূল্যায়ন ও রিভিউ</h3>
+                <p className="text-xs text-[#8a817c]">আপনার ভর্তিকৃত কোর্সসমূহের পর্যালোচনা লিখুন ও পূর্ববর্তী রিভিউ পরিচালনা করুন</p>
+              </div>
+            </div>
+
+            {/* List of Enrolled courses ready for review */}
+            <div className="bg-white p-6 rounded-3xl border border-[#ece8e0] card-natural-shadow space-y-4">
+              <h4 className="font-extrabold text-sm text-[#112734] flex items-center gap-2">
+                <Star size={16} className="text-amber-500 fill-amber-500" />
+                <span>ভর্তিকৃত কোর্সের তালিকা (যেখানে রিভিউ দিতে পারবেন)</span>
+              </h4>
+              {(() => {
+                const enrolledCourses = courses.filter(c => 
+                  orders.some(o => o.status === 'approved' && o.itemType === 'course' && o.itemId === c.id)
+                );
+
+                if (enrolledCourses.length === 0) {
+                  return (
+                    <div className="py-8 text-center bg-[#faf8f5] rounded-2xl border border-dashed border-[#ece8e0] space-y-2">
+                      <p className="text-xs text-[#8a817c]">আপনার এখনও কোনো অনুমোদিত কোর্স নেই। কোর্সে ভর্তি হয়ে রিভিউ দিতে পারবেন।</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {enrolledCourses.map(course => {
+                      const userRev = reviews.find(r => 
+                        (r.userId === user.uid || (r.userEmail && r.userEmail.toLowerCase() === user.email.toLowerCase())) &&
+                        (r.courseId === course.id || (r.courseTitle && course.titleBn && r.courseTitle.toLowerCase().includes(course.titleBn.toLowerCase())))
+                      );
+                      return (
+                        <div key={course.id} className="p-4 rounded-2xl bg-[#faf8f5] border border-[#ece8e0] flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <img
+                              src={formatImageUrl(course.thumbnail)}
+                              alt={course.titleBn}
+                              className="w-12 h-12 rounded-xl object-cover shrink-0 border border-[#ece8e0]"
+                            />
+                            <div className="min-w-0">
+                              <h5 className="font-extrabold text-xs text-[#112734] truncate">{course.titleBn}</h5>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {userRev ? (
+                                  <div className="flex items-center gap-1 text-amber-500 text-[11px]">
+                                    {[1, 2, 3, 4, 5].map(s => (
+                                      <Star key={s} size={11} className={s <= (userRev.rating || 5) ? 'fill-amber-500 text-amber-500' : 'text-slate-300'} />
+                                    ))}
+                                    <span className="text-[10px] text-emerald-700 font-bold ml-1">রিভিউ দিয়েছেন</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-[11px] text-[#8a817c]">এখনও রিভিউ দেওয়া হয়নি</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenReviewModal(course, userRev || null)}
+                            className="px-3.5 py-2 bg-[#112734] hover:bg-[#23626F] text-white rounded-xl text-xs font-bold shrink-0 transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+                          >
+                            <Star size={12} className="text-amber-400 fill-amber-400" />
+                            <span>{userRev ? 'এডিট করুন' : 'রিভিউ লিখুন'}</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* List of submitted reviews by user */}
+            <div className="space-y-4">
+              <h4 className="font-extrabold text-sm text-[#112734]">আপনার প্রদত্ত সকল রিভিউ</h4>
+              {(() => {
+                const userRevs = reviews.filter(r => (r.userId === user.uid || (r.userEmail && r.userEmail.toLowerCase() === user.email.toLowerCase())));
+                if (userRevs.length === 0) {
+                  return (
+                    <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-[#ece8e0] space-y-3">
+                      <Star size={36} className="mx-auto text-amber-300" />
+                      <p className="text-xs text-[#8a817c]">আপনি এখনও কোনো কোর্সের রিভিউ লিখেননি।</p>
+                      <p className="text-[11px] text-[#8a817c]">উপরের তালিকা থেকে আপনার কোর্সের জন্য মূল্যবান পর্যালোচনা লিখুন।</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {userRevs.map(rev => (
+                      <div key={rev.id} className="p-5 bg-white rounded-3xl border border-[#ece8e0] card-natural-shadow space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <span className="text-[10px] font-bold text-[#0f8293] bg-[#17A2B8]/10 px-2.5 py-0.5 rounded-full">
+                              {rev.courseTitle || 'ফিকহ কোর্স'}
+                            </span>
+                            <div className="flex items-center gap-1 text-amber-500 mt-1.5">
+                              {[1, 2, 3, 4, 5].map(s => (
+                                <Star key={s} size={13} className={s <= (rev.rating || 5) ? 'fill-amber-500 text-amber-500' : 'text-slate-200'} />
+                              ))}
+                              <span className="text-xs font-bold text-[#112734] ml-1">{rev.rating}/৫</span>
+                            </div>
+                          </div>
+                          {rev.createdAt && (
+                            <span className="text-[10px] text-[#8a817c]">{rev.createdAt}</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-[#5a524d] leading-relaxed bg-[#faf8f5] p-3 rounded-xl border border-[#ece8e0]">
+                          &ldquo;{rev.content}&rdquo;
+                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-[#ece8e0] text-xs">
+                          <span className="text-[11px] text-[#8a817c] flex items-center gap-1.5 flex-wrap">
+                            <span>পরিচিতি: {rev.role || 'কোর্স শিক্ষার্থী'}</span>
+                            {rev.location && (
+                              <span className="inline-flex items-center gap-0.5 text-[#0f8293] font-semibold">
+                                <MapPin size={11} />
+                                {rev.location}
+                              </span>
+                            )}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const targetCourse = courses.find(c => c.id === rev.courseId || (rev.courseTitle && c.titleBn && rev.courseTitle.includes(c.titleBn))) || null;
+                              if (targetCourse) {
+                                handleOpenReviewModal(targetCourse, rev);
+                              } else {
+                                handleOpenReviewModal({
+                                  id: rev.courseId || 'course',
+                                  titleBn: rev.courseTitle || 'ফিকহ কোর্স',
+                                  title: rev.courseTitle || 'Fiqh Course'
+                                } as Course, rev);
+                              }
+                            }}
+                            className="text-[#17A2B8] hover:text-[#112734] font-bold text-xs flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>এডিট করুন</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* PDF Reading Modal for Dashboard */}
@@ -1074,6 +1374,138 @@ export default function DashboardPage() {
             }
           }}
         />
+      )}
+
+      {/* Course Review Modal for Enrolled Students */}
+      {reviewModalCourse && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5 border border-[#ece8e0] animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-[#ece8e0] pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
+                  <Star size={18} className="fill-amber-600 text-amber-600" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-base text-[#112734]">
+                    কোর্স রিভিউ প্রদান করুন
+                  </h4>
+                  <p className="text-[11px] text-[#8a817c] truncate max-w-[260px]">{reviewModalCourse.titleBn}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReviewModalCourse(null)}
+                className="w-8 h-8 rounded-full hover:bg-slate-100 text-[#8a817c] flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {reviewSuccessMsg ? (
+              <div className="p-6 text-center space-y-3 bg-emerald-50 rounded-2xl border border-emerald-200">
+                <CheckCircle2 size={36} className="text-emerald-600 mx-auto" />
+                <h5 className="font-bold text-sm text-emerald-950">{reviewSuccessMsg}</h5>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveReview} className="space-y-4">
+                {/* Interactive Star Picker */}
+                <div className="space-y-1.5 text-center py-3 px-4 bg-[#faf8f5] rounded-2xl border border-[#ece8e0]">
+                  <label className="text-xs font-bold text-[#5a524d] block">
+                    আপনার সার্বিক রেটিং নির্বাচন করুন
+                  </label>
+                  <div className="flex items-center justify-center gap-2 py-1.5">
+                    {[1, 2, 3, 4, 5].map((s) => {
+                      const active = (reviewHoverRating || reviewRating) >= s;
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          onMouseEnter={() => setReviewHoverRating(s)}
+                          onMouseLeave={() => setReviewHoverRating(0)}
+                          onClick={() => setReviewRating(s)}
+                          className="p-1 rounded-lg hover:scale-125 transition-transform cursor-pointer"
+                        >
+                          <Star
+                            size={30}
+                            className={active ? 'fill-amber-500 text-amber-500 drop-shadow-xs' : 'text-slate-300'}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <span className="text-xs font-extrabold text-amber-700 block">
+                    {getRatingLabel(reviewHoverRating || reviewRating)}
+                  </span>
+                </div>
+
+                {/* Review Textarea */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-[#2c3e50] flex items-center justify-between">
+                    <span>আপনার মূল্যবান রিভিউ বা অভিজ্ঞতা *</span>
+                    <span className="text-[10px] text-[#8a817c]">বাংলায় লিখুন</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={reviewContent}
+                    onChange={(e) => setReviewContent(e.target.value)}
+                    placeholder="কোর্সের পাঠদান, ফিক্বহী বিশ্লেষণ ও শিক্ষকের উপস্থাপন পদ্ধতি কেমন লেগেছে বিস্তারিত লিখুন..."
+                    className="w-full text-xs sm:text-sm p-3.5 rounded-xl border border-[#ece8e0] focus:ring-2 focus:ring-[#17A2B8] focus:border-transparent outline-none resize-none"
+                    required
+                  />
+                </div>
+
+                {/* Student Designation / Role & District */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[#2c3e50]">
+                      আপনার পদবি বা পরিচিতি (ঐচ্ছিক)
+                    </label>
+                    <input
+                      type="text"
+                      value={reviewRole}
+                      onChange={(e) => setReviewRole(e.target.value)}
+                      placeholder="যেমন: শিক্ষার্থী / শিক্ষক / আলেম"
+                      className="w-full text-xs p-2.5 rounded-xl border border-[#ece8e0] focus:ring-2 focus:ring-[#17A2B8] outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[#112734] flex items-center gap-1">
+                      <MapPin size={12} className="text-[#0f8293]" />
+                      <span>আপনার জেলা বা অবস্থান (ঐচ্ছিক)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={reviewLocation}
+                      onChange={(e) => setReviewLocation(e.target.value)}
+                      placeholder="যেমন: ঢাকা, চট্টগ্রাম, সিলেট, কুমিল্লা"
+                      className="w-full text-xs p-2.5 rounded-xl border border-[#ece8e0] focus:ring-2 focus:ring-[#17A2B8] outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Submit button */}
+                <div className="pt-2 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setReviewModalCourse(null)}
+                    className="px-4 py-2.5 border border-[#ece8e0] text-[#5a524d] font-bold text-xs rounded-xl hover:bg-slate-50 transition-colors cursor-pointer"
+                  >
+                    বাতিল
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingReview || !reviewContent.trim()}
+                    className="px-5 py-2.5 bg-[#112734] hover:bg-[#23626F] disabled:opacity-50 text-white font-bold text-xs rounded-xl transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Send size={13} />
+                    <span>{isSubmittingReview ? 'জমা হচ্ছে...' : 'রিভিউ সংরক্ষণ করুন'}</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

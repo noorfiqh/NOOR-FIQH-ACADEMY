@@ -33,9 +33,11 @@ export default function AboutPage() {
     };
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('noorfiqh_settings_updated', handleUpdate);
+    window.addEventListener('noorfiqh_faculty_updated', handleUpdate);
     return () => {
       window.removeEventListener('storage', handleUpdate);
       window.removeEventListener('noorfiqh_settings_updated', handleUpdate);
+      window.removeEventListener('noorfiqh_faculty_updated', handleUpdate);
     };
   }, []);
 

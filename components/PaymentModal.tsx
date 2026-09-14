@@ -23,7 +23,7 @@ interface PaymentModalProps {
 
 export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalProps) {
   const { user, loginWithGoogle } = useAuth();
-  const [method, setMethod] = useState<'bkash' | 'nagad' | 'rocket' | 'card' | 'cod'>('bkash');
+  const [method, setMethod] = useState<'bkash' | 'nagad' | 'cellfin' | 'card' | 'cod'>('bkash');
   const [trxId, setTrxId] = useState('');
   const [senderPhone, setSenderPhone] = useState('');
   const [guestName, setGuestName] = useState('');
@@ -38,14 +38,15 @@ export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalP
   const [createdOrderNum, setCreatedOrderNum] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const PAYMENT_NUMBERS = {
-    bkash: '01855905185 (Personal / Send Money)',
-    nagad: '01855905185 (Personal / Send Money)',
-    rocket: '01855905185 (Personal / Send Money)',
+  const PAYMENT_NUMBERS: Record<string, string> = {
+    bkash: '01348161517',
+    nagad: 'আপাতত নেই',
+    cellfin: 'আপাতত নেই',
   };
 
   const handleCopyNumber = (num: string) => {
-    navigator.clipboard.writeText('01855905185');
+    if (method !== 'bkash') return;
+    navigator.clipboard.writeText('01348161517');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -76,6 +77,11 @@ export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalP
 
     if (!user && (!guestName.trim() || !guestEmail.trim())) {
       setErrorMessage('অনুগ্রহ করে আপনার নাম ও ইমেইল লিখুন অথবা গুগল দিয়ে ১-ক্লিকে লগইন করুন।');
+      return;
+    }
+
+    if (method === 'nagad' || method === 'cellfin') {
+      setErrorMessage('নগদ ও সেলফিন পেমেন্ট সেবা আপাতত উপলব্ধ নেই। অনুগ্রহ করে বিকাশ (01348161517) নির্বাচন করুন।');
       return;
     }
 
@@ -285,20 +291,20 @@ export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalP
                     }`}
                   >
                     <span className="font-extrabold text-sm">নগদ</span>
-                    <span className="text-[10px] opacity-70">Send Money</span>
+                    <span className="text-[10px] text-rose-600 font-bold">আপাতত নেই</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setMethod('rocket')}
+                    onClick={() => setMethod('cellfin')}
                     className={`p-3 rounded-2xl border font-bold text-xs flex flex-col items-center justify-center gap-1.5 transition-all ${
-                      method === 'rocket'
+                      method === 'cellfin'
                         ? 'border-purple-600 bg-purple-50 text-purple-700 ring-2 ring-purple-500/20'
                         : 'border-[#ece8e0] hover:bg-slate-50 text-[#5a524d]'
                     }`}
                   >
-                    <span className="font-extrabold text-sm">রকেট</span>
-                    <span className="text-[10px] opacity-70">Send Money</span>
+                    <span className="font-extrabold text-sm">সেলফিন</span>
+                    <span className="text-[10px] text-rose-600 font-bold">আপাতত নেই</span>
                   </button>
                   
                   {item.purchaseType === 'hardcover' && (
@@ -319,30 +325,58 @@ export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalP
               </div>
 
               {/* Payment Instructions for Mobile Banking */}
-              {(method === 'bkash' || method === 'nagad' || method === 'rocket') && (
+              {method === 'bkash' && (
                 <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4 space-y-2.5 text-xs text-[#5a524d]">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-amber-900 capitalize">{method} পার্সোনাল নম্বর:</span>
+                    <span className="font-bold text-amber-900">বিকাশ পার্সোনাল নম্বর:</span>
                     <button
                       type="button"
-                      onClick={() => handleCopyNumber(PAYMENT_NUMBERS[method])}
-                      className="flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-200/70 px-2.5 py-1 rounded-lg hover:bg-[#17A2B8]/20/80 transition-colors"
+                      onClick={() => handleCopyNumber(PAYMENT_NUMBERS.bkash)}
+                      className="flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-200/70 px-2.5 py-1 rounded-lg hover:bg-amber-200 transition-colors cursor-pointer"
                     >
                       {copied ? <Check size={12} className="text-[#23626F]" /> : <Copy size={12} />}
                       <span>{copied ? 'কপি হয়েছে' : 'নম্বর কপি'}</span>
                     </button>
                   </div>
-                  <p className="font-mono text-base font-black text-slate-900 bg-white p-2 rounded-xl border border-amber-200 text-center">
-                    01855905185
+                  <p className="font-mono text-base font-black text-slate-900 bg-white p-2 rounded-xl border border-amber-200 text-center select-all">
+                    01348161517
                   </p>
-                  <p className="text-[11px] text-amber-950">
-                    * আপনার {method} অ্যাপ থেকে উপরোক্ত নম্বরে <strong>৳{item.price}</strong> সেন্ড মানি করুন। এরপর নিচে আপনার প্রেরক নম্বর ও ট্রানজেকশন আইডি (TrxID) লিখুন।
+                  <p className="text-[11px] text-amber-950 font-tiro">
+                    * আপনার বিকাশ অ্যাপ থেকে উপরোক্ত নম্বরে <strong>৳{item.price}</strong> সেন্ড মানি করুন। এরপর নিচে আপনার প্রেরক নম্বর ও ট্রানজেকশন আইডি (TrxID) লিখুন।
                   </p>
                 </div>
               )}
 
-              {/* Transaction Inputs */}
-              {(method === 'bkash' || method === 'nagad' || method === 'rocket') && (
+              {(method === 'nagad' || method === 'cellfin') && (
+                <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4 space-y-3 text-xs text-[#5a524d]">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-amber-900">
+                      {method === 'nagad' ? 'নগদ পার্সোনাল নম্বর:' : 'সেলফিন নম্বর:'}
+                    </span>
+                    <span className="inline-flex items-center text-xs font-bold text-rose-700 bg-rose-100 border border-rose-200 px-3 py-1 rounded-lg font-tiro">
+                      আপাতত নেই
+                    </span>
+                  </div>
+                  <p className="font-tiro text-sm sm:text-base font-bold text-rose-600 bg-white p-2 rounded-xl border border-rose-200 text-center">
+                    আপাতত নেই
+                  </p>
+                  <p className="text-[11px] text-rose-900 leading-relaxed font-tiro">
+                    * {method === 'nagad' ? 'নগদ' : 'সেলফিন'} পেমেন্ট সেবা আপাতত উপলব্ধ নেই। অনুগ্রহ করে <strong>বিকাশ (bKash)</strong> নির্বাচন করে <strong>01348161517</strong> নম্বরে সেন্ড মানি করুন।
+                  </p>
+                  <div className="text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setMethod('bkash')}
+                      className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer inline-flex items-center gap-1.5 font-tiro"
+                    >
+                      <span>বিকাশে পেমেন্ট করতে এখানে ক্লিক করুন</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Transaction Inputs (Only active for bKash) */}
+              {method === 'bkash' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-[#2c3e50] mb-1">
@@ -416,14 +450,24 @@ export function PaymentModal({ isOpen, onClose, item, onSuccess }: PaymentModalP
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 bg-[#112734] hover:bg-[#23626F] text-white font-extrabold rounded-2xl shadow-lg transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <ShieldCheck size={18} className="text-[#17A2B8]" />
-                <span>{loading ? 'প্রসেসিং হচ্ছে...' : 'অর্ডার নিশ্চিত করুন (Confirm Enrollment)'}</span>
-              </button>
+              {method === 'nagad' || method === 'cellfin' ? (
+                <button
+                  type="button"
+                  onClick={() => setMethod('bkash')}
+                  className="w-full py-3.5 bg-pink-600 hover:bg-pink-700 text-white font-extrabold rounded-2xl shadow-lg transition-all text-sm flex items-center justify-center gap-2 cursor-pointer font-tiro"
+                >
+                  <span>বিকাশ নির্বাচন করে পেমেন্ট করুন (01348161517)</span>
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3.5 bg-[#112734] hover:bg-[#23626F] text-white font-extrabold rounded-2xl shadow-lg transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  <ShieldCheck size={18} className="text-[#17A2B8]" />
+                  <span>{loading ? 'প্রসেসিং হচ্ছে...' : 'অর্ডার নিশ্চিত করুন (Confirm Enrollment)'}</span>
+                </button>
+              )}
             </form>
           )}
         </div>

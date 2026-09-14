@@ -51,7 +51,8 @@ import {
   Check,
   RefreshCw,
   Library,
-  Truck
+  Truck,
+  MapPin
 } from 'lucide-react';
 import { CertificateView } from '@/components/CertificateView';
 import { sendTestNotificationEmail } from '@/lib/email-service';
@@ -240,6 +241,27 @@ export default function AdminDashboardPage() {
       window.removeEventListener('storage', handleOrderLocalUpdate);
     };
   }, [isAdmin]);
+
+  // Handle URL params for direct navigation from course page (e.g. ?tab=courses&edit=course-1)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab') as AdminTab;
+      const editCourseId = params.get('edit');
+      if (tabParam) {
+        setActiveTab(tabParam);
+      }
+      if (editCourseId) {
+        setActiveTab('courses');
+        const allCourses = AppStore.getCourses();
+        const found = allCourses.find(c => c.id === editCourseId) || AppStore.getCourseById(editCourseId);
+        if (found) {
+          setIsNewCourse(false);
+          setEditingCourse(JSON.parse(JSON.stringify(found)));
+        }
+      }
+    }
+  }, []);
 
   // Firestore Sync All Handler
   const [isSyncingFirestore, setIsSyncingFirestore] = useState(false);
@@ -2554,16 +2576,16 @@ export default function AdminDashboardPage() {
                     setIsNewReview(true);
                     setEditingReview({
                       id: 'rev-' + Date.now(),
-                      name: 'মাওলানা মাহমুদ হাসান',
-                      role: 'মুফতী ও ফিকহ গবেষক',
-                      location: 'ঢাকা',
+                      name: '',
+                      role: '',
+                      location: '',
                       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
                       rating: 5,
-                      content: 'নূর ফিকহ একাডেমি আধুনিক যুগের এক অপূর্ব উপহার। দলীলভিত্তিক প্রতিটি মাসআলার উপস্থাপনা অত্যন্ত চমৎকার।',
-                      courseTitle: 'সমকালীন আধুনিক ফিকহ'
+                      content: '',
+                      courseTitle: ''
                     });
                   }}
-                  className="px-4 py-2.5 bg-[#112734] hover:bg-[#23626F] text-white font-extrabold rounded-2xl text-xs flex items-center gap-2 shadow-lg transition-all"
+                  className="px-4 py-2.5 bg-[#112734] hover:bg-[#23626F] text-white font-extrabold rounded-2xl text-xs flex items-center gap-2 shadow-lg transition-all cursor-pointer"
                 >
                   <Plus size={16} />
                   <span>নতুন রিভিউ যোগ করুন</span>
@@ -2585,7 +2607,17 @@ export default function AdminDashboardPage() {
                         />
                         <div>
                           <h4 className="font-extrabold text-sm text-[#2c3e50]">{rev.name}</h4>
-                          <p className="text-[10px] text-[#8a817c]">{rev.role} • {rev.location}</p>
+                          <p className="text-[10px] text-[#8a817c] flex items-center gap-1 flex-wrap">
+                            {rev.role && <span>{rev.role}</span>}
+                            {rev.role && rev.location && <span className="text-slate-300">•</span>}
+                            {rev.location && (
+                              <span className="inline-flex items-center gap-0.5 text-[#0f8293] font-semibold">
+                                <MapPin size={10} />
+                                {rev.location}
+                              </span>
+                            )}
+                            {!rev.role && !rev.location && <span>কোর্স শিক্ষার্থী</span>}
+                          </p>
                         </div>
                       </div>
                       <div className="flex text-amber-500 text-xs">
@@ -2600,13 +2632,14 @@ export default function AdminDashboardPage() {
                           setIsNewReview(false);
                           setEditingReview({ ...rev });
                         }}
-                        className="flex-1 py-1.5 bg-[#17A2B8]/10 text-[#112734] rounded-xl text-xs font-bold"
+                        className="flex-1 py-1.5 bg-[#17A2B8]/10 text-[#112734] rounded-xl text-xs font-bold hover:bg-[#17A2B8]/20 transition-colors cursor-pointer"
                       >
                         এডিট
                       </button>
                       <button
                         onClick={() => handleDeleteReview(rev.id)}
-                        className="p-1.5 bg-red-50 text-red-600 rounded-xl"
+                        className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-colors cursor-pointer"
+                        title="রিভিউ ডিলিট করুন"
                       >
                         <Trash2 size={14} />
                       </button>
@@ -2617,58 +2650,150 @@ export default function AdminDashboardPage() {
 
               {/* Review Modal */}
               {editingReview && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                  <div className="bg-white w-full max-w-lg p-6 sm:p-8 rounded-3xl shadow-2xl space-y-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                  <div className="bg-white w-full max-w-lg p-6 sm:p-7 rounded-3xl shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
                     <div className="flex items-center justify-between border-b pb-3">
-                      <h4 className="font-extrabold text-base text-[#112734]">শিক্ষার্থী রিভিউ</h4>
-                      <button onClick={() => setEditingReview(null)} className="text-xs font-bold text-slate-400">✕</button>
-                    </div>
-                    <form onSubmit={handleSaveReview} className="space-y-3 text-xs">
                       <div>
-                        <label className="block font-bold mb-1">শিক্ষার্থীর নাম *</label>
+                        <h4 className="font-extrabold text-base text-[#112734]">
+                          {isNewReview ? 'নতুন শিক্ষার্থী রিভিউ যোগ করুন' : 'শিক্ষার্থী রিভিউ এডিট করুন'}
+                        </h4>
+                        <p className="text-[11px] text-[#8a817c]">শিক্ষার্থীর নাম, পদবী, জেলা ও প্রশংসাপত্র সংরক্ষণ করুন</p>
+                      </div>
+                      <button 
+                        onClick={() => setEditingReview(null)} 
+                        className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleSaveReview} className="space-y-3.5 text-xs">
+                      <div>
+                        <label className="block font-bold mb-1 text-[#2c3e50]">শিক্ষার্থীর নাম *</label>
                         <input
                           type="text"
                           required
+                          placeholder="যেমন: ফয়সাল আহমদ / মোসাঃ শিরিন সুলতানা"
                           value={editingReview.name}
-                          onChange={(e) => setEditingReview({ ...editingReview, name: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-[#ece8e0]"
+                          onChange={(e) => setEditingReview({ ...editingReview, name: e.target.value, nameBn: e.target.value })}
+                          className="w-full px-3 py-2.5 rounded-xl border border-[#ece8e0] focus:ring-2 focus:ring-[#17A2B8] outline-none"
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="block font-bold mb-1">পদবী / পরিচয়</label>
+                          <label className="block font-bold mb-1 text-[#2c3e50]">পদবী / পরিচয় (ঐচ্ছিক)</label>
                           <input
                             type="text"
-                            value={editingReview.role}
+                            placeholder="যেমন: শিক্ষার্থী, শিক্ষক, ব্যবসায়ী"
+                            value={editingReview.role || ''}
                             onChange={(e) => setEditingReview({ ...editingReview, role: e.target.value })}
-                            className="w-full px-3 py-2 rounded-xl border border-[#ece8e0]"
+                            className="w-full px-3 py-2.5 rounded-xl border border-[#ece8e0] focus:ring-2 focus:ring-[#17A2B8] outline-none"
                           />
                         </div>
+
                         <div>
-                          <label className="block font-bold mb-1">রেটিং (১-৫)</label>
+                          <label className="block font-bold mb-1 text-[#112734] flex items-center justify-between">
+                            <span className="flex items-center gap-1 font-extrabold text-[#0f8293]">
+                              <MapPin size={12} />
+                              <span>জেলা / অবস্থান *</span>
+                            </span>
+                            <span className="text-[10px] text-[#8a817c]">বাংলা বা ইংরেজি</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="যেমন: ঢাকা, চট্টগ্রাম, সিলেট, কুমিল্লা ইত্যাদি"
+                            value={editingReview.location || ''}
+                            onChange={(e) => setEditingReview({ ...editingReview, location: e.target.value })}
+                            className="w-full px-3 py-2.5 rounded-xl border-2 border-[#17A2B8]/40 focus:border-[#17A2B8] focus:ring-2 focus:ring-[#17A2B8]/20 outline-none font-bold text-[#112734] bg-sky-50/20"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Quick District selection chips */}
+                      <div className="space-y-1.5 p-2.5 rounded-xl bg-[#faf8f5] border border-[#ece8e0]/70">
+                        <span className="text-[10px] text-[#8a817c] font-semibold block">জনপ্রিয় জেলা নির্বাচন করুন (ক্লিক করলেই বসে যাবে):</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {['ঢাকা', 'চট্টগ্রাম', 'সিলেট', 'রাজশাহী', 'খুলনা', 'বরিশাল', 'রংপুর', 'ময়মনসিংহ', 'কুমিল্লা', 'বগুড়া', 'নোয়াখালী', 'কুষ্টিয়া', 'প্রবাসী'].map((dist) => (
+                            <button
+                              key={dist}
+                              type="button"
+                              onClick={() => setEditingReview({ ...editingReview, location: dist })}
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-medium border transition-colors cursor-pointer ${
+                                editingReview.location === dist 
+                                  ? 'bg-[#112734] text-white border-[#112734] shadow-xs' 
+                                  : 'bg-white text-[#5a524d] border-[#ece8e0] hover:bg-emerald-50 hover:text-emerald-800'
+                              }`}
+                            >
+                              {dist}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block font-bold mb-1 text-[#2c3e50]">রেটিং (১-৫)</label>
                           <input
                             type="number"
                             min={1}
                             max={5}
                             value={editingReview.rating}
                             onChange={(e) => setEditingReview({ ...editingReview, rating: Number(e.target.value) })}
-                            className="w-full px-3 py-2 rounded-xl border border-[#ece8e0]"
+                            className="w-full px-3 py-2.5 rounded-xl border border-[#ece8e0] focus:ring-2 focus:ring-[#17A2B8] outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold mb-1 text-[#2c3e50]">কোর্স বা বিষয় (ঐচ্ছিক)</label>
+                          <input
+                            type="text"
+                            placeholder="যেমন: সমকালীন আধুনিক ফিকহ"
+                            value={editingReview.courseTitle || ''}
+                            onChange={(e) => setEditingReview({ ...editingReview, courseTitle: e.target.value })}
+                            className="w-full px-3 py-2.5 rounded-xl border border-[#ece8e0] focus:ring-2 focus:ring-[#17A2B8] outline-none"
                           />
                         </div>
                       </div>
+
                       <div>
-                        <label className="block font-bold mb-1">মতামত / বিবরণ *</label>
+                        <label className="block font-bold mb-1 text-[#2c3e50]">প্রোফাইল ছবি / Avatar URL (ঐচ্ছিক)</label>
+                        <input
+                          type="text"
+                          placeholder="https://images.unsplash.com/... অথবা খালি রাখুন"
+                          value={editingReview.avatar || ''}
+                          onChange={(e) => setEditingReview({ ...editingReview, avatar: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] focus:ring-2 focus:ring-[#17A2B8] outline-none text-[11px]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold mb-1 text-[#2c3e50]">মতামত / বিবরণ *</label>
                         <textarea
                           rows={3}
                           required
+                          placeholder="শিক্ষার্থীর মূল্যবান মতামত বা কোর্স অভিজ্ঞতা লিখুন..."
                           value={editingReview.content}
                           onChange={(e) => setEditingReview({ ...editingReview, content: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl border border-[#ece8e0]"
+                          className="w-full px-3 py-2.5 rounded-xl border border-[#ece8e0] focus:ring-2 focus:ring-[#17A2B8] outline-none"
                         />
                       </div>
-                      <div className="flex justify-end gap-2 pt-2">
-                        <button type="button" onClick={() => setEditingReview(null)} className="px-4 py-2 bg-slate-100 rounded-xl font-bold">বাতিল</button>
-                        <button type="submit" className="px-6 py-2 bg-[#112734] text-white rounded-xl font-bold">সংরক্ষণ</button>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-[#ece8e0]">
+                        <button 
+                          type="button" 
+                          onClick={() => setEditingReview(null)} 
+                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors cursor-pointer"
+                        >
+                          বাতিল
+                        </button>
+                        <button 
+                          type="submit" 
+                          className="px-6 py-2 bg-[#112734] hover:bg-[#23626F] text-white rounded-xl font-bold transition-colors shadow-md cursor-pointer"
+                        >
+                          সংরক্ষণ করুন
+                        </button>
                       </div>
                     </form>
                   </div>
@@ -7260,9 +7385,83 @@ interface CourseBuilderModalProps {
 }
 
 function CourseBuilderModal({ course, isNew, onClose, onSave }: CourseBuilderModalProps) {
-  const [formData, setFormData] = useState<Course>(() => JSON.parse(JSON.stringify(course)));
-  const [activeSubTab, setActiveSubTab] = useState<'basic' | 'curriculum' | 'quizzes' | 'instructor'>('basic');
+  const [formData, setFormData] = useState<Course>(() => {
+    const copy = JSON.parse(JSON.stringify(course));
+    if (!copy.objectives || !Array.isArray(copy.objectives)) {
+      copy.objectives = [];
+    }
+    if (!copy.instructor) {
+      copy.instructor = {
+        id: 'inst-1',
+        name: 'Mufti Ammar Bin Noor',
+        nameBn: 'মুফতী আম্মার বিন নূর',
+        title: 'মুহাদ্দিস ও ফকিহ',
+        roleBn: 'দারুল উলুম দেওবন্দ',
+        bio: 'নূর ফিকহ একাডেমির সিনিয়র ফ্যাকাল্টি সদস্য।',
+        avatar: ''
+      };
+    } else if (copy.instructor.roleBn === undefined) {
+      copy.instructor.roleBn = 'দারুল উলুম দেওবন্দ';
+    }
+    return copy;
+  });
+  const [activeSubTab, setActiveSubTab] = useState<'basic' | 'objectives' | 'curriculum' | 'quizzes' | 'instructor'>('basic');
   const [editingLessonIdx, setEditingLessonIdx] = useState<number | null>(null);
+
+  // Objectives (এই কোর্সে যা যা শিখবেন) State & Handlers
+  const [newObjective, setNewObjective] = useState('');
+  const [editingObjIdx, setEditingObjIdx] = useState<number | null>(null);
+  const [editingObjText, setEditingObjText] = useState('');
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [bulkObjectivesText, setBulkObjectivesText] = useState('');
+
+  const handleAddObjective = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newObjective.trim()) return;
+    const current = formData.objectives || [];
+    setFormData({
+      ...formData,
+      objectives: [...current, newObjective.trim()]
+    });
+    setNewObjective('');
+  };
+
+  const handleUpdateObjective = (idx: number, text: string) => {
+    if (!text.trim()) return;
+    const updated = [...(formData.objectives || [])];
+    updated[idx] = text.trim();
+    setFormData({ ...formData, objectives: updated });
+    setEditingObjIdx(null);
+    setEditingObjText('');
+  };
+
+  const handleRemoveObjective = (idx: number) => {
+    const updated = (formData.objectives || []).filter((_, i) => i !== idx);
+    setFormData({ ...formData, objectives: updated });
+    if (editingObjIdx === idx) {
+      setEditingObjIdx(null);
+      setEditingObjText('');
+    }
+  };
+
+  const handleMoveObjective = (idx: number, direction: 'up' | 'down') => {
+    const list = [...(formData.objectives || [])];
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= list.length) return;
+    const temp = list[idx];
+    list[idx] = list[targetIdx];
+    list[targetIdx] = temp;
+    setFormData({ ...formData, objectives: list });
+  };
+
+  const handleSaveBulkObjectives = () => {
+    const parsed = bulkObjectivesText
+      .split('\n')
+      .map(line => line.replace(/^[\s•\-\*\d\.\)\✓\-\>\–]+\s*/, '').trim())
+      .filter(line => line.length > 0);
+    setFormData({ ...formData, objectives: parsed });
+    setIsBulkMode(false);
+  };
 
   // Dynamic Course Categories
   const [categories, setCategories] = useState<CourseCategory[]>(() => AppStore.getCourseCategories());
@@ -7400,7 +7599,14 @@ function CourseBuilderModal({ course, isNew, onClose, onSave }: CourseBuilderMod
       alert('অনুগ্রহ করে কোর্সের নাম লিখুন');
       return;
     }
-    onSave(formData);
+    const cleanedObjectives = (formData.objectives || [])
+      .map(o => (typeof o === 'string' ? o.trim() : ''))
+      .filter(Boolean);
+
+    onSave({
+      ...formData,
+      objectives: cleanedObjectives
+    });
   };
 
   return (
@@ -7423,11 +7629,11 @@ function CourseBuilderModal({ course, isNew, onClose, onSave }: CourseBuilderMod
         </div>
 
         {/* Builder Sub-Navigation Tabs */}
-        <div className="flex border-b border-[#ece8e0] px-6 bg-[#fdfcf9] gap-4 overflow-x-auto text-xs font-bold shrink-0">
+        <div className="flex border-b border-[#ece8e0] px-6 bg-[#fdfcf9] gap-2 sm:gap-4 overflow-x-auto text-xs font-bold shrink-0">
           <button
             type="button"
             onClick={() => setActiveSubTab('basic')}
-            className={`py-3 border-b-2 transition-all ${
+            className={`py-3 px-2 border-b-2 transition-all shrink-0 ${
               activeSubTab === 'basic' ? 'border-[#112734] text-[#112734]' : 'border-transparent text-[#8a817c]'
             }`}
           >
@@ -7435,30 +7641,44 @@ function CourseBuilderModal({ course, isNew, onClose, onSave }: CourseBuilderMod
           </button>
           <button
             type="button"
+            onClick={() => setActiveSubTab('objectives')}
+            className={`py-3 px-2 border-b-2 transition-all shrink-0 flex items-center gap-1.5 ${
+              activeSubTab === 'objectives' ? 'border-[#112734] text-[#112734]' : 'border-transparent text-[#8a817c]'
+            }`}
+          >
+            <span>২. এই কোর্সে যা যা শিখবেন</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              (formData.objectives?.length || 0) > 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-200 text-slate-600'
+            }`}>
+              {formData.objectives?.length || 0}
+            </span>
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveSubTab('curriculum')}
-            className={`py-3 border-b-2 transition-all ${
+            className={`py-3 px-2 border-b-2 transition-all shrink-0 ${
               activeSubTab === 'curriculum' ? 'border-[#112734] text-[#112734]' : 'border-transparent text-[#8a817c]'
             }`}
           >
-            ২. লেকচার ও কারিকুলাম ({formData.lessons.length})
+            ৩. লেকচার ও কারিকুলাম ({formData.lessons.length})
           </button>
           <button
             type="button"
             onClick={() => setActiveSubTab('quizzes')}
-            className={`py-3 border-b-2 transition-all ${
+            className={`py-3 px-2 border-b-2 transition-all shrink-0 ${
               activeSubTab === 'quizzes' ? 'border-[#112734] text-[#112734]' : 'border-transparent text-[#8a817c]'
             }`}
           >
-            ৩. কুইজ ও মূল্যায়ন পরীক্ষা
+            ৪. কুইজ ও মূল্যায়ন পরীক্ষা
           </button>
           <button
             type="button"
             onClick={() => setActiveSubTab('instructor')}
-            className={`py-3 border-b-2 transition-all ${
+            className={`py-3 px-2 border-b-2 transition-all shrink-0 ${
               activeSubTab === 'instructor' ? 'border-[#112734] text-[#112734]' : 'border-transparent text-[#8a817c]'
             }`}
           >
-            ৪. ইন্সট্রাক্টর ও উদ্দেশ্য
+            ৫. ইন্সট্রাক্টরের তথ্য
           </button>
         </div>
 
@@ -7732,10 +7952,268 @@ function CourseBuilderModal({ course, isNew, onClose, onSave }: CourseBuilderMod
                   className="w-full px-3.5 py-2 rounded-xl border border-[#ece8e0]"
                 />
               </div>
+
+              {/* Quick Jump to Objectives Editor */}
+              <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <h5 className="font-bold text-[#112734] text-xs flex items-center gap-1.5 font-anek">
+                    <CheckCircle2 size={16} className="text-amber-600" />
+                    <span>এই কোর্সে যা যা শিখবেন ({formData.objectives?.length || 0}টি বিষয় যুক্ত আছে)</span>
+                  </h5>
+                  <p className="text-[11px] text-[#5a524d] mt-0.5 font-noto">
+                    কোর্স পেজের বিশেষ চেকলিস্ট পয়েন্টগুলো এডিট বা নতুন পয়েন্ট যোগ করতে &quot;এই কোর্সে যা যা শিখবেন&quot; ট্যাবে যান।
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('objectives')}
+                  className="px-4 py-2 bg-[#112734] hover:bg-[#23626F] text-white text-xs font-bold rounded-xl shadow transition-colors shrink-0 flex items-center gap-1.5"
+                >
+                  <Edit3 size={13} />
+                  <span>শিখনফল এডিট করুন →</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* SUBTAB 2: LESSONS & CURRICULUM */}
+          {/* SUBTAB 2: COURSE OBJECTIVES / এই কোর্সে যা যা শিখবেন */}
+          {activeSubTab === 'objectives' && (
+            <div className="space-y-6 animate-in fade-in">
+              {/* Header & Controls */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80">
+                <div>
+                  <h4 className="font-extrabold text-sm text-[#112734] flex items-center gap-2 font-anek">
+                    <CheckCircle2 size={18} className="text-amber-600" />
+                    <span>কোর্স পেজের &quot;এই কোর্সে যা যা শিখবেন&quot; তালিকা</span>
+                  </h4>
+                  <p className="text-[11px] text-[#5a524d] mt-0.5 font-noto">
+                    শিক্ষার্থীরা কোর্স এনরোল করার আগে এই বিষয়গুলো কোর্স ডিটেইল পেজে স্পষ্ট চেকলিস্ট আকারে দেখতে পাবে।
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isBulkMode) {
+                        setBulkObjectivesText((formData.objectives || []).join('\n'));
+                      }
+                      setIsBulkMode(!isBulkMode);
+                    }}
+                    className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-[#112734] border border-[#ece8e0] rounded-xl font-bold text-xs shadow-sm transition-all flex items-center gap-1.5"
+                  >
+                    {isBulkMode ? '📋 একক তালিকা ভিউ' : '📝 একসাথে বাল্ক এডিট / পেস্ট'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Bulk Edit Mode */}
+              {isBulkMode ? (
+                <div className="space-y-3 bg-white p-5 rounded-2xl border border-[#ece8e0]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <label className="font-bold text-[#112734] text-xs">
+                      প্রতি লাইনে একটি করে বিষয় বা শিখনফল লিখুন (বা একবারে কপি-পেস্ট করুন):
+                    </label>
+                    <span className="text-[11px] text-[#8a817c]">
+                      (বুলেট চিহ্ন বা ক্রমিক নম্বর থাকলে স্বয়ংক্রিয়ভাবে ক্লিন হয়ে যাবে)
+                    </span>
+                  </div>
+                  <textarea
+                    rows={8}
+                    value={bulkObjectivesText}
+                    onChange={(e) => setBulkObjectivesText(e.target.value)}
+                    placeholder={`বিশুদ্ধভাবে তাহরাত ও নামাজ আদায়ের সকল খুঁটিনাটি বিধান জানা\nদৈনন্দিন ভুলত্রুটি ও সাহু সেজদার সঠিক সমাধান শেখা\nআধুনিক যুগে যাকাতের নিখুঁত হিসাব বের করতে পারা\nরমজান ও নফল রোজার সমকালীন মেডিকেল মাসআলা সমাধান করা`}
+                    className="w-full p-3.5 rounded-xl border border-[#ece8e0] text-xs font-noto leading-relaxed focus:border-[#17A2B8] outline-none"
+                  />
+                  <div className="flex items-center justify-end gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsBulkMode(false)}
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs"
+                    >
+                      বাতিল
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveBulkObjectives}
+                      className="px-5 py-2 bg-[#112734] hover:bg-[#23626F] text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow"
+                    >
+                      <Save size={14} />
+                      <span>বাল্ক তালিকা আপডেট করুন</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Single Item List Mode */
+                <div className="space-y-4">
+                  {/* Add New Objective Form */}
+                  <form onSubmit={handleAddObjective} className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="নতুন শিখনফল বা বিষয় লিখুন (যেমন: শেয়ার মার্কেট ও আধুনিক পেমেন্টের শরয়ী বিধান)..."
+                      value={newObjective}
+                      onChange={(e) => setNewObjective(e.target.value)}
+                      className="flex-1 px-4 py-2.5 rounded-xl border border-[#ece8e0] text-xs focus:border-[#17A2B8] outline-none bg-white font-noto"
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2.5 bg-[#112734] hover:bg-[#23626F] text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 shadow transition-colors"
+                    >
+                      <Plus size={14} />
+                      <span>যোগ করুন</span>
+                    </button>
+                  </form>
+
+                  {/* Existing Objectives List */}
+                  {(!formData.objectives || formData.objectives.length === 0) ? (
+                    <div className="text-center py-10 bg-[#fdfcf9] rounded-2xl border-2 border-dashed border-[#ece8e0] text-slate-500 space-y-2">
+                      <CheckCircle2 size={32} className="mx-auto text-slate-400" />
+                      <p className="font-bold text-xs text-slate-700">এখনও কোনো &quot;যা যা শিখবেন&quot; বিষয় যোগ করা হয়নি।</p>
+                      <p className="text-[11px] text-slate-400 font-noto">
+                        উপরের ঘরে লিখে যোগ করুন অথবা &quot;একসাথে বাল্ক এডিট / পেস্ট&quot; বাটনে ক্লিক করে একবারে পেস্ট করুন।
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {formData.objectives.map((obj, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-2.5 p-3 bg-white rounded-xl border border-[#ece8e0] shadow-sm hover:border-[#17A2B8]/50 transition-all group"
+                        >
+                          {/* Index badge */}
+                          <span className="w-6 h-6 rounded-full bg-[#17A2B8]/10 text-[#112734] font-bold text-xs flex items-center justify-center shrink-0 font-anek">
+                            {idx + 1}
+                          </span>
+
+                          {/* Edit or display */}
+                          {editingObjIdx === idx ? (
+                            <div className="flex-1 flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={editingObjText}
+                                onChange={(e) => setEditingObjText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleUpdateObjective(idx, editingObjText);
+                                  }
+                                }}
+                                autoFocus
+                                className="flex-1 px-3 py-1.5 rounded-lg border border-[#17A2B8] text-xs font-noto outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateObjective(idx, editingObjText)}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shrink-0"
+                              >
+                                সেভ
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingObjIdx(null);
+                                  setEditingObjText('');
+                                }}
+                                className="px-2.5 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs shrink-0"
+                              >
+                                বাতিল
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="flex-1 text-xs text-[#2c3e50] font-noto leading-relaxed">
+                                {obj}
+                              </span>
+
+                              <div className="flex items-center gap-1 opacity-90 group-hover:opacity-100 shrink-0">
+                                {/* Move Up */}
+                                <button
+                                  type="button"
+                                  disabled={idx === 0}
+                                  onClick={() => handleMoveObjective(idx, 'up')}
+                                  className={`p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors ${
+                                    idx === 0 ? 'opacity-30 cursor-not-allowed' : ''
+                                  }`}
+                                  title="উপরে নিন"
+                                >
+                                  ↑
+                                </button>
+
+                                {/* Move Down */}
+                                <button
+                                  type="button"
+                                  disabled={idx === formData.objectives.length - 1}
+                                  onClick={() => handleMoveObjective(idx, 'down')}
+                                  className={`p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors ${
+                                    idx === formData.objectives.length - 1 ? 'opacity-30 cursor-not-allowed' : ''
+                                  }`}
+                                  title="নিচে নিন"
+                                >
+                                  ↓
+                                </button>
+
+                                {/* Edit */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingObjIdx(idx);
+                                    setEditingObjText(obj);
+                                  }}
+                                  className="px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded-lg font-bold transition-colors"
+                                  title="সম্পাদনা করুন"
+                                >
+                                  ✏️ এডিট
+                                </button>
+
+                                {/* Delete */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveObjective(idx)}
+                                  className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                                  title="মুছে ফেলুন"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Live Preview Box matching Course Page */}
+                  {(formData.objectives && formData.objectives.length > 0) && (
+                    <div className="mt-6 pt-5 border-t border-[#ece8e0]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold text-[#8a817c] uppercase tracking-wider">
+                          লাইভ প্রিভিউ (কোর্স পেজে শিক্ষার্থীরা যেভাবে দেখবে)
+                        </span>
+                        <span className="text-[11px] text-emerald-600 font-bold">✓ লাইভ প্রিভিউ</span>
+                      </div>
+                      <div className="bg-[#fcfdfd] p-5 rounded-2xl border border-[#ece8e0] shadow-sm space-y-3">
+                        <h4 className="text-base font-extrabold text-[#112734] flex items-center gap-2 font-anek">
+                          <CheckCircle2 size={18} className="text-amber-600" />
+                          এই কোর্সে যা যা শিখবেন
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs text-[#5a524d] font-noto">
+                          {formData.objectives.map((obj, i) => (
+                            <div key={i} className="flex items-start gap-2">
+                              <span className="w-4 h-4 rounded-full bg-[#17A2B8]/15 text-[#112734] font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5 font-anek">
+                                ✓
+                              </span>
+                              <span className="leading-relaxed">{obj}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SUBTAB 3: LESSONS & CURRICULUM */}
           {activeSubTab === 'curriculum' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -7973,6 +8451,20 @@ function CourseBuilderModal({ course, isNew, onClose, onSave }: CourseBuilderMod
               </div>
 
               <div>
+                <label className="block font-bold mb-1">শিক্ষা প্রতিষ্ঠান / পরিচয় (যেমন: দারুল উলুম দেওবন্দ, আল-আজহার)</label>
+                <input
+                  type="text"
+                  value={formData.instructor.roleBn || ''}
+                  placeholder="যেমন: দারুল উলুম দেওবন্দ"
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    instructor: { ...formData.instructor, roleBn: e.target.value }
+                  })}
+                  className="w-full px-3 py-2 rounded-xl border border-[#ece8e0]"
+                />
+              </div>
+
+              <div>
                 <label className="block font-bold mb-1">ইন্সট্রাক্টরের প্রোফাইল ছবি URL</label>
                 <input
                   type="text"
@@ -7996,6 +8488,26 @@ function CourseBuilderModal({ course, isNew, onClose, onSave }: CourseBuilderMod
                   })}
                   className="w-full px-3 py-2 rounded-xl border border-[#ece8e0]"
                 />
+              </div>
+
+              {/* Objectives quick link */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-[#ece8e0] flex items-center justify-between mt-4">
+                <div>
+                  <h5 className="font-bold text-[#112734] text-xs flex items-center gap-1.5">
+                    <CheckCircle2 size={15} className="text-amber-600" />
+                    <span>এই কোর্সে যা যা শিখবেন (Objectives)</span>
+                  </h5>
+                  <p className="text-[11px] text-[#8a817c] mt-0.5 font-noto">
+                    বর্তমানে মোট {formData.objectives?.length || 0}টি বিষয় নির্ধারিত রয়েছে।
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('objectives')}
+                  className="px-3.5 py-1.5 bg-[#112734] text-white hover:bg-[#23626F] text-xs font-bold rounded-xl transition-colors shrink-0"
+                >
+                  শিখনফল এডিট ট্যাবে যান →
+                </button>
               </div>
             </div>
           )}

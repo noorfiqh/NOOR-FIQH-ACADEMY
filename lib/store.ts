@@ -24,13 +24,13 @@ const STORAGE_KEYS = {
 export const INITIAL_FACULTY: FacultyMember[] = [
   {
     id: 'fac-1',
-    name: 'Mufti Abdullah An-Noor',
-    nameBn: 'মুফতী আব্দুল্লাহ আন-নূর',
-    designation: 'প্রতিষ্ঠাতা পরিচালক ও প্রধান ফিকহ গবেষক',
+    name: 'Mufti Ammar Bin Noor',
+    nameBn: 'মুফতী আম্মার বিন নূর',
+    designation: 'Founder and Rector',
     category: 'council',
-    categoryLabelBn: 'গবেষণা পরিষদ',
-    qualifications: 'উচ্চতর ইফতা (দারুল উলুম দেওবন্দ / আল-আজহার), বিশিষ্ট ইসলামিক আইন গবেষক',
-    bio: 'ইসলামিক আধুনিক অর্থনীতি, কর্পোরেট ব্যবসা ও চিকিৎসাবিজ্ঞানের ফিকহি গবেষণায় ১৫+ বছরের অভিজ্ঞতা সম্পন্ন বিশিষ্ট ইসলামিক স্কলার।',
+    categoryLabelBn: 'প্রতিষ্ঠাতা ও পরিচালক',
+    qualifications: 'পোস্ট গ্র্যাজুয়েট ইন ইসলামিক ল, জামিয়া শারঈয়্যাহ মালিবাগ।',
+    bio: 'নূর ফিকহ একাডেমির প্রতিষ্ঠাতা ও পরিচালক। সমকালীন ফিকহি গবেষণা, আধুনিক অর্থনৈতিক লেনদেন, চিকিৎসা ফিকহ ও যুগোপযোগী ইসলামিক আইনের প্রামাণ্য বিশ্লেষণে নিবেদিতপ্রাণ গবেষক ও প্রশিক্ষক।',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
     email: 'noorfiqhaca@gmail.com',
     phone: '+8801855905185',
@@ -84,7 +84,7 @@ export const INITIAL_FACULTY: FacultyMember[] = [
 export const INITIAL_USERS: UserProfile[] = [
   {
     uid: 'usr-admin-noor',
-    name: 'মুফতী আব্দুল্লাহ আন-নূর (এডমিন)',
+    name: 'মুফতী আম্মার বিন নূর (এডমিন)',
     email: 'noorfiqhaca@gmail.com',
     phone: '+8801855905185',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
@@ -401,13 +401,71 @@ function removeDeletedBookId(id: string): void {
   setLocal(DELETED_BOOKS_KEY, ids);
 }
 
+// Known dummy item identifiers to purge completely
+export const DUMMY_ITEM_IDS = new Set([
+  'fiqh-ibadat-mastery',
+  'islamic-finance-muamalat',
+  'nikah-family-fiqh',
+  'usul-al-fiqh-foundations',
+  'fiqh-al-muyassar-bn',
+  'contemporary-fiqh-solutions',
+  'farayez-calculator-guide',
+  'live-fiqh-session-01',
+  'live-fiqh-session-02',
+  'fatwa-01',
+  'fatwa-02',
+  'fatwa-03',
+  'rev-1',
+  'rev-2',
+  'rev-3'
+]);
+
+function purgeDummyDataOnce(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const isPurged = localStorage.getItem('nfa_dummy_cleaned_v5');
+    if (!isPurged) {
+      const courses = getLocal<Course[]>(STORAGE_KEYS.COURSES, []);
+      setLocal(STORAGE_KEYS.COURSES, courses.filter(c => !DUMMY_ITEM_IDS.has(c.id)));
+
+      const books = getLocal<Book[]>(STORAGE_KEYS.BOOKS, []);
+      setLocal(STORAGE_KEYS.BOOKS, books.filter(b => !DUMMY_ITEM_IDS.has(b.id)));
+
+      const fatwas = getLocal<FatwaQuestion[]>(STORAGE_KEYS.FATWAS, []);
+      setLocal(STORAGE_KEYS.FATWAS, fatwas.filter(f => !DUMMY_ITEM_IDS.has(f.id)));
+
+      const live = getLocal<LiveClass[]>(STORAGE_KEYS.LIVE_CLASSES, []);
+      setLocal(STORAGE_KEYS.LIVE_CLASSES, live.filter(l => !DUMMY_ITEM_IDS.has(l.id)));
+
+      const reviews = getLocal<SiteReview[]>(STORAGE_KEYS.SETTINGS + '_reviews', []);
+      setLocal(STORAGE_KEYS.SETTINGS + '_reviews', reviews.filter(r => !DUMMY_ITEM_IDS.has(r.id)));
+
+      const settings = getLocal<SiteSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
+      if (settings && settings.logoImageUrl && (
+        settings.logoImageUrl.includes('placeholder') || 
+        settings.logoImageUrl.includes('dummy') ||
+        settings.logoImageUrl.includes('sample') ||
+        settings.logoImageUrl.includes('unsplash.com')
+      )) {
+        settings.logoImageUrl = '';
+        setLocal(STORAGE_KEYS.SETTINGS, settings);
+      }
+
+      localStorage.setItem('nfa_dummy_cleaned_v5', 'true');
+    }
+  } catch (e) {
+    console.warn('Dummy purge error:', e);
+  }
+}
+
 export const AppStore = {
   // Courses
   getCourses: (): Course[] => {
+    purgeDummyDataOnce();
     const deletedIds = getDeletedCourseIds();
     const list = getLocal<Course[]>(STORAGE_KEYS.COURSES, INITIAL_COURSES);
     return list
-      .filter(c => !deletedIds.includes(c.id))
+      .filter(c => !deletedIds.includes(c.id) && !DUMMY_ITEM_IDS.has(c.id))
       .map(c => ({
         ...c,
         thumbnail: formatImageUrl(c.thumbnail),
@@ -491,10 +549,11 @@ export const AppStore = {
 
   // Books
   getBooks: (): Book[] => {
+    purgeDummyDataOnce();
     const deletedIds = getDeletedBookIds();
     const list = getLocal<Book[]>(STORAGE_KEYS.BOOKS, INITIAL_BOOKS);
     return list
-      .filter(b => !deletedIds.includes(b.id))
+      .filter(b => !deletedIds.includes(b.id) && !DUMMY_ITEM_IDS.has(b.id))
       .map(b => ({
         ...b,
         coverImage: formatImageUrl(b.coverImage),
@@ -549,7 +608,9 @@ export const AppStore = {
 
   // Fatwas & Fiqh Consultation
   getFatwas: (): FatwaQuestion[] => {
-    return getLocal<FatwaQuestion[]>(STORAGE_KEYS.FATWAS, INITIAL_FATWAS);
+    purgeDummyDataOnce();
+    return getLocal<FatwaQuestion[]>(STORAGE_KEYS.FATWAS, INITIAL_FATWAS)
+      .filter(f => !DUMMY_ITEM_IDS.has(f.id));
   },
   getFatwaById: (id: string): FatwaQuestion | undefined => {
     return AppStore.getFatwas().find(f => f.id === id || f.trackingCode === id);
@@ -654,12 +715,15 @@ export const AppStore = {
 
   // Live Classes
   getLiveClasses: (): LiveClass[] => {
+    purgeDummyDataOnce();
     const list = getLocal<LiveClass[]>(STORAGE_KEYS.LIVE_CLASSES, INITIAL_LIVE_CLASSES);
-    return list.map(cls => ({
-      ...cls,
-      thumbnail: formatImageUrl(cls.thumbnail),
-      instructorAvatar: formatImageUrl(cls.instructorAvatar)
-    }));
+    return list
+      .filter(cls => !DUMMY_ITEM_IDS.has(cls.id))
+      .map(cls => ({
+        ...cls,
+        thumbnail: formatImageUrl(cls.thumbnail),
+        instructorAvatar: formatImageUrl(cls.instructorAvatar)
+      }));
   },
   saveLiveClass: (cls: LiveClass): void => {
     const formatted: LiveClass = {
@@ -1066,7 +1130,9 @@ export const AppStore = {
 
   // Site Reviews
   getReviews: (): SiteReview[] => {
-    return getLocal<SiteReview[]>(STORAGE_KEYS.SETTINGS + '_reviews', INITIAL_REVIEWS);
+    purgeDummyDataOnce();
+    return getLocal<SiteReview[]>(STORAGE_KEYS.SETTINGS + '_reviews', INITIAL_REVIEWS)
+      .filter(r => !DUMMY_ITEM_IDS.has(r.id));
   },
   saveReview: (review: SiteReview): void => {
     const reviews = AppStore.getReviews();
@@ -1076,6 +1142,8 @@ export const AppStore = {
     setLocal(STORAGE_KEYS.SETTINGS + '_reviews', reviews);
 
     if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('noorfiqh_reviews_updated', { detail: reviews }));
       try {
         setDoc(doc(db, 'reviews', review.id), review, { merge: true }).catch(err => {
           handleFirestoreError(err, OperationType.WRITE, `reviews/${review.id}`);
@@ -1090,6 +1158,8 @@ export const AppStore = {
     setLocal(STORAGE_KEYS.SETTINGS + '_reviews', reviews);
 
     if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('noorfiqh_reviews_updated', { detail: reviews }));
       try {
         deleteDoc(doc(db, 'reviews', id)).catch(err => {
           handleFirestoreError(err, OperationType.DELETE, `reviews/${id}`);
@@ -1184,6 +1254,8 @@ export const AppStore = {
     setLocal(STORAGE_KEYS.FACULTY, list);
 
     if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('noorfiqh_faculty_updated'));
+      window.dispatchEvent(new Event('noorfiqh_settings_updated'));
       try {
         setDoc(doc(db, 'faculty', formatted.id), formatted, { merge: true }).catch(err => {
           handleFirestoreError(err, OperationType.WRITE, `faculty/${formatted.id}`);
@@ -1198,6 +1270,8 @@ export const AppStore = {
     setLocal(STORAGE_KEYS.FACULTY, list);
 
     if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('noorfiqh_faculty_updated'));
+      window.dispatchEvent(new Event('noorfiqh_settings_updated'));
       try {
         deleteDoc(doc(db, 'faculty', id)).catch(err => {
           handleFirestoreError(err, OperationType.DELETE, `faculty/${id}`);
@@ -1364,6 +1438,7 @@ export const AppStore = {
     const unsubs: (() => void)[] = [];
 
     // Helper to notify all React components in browser
+    purgeDummyDataOnce();
     const triggerLocalUpdate = (eventCustomName?: string, detail?: any) => {
       window.dispatchEvent(new Event('storage'));
       if (eventCustomName) {
@@ -1378,7 +1453,7 @@ export const AppStore = {
           const deletedIds = getDeletedCourseIds();
           const list: Course[] = [];
           snapshot.forEach((d) => {
-            if (!deletedIds.includes(d.id)) {
+            if (!deletedIds.includes(d.id) && !DUMMY_ITEM_IDS.has(d.id)) {
               list.push({ id: d.id, ...d.data() } as Course);
             }
           });
@@ -1394,7 +1469,7 @@ export const AppStore = {
           const deletedIds = getDeletedBookIds();
           const list: Book[] = [];
           snapshot.forEach((d) => {
-            if (!deletedIds.includes(d.id)) {
+            if (!deletedIds.includes(d.id) && !DUMMY_ITEM_IDS.has(d.id)) {
               list.push({ id: d.id, ...d.data() } as Book);
             }
           });
@@ -1409,12 +1484,12 @@ export const AppStore = {
         if (!snapshot.empty) {
           const list: FatwaQuestion[] = [];
           snapshot.forEach((d) => {
-            list.push({ id: d.id, ...d.data() } as FatwaQuestion);
+            if (!DUMMY_ITEM_IDS.has(d.id)) {
+              list.push({ id: d.id, ...d.data() } as FatwaQuestion);
+            }
           });
-          if (list.length > 0) {
-            setLocal(STORAGE_KEYS.FATWAS, list);
-            triggerLocalUpdate('noorfiqh_fatwas_updated', list);
-          }
+          setLocal(STORAGE_KEYS.FATWAS, list);
+          triggerLocalUpdate('noorfiqh_fatwas_updated', list);
         }
       }, (err) => console.warn('Firestore fatwas sync error:', err));
       unsubs.push(unsubFatwas);
@@ -1424,12 +1499,12 @@ export const AppStore = {
         if (!snapshot.empty) {
           const list: LiveClass[] = [];
           snapshot.forEach((d) => {
-            list.push({ id: d.id, ...d.data() } as LiveClass);
+            if (!DUMMY_ITEM_IDS.has(d.id)) {
+              list.push({ id: d.id, ...d.data() } as LiveClass);
+            }
           });
-          if (list.length > 0) {
-            setLocal(STORAGE_KEYS.LIVE_CLASSES, list);
-            triggerLocalUpdate('noorfiqh_live_updated', list);
-          }
+          setLocal(STORAGE_KEYS.LIVE_CLASSES, list);
+          triggerLocalUpdate('noorfiqh_live_updated', list);
         }
       }, (err) => console.warn('Firestore live classes sync error:', err));
       unsubs.push(unsubLive);
@@ -1469,12 +1544,12 @@ export const AppStore = {
         if (!snapshot.empty) {
           const list: SiteReview[] = [];
           snapshot.forEach((d) => {
-            list.push({ id: d.id, ...d.data() } as SiteReview);
+            if (!DUMMY_ITEM_IDS.has(d.id)) {
+              list.push({ id: d.id, ...d.data() } as SiteReview);
+            }
           });
-          if (list.length > 0) {
-            setLocal(STORAGE_KEYS.SETTINGS + '_reviews', list);
-            triggerLocalUpdate('noorfiqh_reviews_updated', list);
-          }
+          setLocal(STORAGE_KEYS.SETTINGS + '_reviews', list);
+          triggerLocalUpdate('noorfiqh_reviews_updated', list);
         }
       }, (err) => console.warn('Firestore reviews sync error:', err));
       unsubs.push(unsubReviews);
