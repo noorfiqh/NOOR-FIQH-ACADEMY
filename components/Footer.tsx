@@ -195,7 +195,7 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-2.5">
                 <Phone size={16} className="text-[#17A2B8] shrink-0" />
-                <span>+8801855905185 (হোয়াটসঅ্যাপ/কল)</span>
+                <span>{siteSettings.whatsappNumber || siteSettings.phone || '+8801348161517'} (হোয়াটসঅ্যাপ/কল)</span>
               </div>
               <div className="pt-2">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#112734] border border-[#23626F] text-[11px] text-[#17A2B8] font-medium">

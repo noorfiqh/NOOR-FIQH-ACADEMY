@@ -19,6 +19,7 @@ import {
 } from './firebase';
 import { UserProfile } from './types';
 import { AppStore } from './store';
+import { safeJsonStringify } from './safe-json';
 
 export type { UserProfile };
 
@@ -91,17 +92,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
             setUser(merged);
             AppStore.saveUser(merged);
-            localStorage.setItem('nfa_active_user', JSON.stringify(merged));
+            localStorage.setItem('nfa_active_user', safeJsonStringify(merged));
           } else {
             await setDoc(userDocRef, baseProfile, { merge: true });
             setUser(baseProfile);
             AppStore.saveUser(baseProfile);
-            localStorage.setItem('nfa_active_user', JSON.stringify(baseProfile));
+            localStorage.setItem('nfa_active_user', safeJsonStringify(baseProfile));
           }
         } catch {
           setUser(baseProfile);
           AppStore.saveUser(baseProfile);
-          localStorage.setItem('nfa_active_user', JSON.stringify(baseProfile));
+          localStorage.setItem('nfa_active_user', safeJsonStringify(baseProfile));
         }
       } else {
         // If not logged in via Firebase, check if an active session is in localStorage
@@ -161,17 +162,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const userDocRef = doc(db, 'users', fbUser.uid);
         await setDoc(userDocRef, profile, { merge: true });
-      } catch (err) {
-        console.warn('Firestore sync skipped', err);
+      } catch (err: any) {
+        console.warn('Firestore sync notice:', err?.message || String(err));
       }
 
       setUser(profile);
       AppStore.saveUser(profile);
-      localStorage.setItem('nfa_active_user', JSON.stringify(profile));
+      localStorage.setItem('nfa_active_user', safeJsonStringify(profile));
       setLoading(false);
       return { success: true };
     } catch (error: any) {
-      console.error('Google Auth error:', error);
+      console.error('Google Auth notice:', error?.message || String(error));
       setLoading(false);
       const code = error?.code || '';
       if (code === 'auth/popup-closed-by-user') {
@@ -240,7 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { success: false, error: 'অতিরিক্ত ব্যর্থ চেষ্টার কারণে সাময়িকভাবে ব্লক করা হয়েছে। কিছুক্ষণ পর চেষ্টা করুন।' };
         } else {
           // In sandboxed environments if network fails, check store
-          console.warn('Firebase signIn failed, evaluating local credential fallback:', fbErr);
+          console.warn('Firebase signIn notice, evaluating local credential fallback:', fbErr?.message || String(fbErr));
         }
       }
 
@@ -266,17 +267,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const userDocRef = doc(db, 'users', uid);
         await setDoc(userDocRef, profile, { merge: true });
-      } catch (err) {
-        console.warn('Firestore user doc sync skipped', err);
+      } catch (err: any) {
+        console.warn('Firestore user doc sync notice:', err?.message || String(err));
       }
 
       setUser(profile);
       AppStore.saveUser(profile);
-      localStorage.setItem('nfa_active_user', JSON.stringify(profile));
+      localStorage.setItem('nfa_active_user', safeJsonStringify(profile));
       setLoading(false);
       return { success: true };
     } catch (err: any) {
-      console.error('Login error:', err);
+      console.error('Login notice:', err?.message || String(err));
       setLoading(false);
       return { success: false, error: err?.message || 'লগইন সম্পন্ন করা সম্ভব হয়নি।' };
     }
@@ -323,13 +324,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const userDocRef = doc(db, 'users', uid);
         await setDoc(userDocRef, profile, { merge: true });
-      } catch (err) {
-        console.warn('Firestore register doc sync skipped', err);
+      } catch (err: any) {
+        console.warn('Firestore register doc sync notice:', err?.message || String(err));
       }
 
       setUser(profile);
       AppStore.saveUser(profile);
-      localStorage.setItem('nfa_active_user', JSON.stringify(profile));
+      localStorage.setItem('nfa_active_user', safeJsonStringify(profile));
       setLoading(false);
       return { success: true };
     } catch (err: any) {

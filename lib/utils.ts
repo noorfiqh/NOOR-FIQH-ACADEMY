@@ -109,3 +109,14 @@ export function handleImageError(e: React.SyntheticEvent<HTMLImageElement, Event
   target.dataset.fallbackApplied = 'true';
   target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23f1f5f9" width="100" height="100"/><text fill="%2394a3b8" x="50" y="55" font-family="sans-serif" font-size="12" text-anchor="middle">No Image</text></svg>';
 }
+
+export function toBengaliNumber(input: number | string): string {
+  const bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  return String(input).replace(/\d/g, (d) => bengaliDigits[Number(d)] ?? d);
+}
+
+export function formatBengaliNumberWithComma(num: number): string {
+  if (isNaN(num)) return '০';
+  const formatted = num.toLocaleString('en-IN');
+  return toBengaliNumber(formatted);
+}

@@ -6,7 +6,7 @@ import { AppStore } from '@/lib/store';
 
 export function FloatingWhatsApp() {
   const [isOpen, setIsOpen] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState('8801855905185');
+  const [phoneNumber, setPhoneNumber] = useState('8801348161517');
 
   useEffect(() => {
     const syncPhone = () => {

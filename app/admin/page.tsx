@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { AppStore, DEFAULT_COURSE_CATEGORIES } from '@/lib/store';
+import { AppStore, DEFAULT_COURSE_CATEGORIES, isDummyFatwa, DUMMY_ITEM_IDS, getDeletedFatwaIds } from '@/lib/store';
 import { Course, Book, FatwaQuestion, Order, Certificate, LiveClass, SiteReview, Lesson, QuizQuestion, UserProfile, FacultyMember, SiteSettings, CourseCategory } from '@/lib/types';
 import { LoginModal } from '@/components/LoginModal';
 import { 
@@ -52,12 +52,13 @@ import {
   RefreshCw,
   Library,
   Truck,
-  MapPin
+  MapPin,
+  BarChart3
 } from 'lucide-react';
 import { CertificateView } from '@/components/CertificateView';
 import { sendTestNotificationEmail } from '@/lib/email-service';
 import { formatImageUrl, handleImageError } from '@/lib/utils';
-import { db, collection, onSnapshot, handleFirestoreError, OperationType } from '@/lib/firebase';
+import { db, doc, deleteDoc, collection, onSnapshot, handleFirestoreError, OperationType } from '@/lib/firebase';
 
 type AdminTab = 'overview' | 'courses' | 'orders' | 'fatwas' | 'books' | 'live_classes' | 'certificates' | 'reviews' | 'users' | 'faculty' | 'settings';
 
@@ -186,13 +187,20 @@ export default function AdminDashboardPage() {
 
     // Listen to Firestore Fatwas
     const unsubFatwas = onSnapshot(collection(db, 'fatwas'), (snapshot) => {
+      const deletedIds = new Set(getDeletedFatwaIds());
       const firestoreFatwas: FatwaQuestion[] = [];
-      snapshot.forEach((doc) => {
-        firestoreFatwas.push({ id: doc.id, ...doc.data() } as FatwaQuestion);
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data() as FatwaQuestion;
+        const isDummy = DUMMY_ITEM_IDS.has(docSnap.id) || deletedIds.has(docSnap.id) || isDummyFatwa({ id: docSnap.id, ...data });
+        if (isDummy) {
+          try {
+            deleteDoc(doc(db, 'fatwas', docSnap.id)).catch(() => {});
+          } catch (e) {}
+        } else {
+          firestoreFatwas.push({ id: docSnap.id, ...data } as FatwaQuestion);
+        }
       });
-      if (firestoreFatwas.length > 0) {
-        setFatwas(firestoreFatwas);
-      }
+      setFatwas(firestoreFatwas);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'fatwas');
     });
@@ -227,9 +235,18 @@ export default function AdminDashboardPage() {
     const handleOrderLocalUpdate = () => {
       setOrders(AppStore.getOrders());
     };
+    const handleFatwaLocalUpdate = () => {
+      setFatwas(AppStore.getFatwas());
+    };
+
+    // Auto purge any lingering dummy fatwas on admin load
+    AppStore.purgeDummyFatwas().catch(() => {});
+
     window.addEventListener('noorfiqh_orders_updated', handleOrderLocalUpdate);
     window.addEventListener('noorfiqh_store_updated', handleOrderLocalUpdate);
+    window.addEventListener('noorfiqh_fatwas_updated', handleFatwaLocalUpdate);
     window.addEventListener('storage', handleOrderLocalUpdate);
+    window.addEventListener('storage', handleFatwaLocalUpdate);
 
     return () => {
       unsubOrders();
@@ -238,7 +255,9 @@ export default function AdminDashboardPage() {
       unsubBooks();
       window.removeEventListener('noorfiqh_orders_updated', handleOrderLocalUpdate);
       window.removeEventListener('noorfiqh_store_updated', handleOrderLocalUpdate);
+      window.removeEventListener('noorfiqh_fatwas_updated', handleFatwaLocalUpdate);
       window.removeEventListener('storage', handleOrderLocalUpdate);
+      window.removeEventListener('storage', handleFatwaLocalUpdate);
     };
   }, [isAdmin]);
 
@@ -441,6 +460,46 @@ export default function AdminDashboardPage() {
     setAnswerRefs('');
     refreshAllData();
     showNotification('ফতোয়ার উত্তর সফলভাবে সংরক্ষণ ও প্রকাশ করা হয়েছে');
+  };
+
+  // Fatwa Delete & Purge Handlers
+  const [deletingFatwaId, setDeletingFatwaId] = useState<string | null>(null);
+
+  const handleDeleteFatwa = async (fatwa: FatwaQuestion) => {
+    const title = fatwa.questionTitle || fatwa.trackingCode;
+    if (!window.confirm(`আপনি কি নিশ্চিতভাবে "${title}" ফতোয়াটি স্থায়ীভাবে মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না।`)) {
+      return;
+    }
+    setDeletingFatwaId(fatwa.id);
+    try {
+      AppStore.deleteFatwa(fatwa.id);
+      try {
+        await deleteDoc(doc(db, 'fatwas', fatwa.id));
+      } catch (err) {
+        console.warn('Firestore fatwa delete error:', err);
+      }
+      setFatwas(prev => prev.filter(f => f.id !== fatwa.id));
+      showNotification('ফতোয়াটি সফলভাবে মুছে ফেলা হয়েছে');
+    } catch (err) {
+      console.error('Error deleting fatwa:', err);
+      showNotification('ফতোয়া মুছতে সমস্যা হয়েছে');
+    } finally {
+      setDeletingFatwaId(null);
+    }
+  };
+
+  const handlePurgeDummyFatwas = async () => {
+    if (!window.confirm('আপনি কি ডাটাবেজ এবং সিস্টেম থেকে সকল ডামি/নমুনা ফতোয়া স্থায়ীভাবে মুছে ফেলতে চান?')) {
+      return;
+    }
+    try {
+      const res = await AppStore.purgeDummyFatwas();
+      setFatwas(AppStore.getFatwas());
+      showNotification(`সকল ডামি ফতোয়া ডাটাবেজ থেকে মুছে ফেলা হয়েছে (${res.count} টি অপসারিত)`);
+    } catch (err) {
+      console.error('Error purging dummy fatwas:', err);
+      showNotification('ডামি ফতোয়া মুছতে সমস্যা হয়েছে');
+    }
   };
 
   // Course Save Handler
@@ -1503,7 +1562,16 @@ export default function AdminDashboardPage() {
                   <p className="text-xs text-[#8a817c]">শিক্ষার্থীদের প্রেরিত প্রশ্নের দলীলভিত্তিক উত্তর তৈরি ও প্রকাশ করুন</p>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePurgeDummyFatwas}
+                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 flex items-center gap-1.5 transition-all shadow-sm"
+                    title="ডাটাবেজ থেকে সকল ডামি/নমুনা ফতোয়া মুছে ফেলুন"
+                  >
+                    <Trash2 size={13} />
+                    <span>ডামি ফতোয়া মুছে ফেলুন</span>
+                  </button>
                   {(['all', 'pending', 'answered'] as const).map((f) => (
                     <button
                       key={f}
@@ -1539,11 +1607,22 @@ export default function AdminDashboardPage() {
                             </span>
                           )}
                         </div>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                          fatwa.status === 'answered' ? 'bg-[#17A2B8]/15 text-[#112734]' : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {fatwa.status === 'answered' ? 'উত্তর সম্পন্ন ✓' : 'অপেক্ষমান'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            fatwa.status === 'answered' ? 'bg-[#17A2B8]/15 text-[#112734]' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {fatwa.status === 'answered' ? 'উত্তর সম্পন্ন ✓' : 'অপেক্ষমান'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteFatwa(fatwa)}
+                            disabled={deletingFatwaId === fatwa.id}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                            title="ফতোয়াটি স্থায়ীভাবে মুছে ফেলুন"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
 
                       <h4 className="font-extrabold text-base text-[#2c3e50]">{fatwa.questionTitle}</h4>
@@ -1557,16 +1636,25 @@ export default function AdminDashboardPage() {
                             <strong className="text-[#112734] flex items-center gap-1.5">
                               <ShieldCheck size={15} /> আল-জাওয়াব (প্রদত্ত ফতোয়া)
                             </strong>
-                            <button
-                              onClick={() => {
-                                setAnsweringFatwa(fatwa);
-                                setAnswerText(fatwa.answer || fatwa.answerText || '');
-                                setAnswerRefs(Array.isArray(fatwa.references) ? fatwa.references.join(', ') : (fatwa.references || ''));
-                              }}
-                              className="text-[#112734] font-bold hover:underline flex items-center gap-1"
-                            >
-                              <Edit3 size={12} /> এডিট করুন
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setAnsweringFatwa(fatwa);
+                                  setAnswerText(fatwa.answer || fatwa.answerText || '');
+                                  setAnswerRefs(Array.isArray(fatwa.references) ? fatwa.references.join(', ') : (fatwa.references || ''));
+                                }}
+                                className="text-[#112734] font-bold hover:underline flex items-center gap-1"
+                              >
+                                <Edit3 size={12} /> এডিট করুন
+                              </button>
+                              <button
+                                onClick={() => handleDeleteFatwa(fatwa)}
+                                disabled={deletingFatwaId === fatwa.id}
+                                className="text-rose-600 hover:text-rose-700 font-bold hover:underline flex items-center gap-1 border-l border-slate-300 pl-2"
+                              >
+                                <Trash2 size={12} /> মুছে ফেলুন
+                              </button>
+                            </div>
                           </div>
                           <p className="text-[#2c3e50] leading-relaxed font-medium">{fatwa.answer || fatwa.answerText}</p>
                           {fatwa.references && (
@@ -1576,20 +1664,41 @@ export default function AdminDashboardPage() {
                           )}
                         </div>
                       ) : (
-                        <button
-                          onClick={() => {
-                            setAnsweringFatwa(fatwa);
-                            setAnswerText('');
-                            setAnswerRefs('');
-                          }}
-                          className="px-4 py-2.5 bg-[#112734] hover:bg-[#23626F] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
-                        >
-                          <Edit3 size={14} />
-                          <span>মুফতী হিসেবে উত্তর লিখুন</span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setAnsweringFatwa(fatwa);
+                              setAnswerText('');
+                              setAnswerRefs('');
+                            }}
+                            className="px-4 py-2.5 bg-[#112734] hover:bg-[#23626F] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm"
+                          >
+                            <Edit3 size={14} />
+                            <span>মুফতী হিসেবে উত্তর লিখুন</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteFatwa(fatwa)}
+                            disabled={deletingFatwaId === fatwa.id}
+                            className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors border border-rose-200"
+                            title="ফতোয়াটি মুছে ফেলুন"
+                          >
+                            <Trash2 size={13} />
+                            <span>{deletingFatwaId === fatwa.id ? 'মুছছে...' : 'মুছে ফেলুন'}</span>
+                          </button>
+                        </div>
                       )}
                     </div>
                   ))}
+
+                {fatwas.length === 0 && (
+                  <div className="bg-white p-12 rounded-3xl border border-[#ece8e0] text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#112734] flex items-center justify-center mx-auto">
+                      <HelpCircle size={24} />
+                    </div>
+                    <h4 className="font-extrabold text-sm text-[#112734]">কোনো ফতোয়া প্রশ্ন নেই</h4>
+                    <p className="text-xs text-[#8a817c]">শিক্ষার্থীরা ওয়েবসাইট থেকে ফতোয়া প্রশ্ন পাঠালে তা এখানে সরাসরি রিয়েলটাইমে জমা হবে।</p>
+                  </div>
+                )}
               </div>
 
               {/* Answering Modal */}
@@ -3797,6 +3906,65 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* 4. HERO STATS & LIVE METRICS CARD SETTINGS */}
+                <div className="space-y-4 pt-6 border-t border-[#ece8e0]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2">
+                    <div>
+                      <h3 className="font-extrabold text-base text-[#112734] flex items-center gap-2">
+                        <BarChart3 size={18} className="text-[#17A2B8]" />
+                        <span>হিরো সেকশন পরিসংখ্যান কার্ড (Stats & Metrics Cards)</span>
+                      </h3>
+                      <p className="text-xs text-[#8a817c] mt-0.5">
+                        শিক্ষার্থী লগইন, প্রদত্ত ফতোয়া এবং রেফারেন্স প্রদানের সাথে সরাসরি কানেক্টেড কার্ডের কনফিগারেশন
+                      </p>
+                    </div>
+
+                    <label className="flex items-center gap-2 cursor-pointer bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-xl border border-[#ece8e0] text-xs font-bold text-[#112734]">
+                      <input
+                        type="checkbox"
+                        checked={siteSettings.statsEnforceLiveOnly ?? false}
+                        onChange={(e) => setSiteSettings({ ...siteSettings, statsEnforceLiveOnly: e.target.checked })}
+                        className="rounded text-[#112734]"
+                      />
+                      <span>শুধুমাত্র লাইভ ডাটা দেখান (বেস কাউন্ট বাদ দিন)</span>
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <label className="block font-bold text-[#2c3e50] mb-1">
+                        শিক্ষার্থী বেস কাউন্ট (Base Student Count)
+                      </label>
+                      <input
+                        type="number"
+                        value={siteSettings.statsBaseStudents ?? 3600}
+                        onChange={(e) => setSiteSettings({ ...siteSettings, statsBaseStudents: Number(e.target.value) })}
+                        disabled={siteSettings.statsEnforceLiveOnly}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] disabled:bg-slate-100"
+                      />
+                      <p className="text-[11px] text-[#8a817c] mt-1">
+                        প্রতিটি শিক্ষার্থী একাউন্ট ও লগইনের সাথে এই সংখ্যাটি স্বয়ংক্রিয়ভাবে বৃদ্ধি পায়। (ডিফল্ট: ৩৬০০)
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-[#2c3e50] mb-1">
+                        প্রদত্ত ফতোয়া বেস কাউন্ট (Base Fatwas Count)
+                      </label>
+                      <input
+                        type="number"
+                        value={siteSettings.statsBaseFatwas ?? 1200}
+                        onChange={(e) => setSiteSettings({ ...siteSettings, statsBaseFatwas: Number(e.target.value) })}
+                        disabled={siteSettings.statsEnforceLiveOnly}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] disabled:bg-slate-100"
+                      />
+                      <p className="text-[11px] text-[#8a817c] mt-1">
+                        দারুল ইফতায় প্রতিটি ফতোয়ার উত্তর দেওয়ার সাথে সাথে এই সংখ্যাটি লাইভ ডেটাবেজ থেকে যুক্ত হয়। (ডিফল্ট: ১২০০)
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

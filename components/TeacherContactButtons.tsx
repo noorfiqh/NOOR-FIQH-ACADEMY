@@ -12,19 +12,19 @@ interface TeacherContactButtonsProps {
 }
 
 export function TeacherContactButtons({
-  phone = '+8801855905185',
+  phone = '+8801348161517',
   email = 'noorfiqhaca@gmail.com',
   name,
   className = '',
   size = 'sm'
 }: TeacherContactButtonsProps) {
   // Format phone for WhatsApp link
-  const rawNum = phone || '+8801855905185';
+  const rawNum = phone || '+8801348161517';
   let digits = rawNum.replace(/[^0-9]/g, '');
   if (!digits.startsWith('88') && digits.startsWith('01')) {
     digits = '88' + digits;
   } else if (!digits) {
-    digits = '8801855905185';
+    digits = '8801348161517';
   }
 
   const defaultMsg = encodeURIComponent(
@@ -49,7 +49,7 @@ export function TeacherContactButtons({
         className={`flex-1 flex items-center justify-center gap-1.5 font-bold font-tiro text-[#112734] bg-[#e8f8f2] hover:bg-[#25d366] hover:text-white border border-[#17A2B8]/30 hover:border-[#25d366] transition-all rounded-xl shadow-xs group ${
           isSmall ? 'py-1.5 px-2.5 text-[11px]' : 'py-2 px-3 text-xs'
         }`}
-        title={`হোয়াটসঅ্যাপে মেসেজ পাঠান (${phone || '+8801855905185'})`}
+        title={`হোয়াটসঅ্যাপে মেসেজ পাঠান (${phone || '+8801348161517'})`}
       >
         <MessageCircle size={isSmall ? 13 : 15} className="text-[#128c7e] group-hover:text-white fill-[#128c7e]/20 group-hover:fill-white/30 transition-colors shrink-0" />
         <span className="truncate font-semibold">হোয়াটসঅ্যাপ</span>

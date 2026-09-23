@@ -74,7 +74,7 @@ export default function FaqPage() {
           <h3 className="font-extrabold text-base text-[#112734] font-anek">অন্য কোনো বিষয়ে জানার আছে?</h3>
           <p className="text-xs text-[#5a524d] font-tiro">আমাদের হেল্পলাইন ও হোয়াটসঅ্যাপে সরাসরি প্রশ্ন করুন</p>
           <a
-            href="https://wa.me/8801855905185"
+            href="https://wa.me/8801348161517"
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#112734] text-white rounded-xl font-bold text-xs shadow hover:bg-[#23626F] transition-colors font-tiro"

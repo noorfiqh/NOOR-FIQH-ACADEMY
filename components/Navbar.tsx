@@ -138,12 +138,12 @@ export function Navbar() {
               </a>
               <span className="text-slate-600">|</span>
               <a 
-                href={`https://wa.me/${siteSettings.whatsappNumber || '8801855905185'}`} 
+                href={`https://wa.me/${(siteSettings.whatsappNumber || '+8801348161517').replace(/[^0-9]/g, '')}`} 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="hover:text-[#17A2B8] text-[#17A2B8] transition-colors font-semibold flex items-center gap-1"
               >
-                <PhoneCall size={12} /> {siteSettings.whatsappNumber || '+8801855905185'}
+                <PhoneCall size={12} /> {siteSettings.whatsappNumber || '+8801348161517'}
               </a>
             </div>
           </div>
@@ -329,7 +329,7 @@ export function Navbar() {
                             )}
 
                             <a
-                              href="https://wa.me/8801855905185"
+                              href={`https://wa.me/${(siteSettings.whatsappNumber || '+8801348161517').replace(/[^0-9]/g, '')}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={() => setUserDropdownOpen(false)}

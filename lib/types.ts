@@ -382,6 +382,9 @@ export interface SiteSettings {
   orderNotificationEnabled?: boolean;
   orderNotificationEmail?: string;
   formSubmitEndpoint?: string;
+  statsBaseStudents?: number;
+  statsBaseFatwas?: number;
+  statsEnforceLiveOnly?: boolean;
 }
 
 

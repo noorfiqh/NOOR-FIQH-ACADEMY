@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AppStore, INITIAL_FATWAS, DEFAULT_SETTINGS } from '@/lib/store';
+import { AppStore, DEFAULT_SETTINGS, isDummyFatwa, getDeletedFatwaIds } from '@/lib/store';
 import { FatwaQuestion, SiteSettings } from '@/lib/types';
 import { db, collection, onSnapshot, handleFirestoreError, OperationType, doc } from '@/lib/firebase';
 import { formatImageUrl, handleImageError } from '@/lib/utils';
@@ -25,7 +25,7 @@ function FatwaContent() {
   const initialQuery = searchParams?.get('q') || '';
 
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
-  const [fatwas, setFatwas] = useState<FatwaQuestion[]>(INITIAL_FATWAS);
+  const [fatwas, setFatwas] = useState<FatwaQuestion[]>([]);
   const [search, setSearch] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -39,6 +39,7 @@ function FatwaContent() {
     };
     window.addEventListener('storage', handleUpdate);
     window.addEventListener('noorfiqh_settings_updated', handleUpdate);
+    window.addEventListener('noorfiqh_fatwas_updated', handleUpdate);
 
     // Sync site settings from Firestore
     const unsubSettings = onSnapshot(doc(db, 'settings', 'general'), (snapshot) => {
@@ -50,21 +51,17 @@ function FatwaContent() {
       handleFirestoreError(error, OperationType.GET, 'settings/general');
     });
 
-    // Sync fatwas live from Firestore
+    // Sync fatwas live from Firestore (excluding dummy and deleted fatwas)
     const unsubscribe = onSnapshot(collection(db, 'fatwas'), (snapshot) => {
-      if (!snapshot.empty) {
-        const firestoreFatwas: FatwaQuestion[] = [];
-        snapshot.forEach((doc) => {
-          firestoreFatwas.push({ id: doc.id, ...doc.data() } as FatwaQuestion);
-        });
-        setFatwas(prev => {
-          const merged = [...firestoreFatwas];
-          prev.forEach(p => {
-            if (!merged.some(m => m.id === p.id)) merged.push(p);
-          });
-          return merged;
-        });
-      }
+      const deletedIds = new Set(getDeletedFatwaIds());
+      const firestoreFatwas: FatwaQuestion[] = [];
+      snapshot.forEach((doc) => {
+        const item = { id: doc.id, ...doc.data() } as FatwaQuestion;
+        if (!isDummyFatwa(item) && !deletedIds.has(item.id)) {
+          firestoreFatwas.push(item);
+        }
+      });
+      setFatwas(firestoreFatwas);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'fatwas');
     });
@@ -72,6 +69,7 @@ function FatwaContent() {
     return () => {
       window.removeEventListener('storage', handleUpdate);
       window.removeEventListener('noorfiqh_settings_updated', handleUpdate);
+      window.removeEventListener('noorfiqh_fatwas_updated', handleUpdate);
       unsubSettings();
       unsubscribe();
     };

@@ -6,7 +6,6 @@ import {
   BookOpen, 
   HelpCircle, 
   Star, 
-  Sparkles, 
   CheckCircle2, 
   ArrowRight, 
   ChevronRight,
@@ -28,20 +27,25 @@ import {
   INITIAL_FATWAS, 
   INITIAL_REVIEWS, 
   INITIAL_FACULTY, 
-  INITIAL_LIVE_CLASSES 
+  INITIAL_LIVE_CLASSES,
+  isDummyFatwa 
 } from '@/lib/store';
-import { Course, Book, FatwaQuestion, FacultyMember, SiteSettings, LiveClass } from '@/lib/types';
+import { Course, Book, FatwaQuestion, FacultyMember, SiteSettings, LiveClass, UserProfile } from '@/lib/types';
 import { CourseCard } from '@/components/CourseCard';
 import { BookCard } from '@/components/BookCard';
 import { LiveClassCard } from '@/components/LiveClassCard';
 import { PaymentModal } from '@/components/PaymentModal';
 import { TeacherContactButtons } from '@/components/TeacherContactButtons';
-import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { formatImageUrl, handleImageError, formatBengaliNumberWithComma, toBengaliNumber } from '@/lib/utils';
+import { useAuth } from '@/lib/auth-context';
 
 export default function HomePage() {
+  const { user: currentUser } = useAuth();
   const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
   const [books, setBooks] = useState<Book[]>(INITIAL_BOOKS);
-  const [fatwas, setFatwas] = useState<FatwaQuestion[]>(() => INITIAL_FATWAS.slice(0, 3));
+  const [fatwas, setFatwas] = useState<FatwaQuestion[]>([]);
+  const [allFatwas, setAllFatwas] = useState<FatwaQuestion[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [reviews, setReviews] = useState(INITIAL_REVIEWS);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [faculty, setFaculty] = useState<FacultyMember[]>(INITIAL_FACULTY);
@@ -56,7 +60,10 @@ export default function HomePage() {
     const syncWithStore = () => {
       setCourses(AppStore.getCourses());
       setBooks(AppStore.getBooks());
-      setFatwas(AppStore.getFatwas().slice(0, 3));
+      const fatwaList = AppStore.getFatwas();
+      setAllFatwas(fatwaList);
+      setFatwas(fatwaList.slice(0, 3));
+      setUsers(AppStore.getUsers());
       setReviews(AppStore.getReviews());
       setSiteSettings(AppStore.getSettings());
       setFaculty(AppStore.getFaculty());
@@ -68,10 +75,18 @@ export default function HomePage() {
     window.addEventListener('storage', syncWithStore);
     window.addEventListener('noorfiqh_settings_updated', syncWithStore);
     window.addEventListener('noorfiqh_faculty_updated', syncWithStore);
+    window.addEventListener('noorfiqh_users_updated', syncWithStore);
+    window.addEventListener('noorfiqh_reviews_updated', syncWithStore);
+    window.addEventListener('noorfiqh_fatwas_updated', syncWithStore);
+    window.addEventListener('noorfiqh_orders_updated', syncWithStore);
     return () => {
       window.removeEventListener('storage', syncWithStore);
       window.removeEventListener('noorfiqh_settings_updated', syncWithStore);
       window.removeEventListener('noorfiqh_faculty_updated', syncWithStore);
+      window.removeEventListener('noorfiqh_users_updated', syncWithStore);
+      window.removeEventListener('noorfiqh_reviews_updated', syncWithStore);
+      window.removeEventListener('noorfiqh_fatwas_updated', syncWithStore);
+      window.removeEventListener('noorfiqh_orders_updated', syncWithStore);
     };
   }, []);
 
@@ -96,7 +111,7 @@ export default function HomePage() {
     bio: 'নূর ফিকহ একাডেমির প্রতিষ্ঠাতা ও পরিচালক। সমকালীন ফিকহি গবেষণা, আধুনিক অর্থনৈতিক লেনদেন, চিকিৎসা ফিকহ ও যুগোপযোগী ইসলামিক আইনের প্রামাণ্য বিশ্লেষণে নিবেদিতপ্রাণ গবেষক ও প্রশিক্ষক।',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
     email: 'noorfiqhaca@gmail.com',
-    phone: '+8801855905185',
+    phone: '+8801348161517',
     order: 1
   };
 
@@ -128,6 +143,29 @@ export default function HomePage() {
     buttonLink: '/courses'
   };
 
+  // 1. Dynamic Student Logins & Enrolled Accounts Connection (Real-time)
+  const studentUsers = users.filter((u) => u.role === 'student' || (!u.role && u.email?.toLowerCase() !== 'noorfiqhaca@gmail.com'));
+  const isCurrentStudentInList = currentUser ? studentUsers.some(u => u.uid === currentUser.uid || u.email === currentUser.email) : false;
+  const liveStudentLoginsCount = studentUsers.length + (currentUser && !isCurrentStudentInList && currentUser.role !== 'admin' ? 1 : 0);
+  const totalStudentsCount = liveStudentLoginsCount;
+
+  // 2. Dynamic Answered Fatwas Connection (Real-time, filters dummy)
+  const answeredFatwas = allFatwas.filter((f) => !isDummyFatwa(f) && (f.status === 'answered' || (f.answer && f.answer.trim().length > 0)));
+  const liveAnsweredCount = answeredFatwas.length;
+  const totalFatwasCount = liveAnsweredCount;
+
+  // 3. Dynamic Student Evaluation & Ratings Connection (Real-time overall student reviews)
+  const validReviews = reviews.filter((r) => r.rating && r.rating > 0);
+  const totalReviewsCount = validReviews.length;
+  const averageRating = totalReviewsCount > 0
+    ? (validReviews.reduce((sum, r) => sum + (Number(r.rating) || 5), 0) / totalReviewsCount)
+    : 5.0;
+  const roundedRatingStr = averageRating.toFixed(1);
+  const formattedRatingBn = toBengaliNumber(roundedRatingStr);
+  const fiveStarPercentage = totalReviewsCount > 0
+    ? Math.round((validReviews.filter((r) => Number(r.rating) >= 5).length / totalReviewsCount) * 100)
+    : 100;
+
   return (
     <div className="space-y-0 overflow-x-hidden w-full">
       {/* 1. ACADEMY HERO SECTION (Edge-to-Edge Full-Width Background with Centered Max-Width Container) */}
@@ -152,11 +190,6 @@ export default function HomePage() {
             
             {/* Left Column: Hero Copy & Actions */}
             <div className={`${heroCard.enabled !== false ? 'lg:col-span-7' : 'lg:col-span-12 max-w-3xl mx-auto text-center'} space-y-6 text-center lg:text-left`}>
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold rounded-full uppercase tracking-wider border border-[#17A2B8]/30 shadow-xs">
-                <Sparkles size={14} className="text-[#17A2B8]" />
-                <span className="font-tiro">{siteSettings.siteNameBn}তে স্বাগতম • {siteSettings.siteName.toUpperCase()}</span>
-              </div>
-
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-black text-white leading-[1.2] tracking-tight font-anek">
                 {siteSettings.heroTitleBn || 'নির্ভরযোগ্য ফিকহ চর্চায় এক অনন্য আধুনিক বিদ্যাপীঠ'}
               </h1>
@@ -184,20 +217,95 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              {/* Quick Metrics */}
-              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/15 max-w-lg mx-auto lg:mx-0 text-center lg:text-left">
-                <div>
-                  <span className="text-2xl sm:text-3xl font-black text-[#17A2B8] block font-anek">৩,৫০০+</span>
-                  <span className="text-[11px] sm:text-xs text-white/80 uppercase font-medium font-tiro">সন্তুষ্ট শিক্ষার্থী</span>
+              {/* Quick Metrics / Connected Aesthetic Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-6 border-t border-white/15 max-w-2xl mx-auto lg:mx-0">
+                
+                {/* 1. Student Logins Card */}
+                <div className="relative bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 hover:border-emerald-300/50 p-4 rounded-2xl transition-all duration-300 shadow-md group flex flex-col justify-between text-left">
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 group-hover:scale-105 transition-transform shrink-0">
+                      <GraduationCap size={19} />
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-300 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-500/30 font-tiro whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                      <span>রিয়েলটাইম লগইন</span>
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-black text-white font-anek tracking-tight group-hover:text-emerald-300 transition-colors">
+                      {toBengaliNumber(totalStudentsCount)} <span className="text-sm font-normal text-emerald-100/90">জন</span>
+                    </div>
+                    <div className="text-xs sm:text-[13px] font-bold text-emerald-100 font-anek mt-0.5">
+                      শিক্ষার্থী লগইন
+                    </div>
+                    <div className="text-[11px] text-emerald-100/75 font-tiro mt-1 line-clamp-1">
+                      {currentUser?.role === 'student' ? (
+                        <span className="text-emerald-300 font-semibold flex items-center gap-1">
+                          <CheckCircle2 size={11} className="shrink-0" /> আপনার অ্যাকাউন্ট যুক্ত
+                        </span>
+                      ) : (
+                        <span>{totalStudentsCount > 0 ? `${toBengaliNumber(totalStudentsCount)} জন শিক্ষার্থী সরাসরি সক্রিয়` : 'লাইভ অ্যাকাউন্ট কানেক্টেড'}</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-2xl sm:text-3xl font-black text-[#17A2B8] block font-anek">১,২০০+</span>
-                  <span className="text-[11px] sm:text-xs text-white/80 uppercase font-medium font-tiro">প্রদত্ত ফতোয়া</span>
+
+                {/* 2. Delivered Fatwas Card */}
+                <div className="relative bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 hover:border-sky-300/50 p-4 rounded-2xl transition-all duration-300 shadow-md group flex flex-col justify-between text-left">
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-300 group-hover:scale-105 transition-transform shrink-0">
+                      <MessageSquare size={18} />
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-sky-300 bg-sky-950/60 px-2.5 py-0.5 rounded-full border border-sky-500/30 font-tiro whitespace-nowrap">
+                      <span>দারুল ইফতা</span>
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-black text-white font-anek tracking-tight group-hover:text-sky-300 transition-colors">
+                      {toBengaliNumber(totalFatwasCount)} <span className="text-sm font-normal text-sky-100/90">টি</span>
+                    </div>
+                    <div className="text-xs sm:text-[13px] font-bold text-white font-anek mt-0.5">
+                      প্রদত্ত ফতোয়া
+                    </div>
+                    <div className="text-[11px] text-emerald-100/75 font-tiro mt-1 line-clamp-1">
+                      {totalFatwasCount > 0 
+                        ? `${toBengaliNumber(totalFatwasCount)} টি শরয়ী সমাধান লাইভ` 
+                        : 'মুফতী পরিষদ কর্তৃক সরাসরি উত্তর'}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-2xl sm:text-3xl font-black text-[#17A2B8] block font-anek">১০০%</span>
-                  <span className="text-[11px] sm:text-xs text-white/80 uppercase font-medium font-tiro">প্রামাণ্য রেফারেন্স</span>
+
+                {/* 3. Student Evaluation Card (Based on overall student reviews) */}
+                <div className="relative bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 hover:border-amber-300/50 p-4 rounded-2xl transition-all duration-300 shadow-md group flex flex-col justify-between text-left">
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-300 group-hover:scale-105 transition-transform shrink-0">
+                      <Star size={19} className="fill-amber-300 text-amber-300" />
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-amber-300 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-500/30 font-tiro whitespace-nowrap">
+                      <span>সরাসরি ফিডব্যাক</span>
+                    </span>
+                  </div>
+                  <div>
+                    <div className="flex items-baseline justify-between gap-1.5">
+                      <div className="text-2xl sm:text-3xl font-black text-white font-anek tracking-tight group-hover:text-amber-300 transition-colors">
+                        {toBengaliNumber(totalReviewsCount)} <span className="text-sm font-normal text-amber-200/90">জন</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-950/70 px-2 py-0.5 rounded-lg border border-amber-500/30 font-anek shrink-0">
+                        <Star size={11} className="fill-amber-300 text-amber-300 shrink-0" />
+                        <span>{formattedRatingBn} / ৫.০</span>
+                      </div>
+                    </div>
+                    <div className="text-xs sm:text-[13px] font-bold text-white font-anek mt-0.5">
+                      শিক্ষার্থী মূল্যায়ন
+                    </div>
+                    <div className="text-[11px] text-emerald-100/75 font-tiro mt-1 line-clamp-1">
+                      {totalReviewsCount > 0 
+                        ? `মোট ${toBengaliNumber(totalReviewsCount)} জন শিক্ষার্থীর সরাসরি মতামত ও রেটিং` 
+                        : '১০০% সন্তোষজনক ইতিবাচক মতামত'}
+                    </div>
+                  </div>
                 </div>
+
               </div>
             </div>
 
@@ -460,21 +568,41 @@ export default function HomePage() {
                     </p>
                   </div>
                 ) : (
-                  fatwas.map((f) => (
-                    <Link
-                      key={f.id}
-                      href={`/fatwa?q=${encodeURIComponent(f.questionTitle)}`}
-                      className="block bg-white/10 hover:bg-white/15 backdrop-blur-md p-4 rounded-2xl border border-white/10 transition-all group"
-                    >
-                      <div className="flex items-center justify-between text-[11px] text-[#17A2B8] font-bold mb-1 font-tiro">
-                        <span>{f.categoryBn}</span>
-                        <span className="text-[#17A2B8]">{f.trackingCode}</span>
-                      </div>
-                      <h4 className="text-sm font-bold text-white group-hover:text-[#17A2B8] transition-colors line-clamp-2 font-anek">
-                        {f.questionTitle}
-                      </h4>
-                    </Link>
-                  ))
+                  fatwas.map((f) => {
+                    const ansText = f.answer || f.answerText || '';
+                    const refText = f.references 
+                      ? (Array.isArray(f.references) ? f.references.join(', ') : f.references)
+                      : null;
+
+                    return (
+                      <Link
+                        key={f.id}
+                        href={`/fatwa?q=${encodeURIComponent(f.questionTitle)}`}
+                        className="block bg-white/10 hover:bg-white/15 backdrop-blur-md p-4 rounded-2xl border border-white/10 hover:border-[#17A2B8]/50 transition-all group shadow-sm"
+                      >
+                        <div className="flex items-center justify-between text-[11px] text-[#17A2B8] font-bold mb-1.5 font-tiro">
+                          <span className="px-2 py-0.5 rounded-md bg-[#17A2B8]/20 border border-[#17A2B8]/30">
+                            {f.categoryBn}
+                          </span>
+                          <span className="font-mono text-emerald-200/90 text-[10px]">{f.trackingCode}</span>
+                        </div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-[#17A2B8] transition-colors line-clamp-2 font-anek">
+                          {f.questionTitle}
+                        </h4>
+                        {ansText && (
+                          <p className="text-xs text-emerald-100/80 font-tiro line-clamp-2 mt-1.5 leading-relaxed">
+                            {ansText}
+                          </p>
+                        )}
+                        {refText && (
+                          <div className="text-[10px] text-amber-200/90 font-tiro mt-2 flex items-center gap-1.5 border-t border-white/10 pt-1.5">
+                            <ShieldCheck size={12} className="text-amber-300 shrink-0" />
+                            <span className="truncate">রেফারেন্স: {refText}</span>
+                          </div>
+                        )}
+                      </Link>
+                    );
+                  })
                 )}
               </div>
 

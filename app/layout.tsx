@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import '@/lib/safe-json';
 import { AuthProvider } from '@/lib/auth-context';
 import { StoreSyncProvider } from '@/components/StoreSyncProvider';
 import { Navbar } from '@/components/Navbar';
@@ -77,6 +78,35 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="bn" className="scroll-smooth">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+(function(){
+  if(typeof window==='undefined') return;
+  try {
+    var origStringify = JSON.stringify;
+    JSON.stringify = function(val, replacer, space) {
+      var seen = new WeakSet();
+      function circReplacer(key, v) {
+        if (typeof v === 'object' && v !== null) {
+          if (seen.has(v)) { return '[Circular]'; }
+          seen.add(v);
+        }
+        if (typeof replacer === 'function') { return replacer(key, v); }
+        return v;
+      }
+      try {
+        return origStringify(val, replacer && typeof replacer !== 'function' ? replacer : circReplacer, space);
+      } catch (e) {
+        try { return origStringify(val, circReplacer, space); }
+        catch (err) { return '"[Unserializable]"'; }
+      }
+    };
+  } catch(e) {}
+})();
+`
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link 

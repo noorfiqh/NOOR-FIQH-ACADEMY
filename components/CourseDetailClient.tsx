@@ -917,7 +917,7 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
               <span className="text-[10px] text-[#8a817c] font-tiro block">ইন্সট্রাক্টরের সাথে সরাসরি যোগাযোগ:</span>
               <TeacherContactButtons
                 name={course.instructor?.nameBn || 'মুফতী আম্মার বিন নূর'}
-                phone="+8801855905185"
+                phone={course.instructor?.phone || "+8801348161517"}
                 email="noorfiqhaca@gmail.com"
               />
             </div>

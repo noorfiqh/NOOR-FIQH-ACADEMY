@@ -19,7 +19,7 @@ export function SeoSchema({ type = 'Organization', data }: SeoSchemaProps) {
     ],
     contactPoint: {
       '@type': 'ContactPoint',
-      telephone: '+8801855905185',
+      telephone: '+8801348161517',
       contactType: 'Customer Support',
       email: 'noorfiqhaca@gmail.com',
       availableLanguage: ['Bengali', 'Arabic', 'English']

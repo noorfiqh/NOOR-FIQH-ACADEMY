@@ -3,6 +3,7 @@
 import { Course, Book, FatwaQuestion, LiveClass, Order, UserProgress, Certificate, SiteReview, HeroCardSettings, UserProfile, FacultyMember, SiteSettings, CourseCategory } from './types';
 import { INITIAL_COURSES, INITIAL_BOOKS, INITIAL_FATWAS, INITIAL_LIVE_CLASSES, INITIAL_REVIEWS } from './seed-data';
 import { formatImageUrl } from './utils';
+import { safeJsonStringify } from './safe-json';
 import { db, doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot, OperationType, handleFirestoreError } from './firebase';
 
 export { INITIAL_COURSES, INITIAL_BOOKS, INITIAL_FATWAS, INITIAL_LIVE_CLASSES, INITIAL_REVIEWS };
@@ -33,7 +34,7 @@ export const INITIAL_FACULTY: FacultyMember[] = [
     bio: 'নূর ফিকহ একাডেমির প্রতিষ্ঠাতা ও পরিচালক। সমকালীন ফিকহি গবেষণা, আধুনিক অর্থনৈতিক লেনদেন, চিকিৎসা ফিকহ ও যুগোপযোগী ইসলামিক আইনের প্রামাণ্য বিশ্লেষণে নিবেদিতপ্রাণ গবেষক ও প্রশিক্ষক।',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
     email: 'noorfiqhaca@gmail.com',
-    phone: '+8801855905185',
+    phone: '+8801348161517',
     order: 1
   },
   {
@@ -47,7 +48,7 @@ export const INITIAL_FACULTY: FacultyMember[] = [
     bio: 'আন্তর্জাতিক ইসলামিক ব্যাংকিং কনসালটেন্ট, ফিনটেক ও হালাল বিনিয়োগ শাস্ত্রের বিশেষজ্ঞ প্রশিক্ষক।',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=400&q=80',
     email: 'tariq.finance@gmail.com',
-    phone: '+8801855905185',
+    phone: '+8801348161517',
     order: 2
   },
   {
@@ -61,7 +62,7 @@ export const INITIAL_FACULTY: FacultyMember[] = [
     bio: 'হানাফী মাযহাব, তুলনামূলক ফিকহ ও প্রাচীন ইসলামিক পাণ্ডুলিপির জটিল মাসআলার প্রাঞ্জল ও পদ্ধতিগত উপস্থাপক।',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
     email: 'khalid.usul@gmail.com',
-    phone: '+8801855905185',
+    phone: '+8801348161517',
     order: 3
   },
   {
@@ -75,7 +76,7 @@ export const INITIAL_FACULTY: FacultyMember[] = [
     bio: 'পারিবারিক আইন, উত্তরাধিকার (ফারায়েজ) বণ্টন ও আধুনিক চুক্তি পদ্ধতির ফতোয়া প্রণয়নে বিশেষজ্ঞ।',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
     email: 'mahmud.ifta@gmail.com',
-    phone: '+8801855905185',
+    phone: '+8801348161517',
     order: 4
   }
 ];
@@ -86,7 +87,7 @@ export const INITIAL_USERS: UserProfile[] = [
     uid: 'usr-admin-noor',
     name: 'মুফতী আম্মার বিন নূর (এডমিন)',
     email: 'noorfiqhaca@gmail.com',
-    phone: '+8801855905185',
+    phone: '+8801348161517',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
     role: 'admin',
     isSuperAdmin: true,
@@ -96,7 +97,7 @@ export const INITIAL_USERS: UserProfile[] = [
     uid: 'usr-scholar-1',
     name: 'মুফতী হাফিজুর রহমান কাসেমী',
     email: 'scholar@noorfiqh.com',
-    phone: '+8801855905185',
+    phone: '+8801348161517',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80',
     role: 'scholar',
     joinedAt: '2025-11-15'
@@ -146,9 +147,9 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   logoSymbol: 'ن',
   logoSubtitle: 'NOOR FIQH ACADEMY',
   facebookUrl: 'https://www.facebook.com/profile.php?id=61591404045439',
-  whatsappNumber: '+8801855905185',
+  whatsappNumber: '+8801348161517',
   email: 'noorfiqhaca@gmail.com',
-  phone: '+8801855905185',
+  phone: '+8801348161517',
   address: 'Global Online Islamic Campus & Research Center, Dhaka, Bangladesh',
   heroTitleBn: 'সহিহ ইলম ও সমকালীন ফিকহের বিশুদ্ধ আলোকবর্তিকা',
   heroSubtitleBn: 'দৈনন্দিন ইবাদত, ব্যবসা-বাণিজ্য, পরিবার ও আধুনিক জীবনের প্রতিটি ক্ষেত্রে কোরআন ও সুন্নাহর প্রামাণ্য দিকনির্দেশনা শিখুন অভিজ্ঞ মুফতী ও ফিকহ বিশেষজ্ঞদের সান্নিধ্যে।',
@@ -288,7 +289,10 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   gtmId: '',
   orderNotificationEnabled: true,
   orderNotificationEmail: 'noorfiqhaca@gmail.com',
-  formSubmitEndpoint: ''
+  formSubmitEndpoint: '',
+  statsBaseStudents: 0,
+  statsBaseFatwas: 0,
+  statsEnforceLiveOnly: true
 };
 
 
@@ -326,7 +330,7 @@ export function cleanDataForFirestore(obj: any): any {
 function setLocal<T>(key: string, value: T): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(key, safeJsonStringify(value));
     if (key === STORAGE_KEYS.COURSES) {
       window.dispatchEvent(new Event('noorfiqh_courses_updated'));
     }
@@ -358,8 +362,8 @@ function setLocal<T>(key: string, value: T): void {
       window.dispatchEvent(new Event('noorfiqh_settings_updated'));
     }
     window.dispatchEvent(new Event('noorfiqh_store_updated'));
-  } catch (e) {
-    console.error('LocalStorage write error', e);
+  } catch (e: any) {
+    console.warn('LocalStorage write notice:', e?.message || String(e));
   }
 }
 
@@ -401,6 +405,25 @@ function removeDeletedBookId(id: string): void {
   setLocal(DELETED_BOOKS_KEY, ids);
 }
 
+const DELETED_FATWAS_KEY = 'nfa_deleted_fatwa_ids';
+
+export function getDeletedFatwaIds(): string[] {
+  return getLocal<string[]>(DELETED_FATWAS_KEY, []);
+}
+
+export function addDeletedFatwaId(id: string): void {
+  const ids = getDeletedFatwaIds();
+  if (!ids.includes(id)) {
+    ids.push(id);
+    setLocal(DELETED_FATWAS_KEY, ids);
+  }
+}
+
+export function removeDeletedFatwaId(id: string): void {
+  const ids = getDeletedFatwaIds().filter(x => x !== id);
+  setLocal(DELETED_FATWAS_KEY, ids);
+}
+
 // Known dummy item identifiers to purge completely
 export const DUMMY_ITEM_IDS = new Set([
   'fiqh-ibadat-mastery',
@@ -415,24 +438,64 @@ export const DUMMY_ITEM_IDS = new Set([
   'fatwa-01',
   'fatwa-02',
   'fatwa-03',
+  'fatwa-1',
+  'fatwa-2',
+  'fatwa-3',
+  'fatwa-101',
+  'fatwa-102',
+  'fatwa-103',
   'rev-1',
   'rev-2',
   'rev-3'
 ]);
 
+// Helper to determine if a fatwa question is a dummy / test item
+export function isDummyFatwa(fatwa: { id?: string; questionTitle?: string; questionDetail?: string; questionBody?: string; trackingCode?: string }): boolean {
+  if (!fatwa) return true;
+  const id = (fatwa.id || '').toLowerCase();
+  if (DUMMY_ITEM_IDS.has(id)) return true;
+  if (id.startsWith('dummy') || id.includes('sample') || id === 'fatwa-01' || id === 'fatwa-02' || id === 'fatwa-03' || id === 'fatwa-1' || id === 'fatwa-2' || id === 'fatwa-3' || id === 'fatwa-101' || id === 'fatwa-102') return true;
+  
+  const title = (fatwa.questionTitle || '').toLowerCase();
+  const tracking = (fatwa.trackingCode || '').toLowerCase();
+
+  if (tracking.includes('dummy') || tracking.includes('sample')) return true;
+
+  if (
+    title.includes('শেয়ার বাজারে বিনিয়োগ') ||
+    title.includes('মুদারাবা ও মুশারাকা') ||
+    title.includes('বিটকয়েন') ||
+    title.includes('ক্রিপ্টোকারেন্সি') ||
+    title.includes('নমুনা ফতোয়া') ||
+    title.includes('ডামি ফতোয়া') ||
+    title.includes('টেস্ট ফতোয়া') ||
+    title.includes('dummy') ||
+    title.includes('sample')
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function purgeDummyDataOnce(): void {
   if (typeof window === 'undefined') return;
   try {
-    const isPurged = localStorage.getItem('nfa_dummy_cleaned_v5');
+    const deletedFatwaIds = new Set(getDeletedFatwaIds());
+    const fatwas = getLocal<FatwaQuestion[]>(STORAGE_KEYS.FATWAS, []);
+    const cleanFatwas = fatwas.filter(f => !DUMMY_ITEM_IDS.has(f.id) && !deletedFatwaIds.has(f.id) && !isDummyFatwa(f));
+    if (cleanFatwas.length !== fatwas.length) {
+      setLocal(STORAGE_KEYS.FATWAS, cleanFatwas);
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('noorfiqh_fatwas_updated', { detail: cleanFatwas }));
+    }
+
+    const isPurged = localStorage.getItem('nfa_dummy_cleaned_v9');
     if (!isPurged) {
       const courses = getLocal<Course[]>(STORAGE_KEYS.COURSES, []);
       setLocal(STORAGE_KEYS.COURSES, courses.filter(c => !DUMMY_ITEM_IDS.has(c.id)));
 
       const books = getLocal<Book[]>(STORAGE_KEYS.BOOKS, []);
       setLocal(STORAGE_KEYS.BOOKS, books.filter(b => !DUMMY_ITEM_IDS.has(b.id)));
-
-      const fatwas = getLocal<FatwaQuestion[]>(STORAGE_KEYS.FATWAS, []);
-      setLocal(STORAGE_KEYS.FATWAS, fatwas.filter(f => !DUMMY_ITEM_IDS.has(f.id)));
 
       const live = getLocal<LiveClass[]>(STORAGE_KEYS.LIVE_CLASSES, []);
       setLocal(STORAGE_KEYS.LIVE_CLASSES, live.filter(l => !DUMMY_ITEM_IDS.has(l.id)));
@@ -451,7 +514,7 @@ function purgeDummyDataOnce(): void {
         setLocal(STORAGE_KEYS.SETTINGS, settings);
       }
 
-      localStorage.setItem('nfa_dummy_cleaned_v5', 'true');
+      localStorage.setItem('nfa_dummy_cleaned_v9', 'true');
     }
   } catch (e) {
     console.warn('Dummy purge error:', e);
@@ -609,8 +672,9 @@ export const AppStore = {
   // Fatwas & Fiqh Consultation
   getFatwas: (): FatwaQuestion[] => {
     purgeDummyDataOnce();
+    const deletedIds = new Set(getDeletedFatwaIds());
     return getLocal<FatwaQuestion[]>(STORAGE_KEYS.FATWAS, INITIAL_FATWAS)
-      .filter(f => !DUMMY_ITEM_IDS.has(f.id));
+      .filter(f => !DUMMY_ITEM_IDS.has(f.id) && !deletedIds.has(f.id) && !isDummyFatwa(f));
   },
   getFatwaById: (id: string): FatwaQuestion | undefined => {
     return AppStore.getFatwas().find(f => f.id === id || f.trackingCode === id);
@@ -630,11 +694,14 @@ export const AppStore = {
       helpfulCount: 0,
       createdAt: new Date().toISOString().split('T')[0]
     };
+    removeDeletedFatwaId(newFatwa.id);
     fatwas.unshift(newFatwa);
     setLocal(STORAGE_KEYS.FATWAS, fatwas);
 
     // Save to Firestore
     if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('noorfiqh_fatwas_updated', { detail: fatwas }));
       try {
         setDoc(doc(db, 'fatwas', newFatwa.id), newFatwa).catch(err => {
           handleFirestoreError(err, OperationType.CREATE, `fatwas/${newFatwa.id}`);
@@ -665,6 +732,8 @@ export const AppStore = {
 
       // Update in Firestore
       if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('noorfiqh_fatwas_updated', { detail: fatwas }));
         try {
           updateDoc(doc(db, 'fatwas', fatwaId), {
             status: 'answered',
@@ -688,6 +757,8 @@ export const AppStore = {
       setLocal(STORAGE_KEYS.FATWAS, fatwas);
 
       if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('noorfiqh_fatwas_updated', { detail: fatwas }));
         try {
           setDoc(doc(db, 'fatwas', fatwa.id), fatwa, { merge: true }).catch(err => {
             handleFirestoreError(err, OperationType.WRITE, `fatwas/${fatwa.id}`);
@@ -699,10 +770,13 @@ export const AppStore = {
     }
   },
   deleteFatwa: (id: string): void => {
+    addDeletedFatwaId(id);
     const fatwas = AppStore.getFatwas().filter(f => f.id !== id);
     setLocal(STORAGE_KEYS.FATWAS, fatwas);
 
     if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('noorfiqh_fatwas_updated', { detail: fatwas }));
       try {
         deleteDoc(doc(db, 'fatwas', id)).catch(err => {
           handleFirestoreError(err, OperationType.DELETE, `fatwas/${id}`);
@@ -711,6 +785,41 @@ export const AppStore = {
         console.warn('Firestore fatwa delete skipped:', err);
       }
     }
+  },
+  purgeDummyFatwas: async (): Promise<{ count: number }> => {
+    purgeDummyDataOnce();
+    const deletedFatwaIds = new Set(getDeletedFatwaIds());
+    const localFatwas = getLocal<FatwaQuestion[]>(STORAGE_KEYS.FATWAS, []);
+    let count = 0;
+    const cleanList: FatwaQuestion[] = [];
+    for (const f of localFatwas) {
+      if (DUMMY_ITEM_IDS.has(f.id) || deletedFatwaIds.has(f.id) || isDummyFatwa(f)) {
+        addDeletedFatwaId(f.id);
+        count++;
+      } else {
+        cleanList.push(f);
+      }
+    }
+    setLocal(STORAGE_KEYS.FATWAS, cleanList);
+
+    if (typeof window !== 'undefined') {
+      try {
+        const snap = await getDocs(collection(db, 'fatwas'));
+        for (const docSnap of snap.docs) {
+          const data = docSnap.data() as FatwaQuestion;
+          if (DUMMY_ITEM_IDS.has(docSnap.id) || deletedFatwaIds.has(docSnap.id) || isDummyFatwa({ id: docSnap.id, ...data })) {
+            addDeletedFatwaId(docSnap.id);
+            await deleteDoc(doc(db, 'fatwas', docSnap.id)).catch(() => {});
+            count++;
+          }
+        }
+      } catch (e) {
+        console.warn('Error purging dummy fatwas from Firestore:', e);
+      }
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('noorfiqh_fatwas_updated', { detail: cleanList }));
+    }
+    return { count };
   },
 
   // Live Classes
@@ -1229,8 +1338,8 @@ export const AppStore = {
     const list = getLocal<FacultyMember[]>(STORAGE_KEYS.FACULTY, INITIAL_FACULTY);
     return list.map(member => {
       let phone = member.phone;
-      if (!phone || phone.includes('01788876206') || phone.includes('017XXXXXXXX')) {
-        phone = '+8801855905185';
+      if (!phone || phone.includes('01788876206') || phone.includes('017XXXXXXXX') || phone.includes('01855905185')) {
+        phone = '+8801348161517';
       }
       return {
         ...member,
@@ -1285,11 +1394,23 @@ export const AppStore = {
   // Site Settings
   getSettings: (): SiteSettings => {
     const settings = getLocal<SiteSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
-    if (settings.whatsappNumber === '+8801788876206' || settings.whatsappNumber === '8801788876206' || !settings.whatsappNumber) {
-      settings.whatsappNumber = '+8801855905185';
+    if (
+      settings.whatsappNumber === '+8801788876206' || 
+      settings.whatsappNumber === '8801788876206' || 
+      settings.whatsappNumber === '+8801855905185' || 
+      settings.whatsappNumber === '8801855905185' || 
+      !settings.whatsappNumber
+    ) {
+      settings.whatsappNumber = '+8801348161517';
     }
-    if (settings.phone === '+8801788876206' || settings.phone === '8801788876206' || !settings.phone) {
-      settings.phone = '+8801855905185';
+    if (
+      settings.phone === '+8801788876206' || 
+      settings.phone === '8801788876206' || 
+      settings.phone === '+8801855905185' || 
+      settings.phone === '8801855905185' || 
+      !settings.phone
+    ) {
+      settings.phone = '+8801348161517';
     }
     settings.logoImageUrl = formatImageUrl(settings.logoImageUrl);
     settings.heroBgImage = formatImageUrl(settings.heroBgImage);
@@ -1460,7 +1581,7 @@ export const AppStore = {
           setLocal(STORAGE_KEYS.COURSES, list);
           triggerLocalUpdate('noorfiqh_courses_updated', list);
         }
-      }, (err) => console.warn('Firestore courses sync error:', err));
+      }, (err) => console.warn('Firestore courses sync notice:', err?.message || String(err)));
       unsubs.push(unsubCourses);
 
       // 2. Books Realtime Sync
@@ -1476,22 +1597,27 @@ export const AppStore = {
           setLocal(STORAGE_KEYS.BOOKS, list);
           triggerLocalUpdate('noorfiqh_books_updated', list);
         }
-      }, (err) => console.warn('Firestore books sync error:', err));
+      }, (err) => console.warn('Firestore books sync notice:', err?.message || String(err)));
       unsubs.push(unsubBooks);
 
       // 3. Fatwas Realtime Sync
       const unsubFatwas = onSnapshot(collection(db, 'fatwas'), (snapshot) => {
-        if (!snapshot.empty) {
-          const list: FatwaQuestion[] = [];
-          snapshot.forEach((d) => {
-            if (!DUMMY_ITEM_IDS.has(d.id)) {
-              list.push({ id: d.id, ...d.data() } as FatwaQuestion);
-            }
-          });
-          setLocal(STORAGE_KEYS.FATWAS, list);
-          triggerLocalUpdate('noorfiqh_fatwas_updated', list);
-        }
-      }, (err) => console.warn('Firestore fatwas sync error:', err));
+        const deletedIds = new Set(getDeletedFatwaIds());
+        const list: FatwaQuestion[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data() as FatwaQuestion;
+          const isDummy = DUMMY_ITEM_IDS.has(d.id) || deletedIds.has(d.id) || isDummyFatwa({ id: d.id, ...data });
+          if (isDummy) {
+            try {
+              deleteDoc(doc(db, 'fatwas', d.id)).catch(() => {});
+            } catch (e) {}
+          } else {
+            list.push({ id: d.id, ...data } as FatwaQuestion);
+          }
+        });
+        setLocal(STORAGE_KEYS.FATWAS, list);
+        triggerLocalUpdate('noorfiqh_fatwas_updated', list);
+      }, (err) => console.warn('Firestore fatwas sync notice:', err?.message || String(err)));
       unsubs.push(unsubFatwas);
 
       // 4. Live Classes Realtime Sync
@@ -1506,7 +1632,7 @@ export const AppStore = {
           setLocal(STORAGE_KEYS.LIVE_CLASSES, list);
           triggerLocalUpdate('noorfiqh_live_updated', list);
         }
-      }, (err) => console.warn('Firestore live classes sync error:', err));
+      }, (err) => console.warn('Firestore live classes sync notice:', err?.message || String(err)));
       unsubs.push(unsubLive);
 
       // 5. Orders Realtime Sync
@@ -1521,7 +1647,7 @@ export const AppStore = {
             triggerLocalUpdate('noorfiqh_orders_updated', list);
           }
         }
-      }, (err) => console.warn('Firestore orders sync error:', err));
+      }, (err) => console.warn('Firestore orders sync notice:', err?.message || String(err)));
       unsubs.push(unsubOrders);
 
       // 6. Faculty Realtime Sync
@@ -1536,7 +1662,7 @@ export const AppStore = {
             triggerLocalUpdate('noorfiqh_faculty_updated', list);
           }
         }
-      }, (err) => console.warn('Firestore faculty sync error:', err));
+      }, (err) => console.warn('Firestore faculty sync notice:', err?.message || String(err)));
       unsubs.push(unsubFaculty);
 
       // 7. Reviews Realtime Sync
@@ -1551,7 +1677,7 @@ export const AppStore = {
           setLocal(STORAGE_KEYS.SETTINGS + '_reviews', list);
           triggerLocalUpdate('noorfiqh_reviews_updated', list);
         }
-      }, (err) => console.warn('Firestore reviews sync error:', err));
+      }, (err) => console.warn('Firestore reviews sync notice:', err?.message || String(err)));
       unsubs.push(unsubReviews);
 
       // 8. Certificates Realtime Sync
@@ -1566,7 +1692,7 @@ export const AppStore = {
             triggerLocalUpdate('noorfiqh_certificates_updated', list);
           }
         }
-      }, (err) => console.warn('Firestore certificates sync error:', err));
+      }, (err) => console.warn('Firestore certificates sync notice:', err?.message || String(err)));
       unsubs.push(unsubCerts);
 
       // 9. Site Settings Realtime Sync
@@ -1576,7 +1702,7 @@ export const AppStore = {
           setLocal(STORAGE_KEYS.SETTINGS, data);
           triggerLocalUpdate('noorfiqh_settings_updated', data);
         }
-      }, (err) => console.warn('Firestore settings sync error:', err));
+      }, (err) => console.warn('Firestore settings sync notice:', err?.message || String(err)));
       unsubs.push(unsubSettings);
 
       // 10. Users Realtime Sync
@@ -1591,11 +1717,11 @@ export const AppStore = {
             triggerLocalUpdate('noorfiqh_users_updated', list);
           }
         }
-      }, (err) => console.warn('Firestore users sync error:', err));
+      }, (err) => console.warn('Firestore users sync notice:', err?.message || String(err)));
       unsubs.push(unsubUsers);
 
-    } catch (e) {
-      console.warn('initGlobalSync error:', e);
+    } catch (e: any) {
+      console.warn('initGlobalSync notice:', e?.message || String(e));
     }
 
     return () => {
