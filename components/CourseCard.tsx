@@ -29,7 +29,7 @@ export function CourseCard({ course, onEnroll }: CourseCardProps) {
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             className="w-full h-full border-0 pointer-events-none"
           />
-        ) : isVideoPlaying && isDirectVideo ? (
+        ) : isVideoPlaying && isDirectVideo && course.previewVideoUrl ? (
           <video
             src={course.previewVideoUrl}
             autoPlay
@@ -38,9 +38,9 @@ export function CourseCard({ course, onEnroll }: CourseCardProps) {
             playsInline
             className="w-full h-full object-cover"
           />
-        ) : (
+        ) : formatImageUrl(course.thumbnail) ? (
           <img
-            src={formatImageUrl(course.thumbnail)}
+            src={formatImageUrl(course.thumbnail) || null}
             alt={course.titleBn || course.title}
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
@@ -48,6 +48,10 @@ export function CourseCard({ course, onEnroll }: CourseCardProps) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             loading="lazy"
           />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-[#112734] via-[#1a3848] to-[#23626F] flex items-center justify-center text-amber-300">
+            <span className="text-arabic text-4xl font-black">ن</span>
+          </div>
         )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80 pointer-events-none" />

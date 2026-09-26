@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { AppStore, DEFAULT_SETTINGS, isDummyFatwa, getDeletedFatwaIds } from '@/lib/store';
 import { FatwaQuestion, SiteSettings } from '@/lib/types';
 import { db, collection, onSnapshot, handleFirestoreError, OperationType, doc } from '@/lib/firebase';
-import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { formatImageUrl, handleImageError, isValidImageUrl } from '@/lib/utils';
 import { 
   HelpCircle, 
   Search, 
@@ -159,8 +159,8 @@ function FatwaContent() {
     badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
     titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
     subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
-    heroImage: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80',
-    showHeroImage: true,
+    heroImage: '',
+    showHeroImage: false,
     heroImagePosition: 'right',
     highlight1: 'প্রামাণ্য ফিকহী কিতাব ও দলীলভিত্তিক সমাধান',
     highlight2: 'অভিজ্ঞ মুফতী বোর্ডের সরাসরি তত্ত্বাবধান',
@@ -179,10 +179,10 @@ function FatwaContent() {
       {/* 1. EDGE-TO-EDGE HERO SECTION */}
       <section className="relative w-full overflow-hidden bg-[#112734] text-white py-12 sm:py-16 lg:py-20 border-b border-[#23626F]">
         {/* Background image if set as background */}
-        {fp.heroImagePosition === 'background' && fp.showHeroImage !== false && fp.heroImage && (
+        {fp.heroImagePosition === 'background' && fp.showHeroImage !== false && fp.heroImage && isValidImageUrl(fp.heroImage) && formatImageUrl(fp.heroImage) && (
           <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
             <img
-              src={formatImageUrl(fp.heroImage)}
+              src={formatImageUrl(fp.heroImage) || null}
               alt="Fatwa Background Hero"
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
@@ -209,7 +209,7 @@ function FatwaContent() {
         <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-[#17A2B8]/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          {fp.heroImagePosition === 'background' && fp.showHeroImage !== false && fp.heroImage ? (
+          {fp.heroImagePosition === 'background' && fp.showHeroImage !== false && fp.heroImage && isValidImageUrl(fp.heroImage) && formatImageUrl(fp.heroImage) ? (
             /* Full Background Hero Layout */
             <div className="max-w-3xl space-y-4 text-left">
               <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-teal-500/20 text-teal-200 text-xs font-bold uppercase tracking-wider border border-teal-400/40 backdrop-blur-sm">
@@ -247,7 +247,7 @@ function FatwaContent() {
                 )}
               </div>
             </div>
-          ) : fp.showHeroImage !== false && fp.heroImage ? (
+          ) : fp.showHeroImage !== false && fp.heroImage && isValidImageUrl(fp.heroImage) && formatImageUrl(fp.heroImage) ? (
             /* Split Grid Hero with Image */
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
               
@@ -294,7 +294,7 @@ function FatwaContent() {
                 <div className="w-full max-w-lg relative rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-white/20 shadow-2xl group bg-[#0b1b24]">
                   <div className="aspect-[16/10] w-full relative">
                     <img
-                      src={formatImageUrl(fp.heroImage)}
+                      src={formatImageUrl(fp.heroImage) || null}
                       alt={fp.titleBn || 'Fatwa Page Hero Banner'}
                       referrerPolicy="no-referrer"
                       crossOrigin="anonymous"

@@ -17,7 +17,7 @@ import {
 import { AppStore, DEFAULT_SETTINGS, INITIAL_FACULTY } from '@/lib/store';
 import { FacultyMember, SiteSettings } from '@/lib/types';
 import { TeacherContactButtons } from '@/components/TeacherContactButtons';
-import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { formatImageUrl, handleImageError, isValidImageUrl } from '@/lib/utils';
 
 export default function AboutPage() {
   const [faculty, setFaculty] = useState<FacultyMember[]>(INITIAL_FACULTY);
@@ -82,10 +82,10 @@ export default function AboutPage() {
       {/* 1. EDGE-TO-EDGE HERO SECTION */}
       <section className="relative w-full overflow-hidden bg-[#112734] text-white py-12 sm:py-16 lg:py-20 border-b border-[#23626F]">
         {/* Full Background Image */}
-        {aboutData.heroImagePosition === 'background' && aboutData.showHeroImage !== false && aboutData.heroImage && (
+        {aboutData.heroImagePosition === 'background' && aboutData.showHeroImage !== false && aboutData.heroImage && isValidImageUrl(aboutData.heroImage) && formatImageUrl(aboutData.heroImage) && (
           <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
             <img
-              src={formatImageUrl(aboutData.heroImage)}
+              src={formatImageUrl(aboutData.heroImage) || null}
               alt="About Hero Background"
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
@@ -110,7 +110,7 @@ export default function AboutPage() {
         <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          {aboutData.heroImagePosition === 'background' && aboutData.showHeroImage !== false && aboutData.heroImage ? (
+          {aboutData.heroImagePosition === 'background' && aboutData.showHeroImage !== false && aboutData.heroImage && isValidImageUrl(aboutData.heroImage) && formatImageUrl(aboutData.heroImage) ? (
             /* Full Background Hero Layout */
             <div className="max-w-4xl mx-auto text-center space-y-4">
               <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
@@ -130,7 +130,7 @@ export default function AboutPage() {
                 ))}
               </div>
             </div>
-          ) : aboutData.showHeroImage !== false && aboutData.heroImage ? (
+          ) : aboutData.showHeroImage !== false && aboutData.heroImage && isValidImageUrl(aboutData.heroImage) && formatImageUrl(aboutData.heroImage) ? (
             /* Split Grid Hero with Image */
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
               <div className={`space-y-4 ${aboutData.heroImagePosition === 'left' ? 'lg:col-span-7 lg:order-2' : 'lg:col-span-7'}`}>
@@ -156,7 +156,7 @@ export default function AboutPage() {
                 <div className="w-full max-w-lg relative rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-white/20 shadow-2xl group bg-[#0b1b24]">
                   <div className="aspect-[16/10] w-full relative">
                     <img
-                      src={formatImageUrl(aboutData.heroImage)}
+                      src={formatImageUrl(aboutData.heroImage) || null}
                       alt={aboutData.titleBn}
                       referrerPolicy="no-referrer"
                       crossOrigin="anonymous"
@@ -237,14 +237,20 @@ export default function AboutPage() {
                 <div key={member.id} className="bg-white p-6 rounded-3xl border border-[#ece8e0] card-natural-shadow space-y-4 flex flex-col justify-between group hover:border-[#112734]/30 transition-all">
                   <div className="space-y-4">
                     <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-[#17A2B8] mx-auto shadow-inner bg-slate-50">
-                      <img
-                        src={formatImageUrl(member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80')}
-                        alt={member.nameBn || member.name}
-                        referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
-                        onError={(e) => handleImageError(e, member.avatar)}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
+                      {member.avatar && isValidImageUrl(member.avatar) && formatImageUrl(member.avatar) ? (
+                        <img
+                          src={formatImageUrl(member.avatar) || null}
+                          alt={member.nameBn || member.name}
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          onError={(e) => handleImageError(e, member.avatar)}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-[#112734] to-[#23626F] text-amber-300 flex items-center justify-center font-bold text-3xl font-anek">
+                          {(member.nameBn || member.name).charAt(0)}
+                        </div>
+                      )}
                     </div>
                     <div className="text-center space-y-1">
                       <h4 className="font-extrabold text-lg text-[#2c3e50] font-anek">{member.nameBn || member.name}</h4>
@@ -291,14 +297,20 @@ export default function AboutPage() {
                 <div key={member.id} className="bg-white p-6 rounded-3xl border border-[#ece8e0] card-natural-shadow space-y-4 flex flex-col justify-between group hover:border-[#112734]/30 transition-all">
                   <div className="space-y-4">
                     <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-emerald-500 mx-auto shadow-inner bg-slate-50">
-                      <img
-                        src={formatImageUrl(member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80')}
-                        alt={member.nameBn || member.name}
-                        referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
-                        onError={(e) => handleImageError(e, member.avatar)}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
+                      {member.avatar && isValidImageUrl(member.avatar) && formatImageUrl(member.avatar) ? (
+                        <img
+                          src={formatImageUrl(member.avatar) || null}
+                          alt={member.nameBn || member.name}
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          onError={(e) => handleImageError(e, member.avatar)}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-[#112734] to-[#047857] text-amber-300 flex items-center justify-center font-bold text-3xl font-anek">
+                          {(member.nameBn || member.name).charAt(0)}
+                        </div>
+                      )}
                     </div>
                     <div className="text-center space-y-1">
                       <h4 className="font-extrabold text-lg text-[#2c3e50] font-anek">{member.nameBn || member.name}</h4>
@@ -345,14 +357,20 @@ export default function AboutPage() {
                 <div key={member.id} className="bg-white p-6 rounded-3xl border border-[#ece8e0] card-natural-shadow space-y-4 flex flex-col justify-between group hover:border-[#112734]/30 transition-all">
                   <div className="space-y-4">
                     <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-purple-400 mx-auto shadow-inner bg-slate-50">
-                      <img
-                        src={formatImageUrl(member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80')}
-                        alt={member.nameBn || member.name}
-                        referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
-                        onError={(e) => handleImageError(e, member.avatar)}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
+                      {member.avatar && isValidImageUrl(member.avatar) && formatImageUrl(member.avatar) ? (
+                        <img
+                          src={formatImageUrl(member.avatar) || null}
+                          alt={member.nameBn || member.name}
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          onError={(e) => handleImageError(e, member.avatar)}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-[#112734] to-[#6b21a8] text-amber-300 flex items-center justify-center font-bold text-3xl font-anek">
+                          {(member.nameBn || member.name).charAt(0)}
+                        </div>
+                      )}
                     </div>
                     <div className="text-center space-y-1">
                       <h4 className="font-extrabold text-lg text-[#2c3e50] font-anek">{member.nameBn || member.name}</h4>

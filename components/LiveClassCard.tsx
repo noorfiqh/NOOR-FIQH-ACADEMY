@@ -78,10 +78,10 @@ export function LiveClassCard({ liveClass, onSelectPayment }: LiveClassCardProps
   return (
     <div className="bg-[#fdfcf9] rounded-[28px] border border-[#ece8e0] overflow-hidden shadow-md hover:shadow-xl transition-all flex flex-col group">
       {/* Thumbnail & Badges */}
-      {liveClass.thumbnail && (
+      {formatImageUrl(liveClass.thumbnail) && (
         <div className="relative h-52 w-full overflow-hidden bg-slate-100">
           <img 
-            src={formatImageUrl(liveClass.thumbnail)} 
+            src={formatImageUrl(liveClass.thumbnail) || null} 
             alt={liveClass.titleBn} 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             referrerPolicy="no-referrer"

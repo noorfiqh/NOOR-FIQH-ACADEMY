@@ -23,7 +23,7 @@ import { useAuth } from '@/lib/auth-context';
 import { LoginModal } from '@/components/LoginModal';
 import { AppStore, DEFAULT_SETTINGS } from '@/lib/store';
 import { SiteSettings } from '@/lib/types';
-import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { formatImageUrl, handleImageError, isValidImageUrl } from '@/lib/utils';
 
 export function Navbar() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
@@ -156,10 +156,10 @@ export function Navbar() {
           
           {/* Brand Logo */}
           <Link href="/" className="flex items-center gap-3.5 group focus:outline-none shrink-0">
-            {siteSettings.logoType === 'image' && siteSettings.logoImageUrl ? (
+            {siteSettings.logoType === 'image' && siteSettings.logoImageUrl && isValidImageUrl(siteSettings.logoImageUrl) && formatImageUrl(siteSettings.logoImageUrl) ? (
               <div className="h-12 sm:h-14 flex items-center py-1 group-hover:opacity-90 transition-opacity">
                 <img
-                  src={formatImageUrl(siteSettings.logoImageUrl)}
+                  src={formatImageUrl(siteSettings.logoImageUrl) || null}
                   alt={siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'}
                   referrerPolicy="no-referrer"
                   crossOrigin="anonymous"
@@ -222,9 +222,9 @@ export function Navbar() {
                     aria-label="User profile menu"
                   >
                     <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#17A2B8] text-slate-950 font-bold text-sm flex items-center justify-center border-2 border-amber-300/80 shrink-0 overflow-hidden shadow-sm">
-                      {user.avatar ? (
+                      {user.avatar && isValidImageUrl(user.avatar) && formatImageUrl(user.avatar) ? (
                         <img
-                          src={user.avatar}
+                          src={formatImageUrl(user.avatar) || null}
                           alt={user.name || 'User Profile'}
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
@@ -258,9 +258,9 @@ export function Navbar() {
                           {/* User Header Profile Card */}
                           <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-br from-emerald-50/70 to-slate-50 flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-[#17A2B8] text-slate-950 font-bold text-base flex items-center justify-center border-2 border-[#17A2B8]/30 shrink-0 overflow-hidden shadow-sm">
-                              {user.avatar ? (
+                              {user.avatar && isValidImageUrl(user.avatar) && formatImageUrl(user.avatar) ? (
                                 <img
-                                  src={user.avatar}
+                                  src={formatImageUrl(user.avatar) || null}
                                   alt={user.name || 'User Profile'}
                                   className="w-full h-full object-cover"
                                   referrerPolicy="no-referrer"

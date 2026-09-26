@@ -161,15 +161,22 @@ export default function BookDetailClient({ id }: BookDetailClientProps) {
         {/* Left Column: Book Preview Image & Quick Buy */}
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white p-6 rounded-3xl border border-[#ece8e0] card-natural-shadow flex flex-col items-center text-center">
-            <div className="w-48 aspect-[3/4] rounded-2xl overflow-hidden shadow-xl mb-6 bg-slate-100">
-              <img
-                src={formatImageUrl(book.coverImage)}
-                alt={book.titleBn}
-                referrerPolicy="no-referrer"
-                crossOrigin="anonymous"
-                onError={(e) => handleImageError(e, book.coverImage)}
-                className="w-full h-full object-cover"
-              />
+            <div className="w-48 aspect-[3/4] rounded-2xl overflow-hidden shadow-xl mb-6 bg-slate-100 flex items-center justify-center">
+              {formatImageUrl(book.coverImage) ? (
+                <img
+                  src={formatImageUrl(book.coverImage) || null}
+                  alt={book.titleBn}
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
+                  onError={(e) => handleImageError(e, book.coverImage)}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-[#112734] to-[#23626F] flex flex-col items-center justify-center p-6 text-center text-white">
+                  <BookOpen size={44} className="text-[#17A2B8] mb-3" />
+                  <span className="font-extrabold text-xs font-anek line-clamp-2">{book.titleBn || book.title}</span>
+                </div>
+              )}
             </div>
 
             <div className="w-full space-y-3">

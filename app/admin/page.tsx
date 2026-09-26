@@ -57,7 +57,7 @@ import {
 } from 'lucide-react';
 import { CertificateView } from '@/components/CertificateView';
 import { sendTestNotificationEmail } from '@/lib/email-service';
-import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { formatImageUrl, handleImageError, isValidImageUrl } from '@/lib/utils';
 import { db, doc, deleteDoc, collection, onSnapshot, handleFirestoreError, OperationType } from '@/lib/firebase';
 
 type AdminTab = 'overview' | 'courses' | 'orders' | 'fatwas' | 'books' | 'live_classes' | 'certificates' | 'reviews' | 'users' | 'faculty' | 'settings';
@@ -316,7 +316,7 @@ export default function AdminDashboardPage() {
       categoryLabelBn: 'গবেষণা পরিষদ',
       qualifications: '',
       bio: '',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+      avatar: '',
       email: '',
       phone: '',
       order: facultyList.length + 1
@@ -843,7 +843,7 @@ export default function AdminDashboardPage() {
                         level: 'intermediate',
                         levelBn: 'মধ্যম স্তর',
                         totalLessons: 1,
-                        thumbnail: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=800&q=80',
+                        thumbnail: '',
                         badge: 'নতুন কোর্স',
                         instructor: {
                           id: 'inst-1',
@@ -852,7 +852,7 @@ export default function AdminDashboardPage() {
                           title: 'প্রধান গবেষক ও মুফতী',
                           roleBn: 'দারুল উলুম দেওবন্দ',
                           bio: 'উচ্চতর ফিকহ ও সমকালীন অর্থনীতি বিশেষজ্ঞ।',
-                          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
+                          avatar: ''
                         },
                         objectives: ['বিশুদ্ধ মাসআলা অনুধাবন', 'দলীলভিত্তিক পড়াশোনা'],
                         lessons: [
@@ -1066,7 +1066,7 @@ export default function AdminDashboardPage() {
                       level: 'intermediate',
                       levelBn: 'মধ্যম স্তর',
                       totalLessons: 1,
-                      thumbnail: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=800&q=80',
+                      thumbnail: '',
                       previewVideoUrl: '',
                       badge: 'নতুন কোর্স',
                       instructor: {
@@ -1076,7 +1076,7 @@ export default function AdminDashboardPage() {
                         title: 'প্রধান গবেষক ও মুফতী',
                         roleBn: 'দারুল উলুম দেওবন্দ',
                         bio: 'উচ্চতর ফিকহ ও সমকালীন অর্থনীতি বিশেষজ্ঞ।',
-                        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80'
+                        avatar: ''
                       },
                       objectives: ['বিশুদ্ধ মাসআলা অনুধাবন', 'দলীলভিত্তিক পড়াশোনা'],
                       lessons: [
@@ -1105,15 +1105,21 @@ export default function AdminDashboardPage() {
                 {courses.map((course) => (
                   <div key={course.id} className="bg-white rounded-3xl border border-[#ece8e0] card-natural-shadow overflow-hidden flex flex-col justify-between">
                     <div>
-                      <div className="h-44 w-full relative bg-slate-100 overflow-hidden">
-                        <img 
-                          src={formatImageUrl(course.thumbnail)} 
-                          alt={course.titleBn} 
-                          referrerPolicy="no-referrer"
-                          crossOrigin="anonymous"
-                          onError={(e) => handleImageError(e, course.thumbnail)}
-                          className="w-full h-full object-cover"
-                        />
+                      <div className="h-44 w-full relative bg-slate-100 overflow-hidden flex items-center justify-center">
+                        {formatImageUrl(course.thumbnail) ? (
+                          <img 
+                            src={formatImageUrl(course.thumbnail) || null} 
+                            alt={course.titleBn} 
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous"
+                            onError={(e) => handleImageError(e, course.thumbnail)}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-[#112734] to-[#23626F] flex items-center justify-center text-amber-300">
+                            <span className="text-arabic text-3xl font-black">ن</span>
+                          </div>
+                        )}
                         <div className="absolute top-3 left-3 bg-[#112734] text-[#17A2B8] text-[10px] font-extrabold px-3 py-1 rounded-full">
                           {course.categoryLabelBn}
                         </div>
@@ -1788,11 +1794,11 @@ export default function AdminDashboardPage() {
                       category: 'fiqh',
                       categoryBn: 'ফিকহ ও উসূল',
                       description: '',
-                      coverImage: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
+                      coverImage: '',
                       hasPdf: true,
                       pdfPrice: 120,
-                      pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-                      previewPdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                      pdfUrl: '',
+                      previewPdfUrl: '',
                       hasHardcover: true,
                       hardcoverPrice: 350,
                       inStock: true,
@@ -1814,15 +1820,21 @@ export default function AdminDashboardPage() {
                 {books.map((book) => (
                   <div key={book.id} className="bg-white rounded-3xl border border-[#ece8e0] card-natural-shadow p-5 flex flex-col justify-between space-y-4">
                     <div className="flex gap-4">
-                      <div className="w-20 h-28 rounded-xl bg-slate-100 overflow-hidden shrink-0 border relative">
-                        <img 
-                          src={formatImageUrl(book.coverImage)} 
-                          alt={book.titleBn} 
-                          referrerPolicy="no-referrer"
-                          crossOrigin="anonymous"
-                          onError={(e) => handleImageError(e, book.coverImage)}
-                          className="w-full h-full object-cover" 
-                        />
+                      <div className="w-20 h-28 rounded-xl bg-slate-100 overflow-hidden shrink-0 border relative flex items-center justify-center">
+                        {formatImageUrl(book.coverImage) ? (
+                          <img 
+                            src={formatImageUrl(book.coverImage) || null} 
+                            alt={book.titleBn} 
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous"
+                            onError={(e) => handleImageError(e, book.coverImage)}
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-[#112734] to-[#23626F] flex items-center justify-center text-white">
+                            <BookOpen size={20} className="text-[#17A2B8]" />
+                          </div>
+                        )}
                         {book.hasPdf && (
                           <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-[#23626F]/90 text-[#17A2B8] text-[8px] font-black rounded">
                             PDF
@@ -2133,7 +2145,7 @@ export default function AdminDashboardPage() {
                           <input
                             type="text"
                             required
-                            placeholder="https://images.unsplash.com/..."
+                            placeholder="https://... কভার ছবির লিংক"
                             value={editingBook.coverImage}
                             onChange={(e) => setEditingBook({ ...editingBook, coverImage: e.target.value })}
                             className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] bg-white focus:outline-none focus:border-[#112734]"
@@ -2197,8 +2209,8 @@ export default function AdminDashboardPage() {
                       startTime: 'শুক্রবার, রাত ৯:০০ টা',
                       duration: '১ ঘণ্টা ৩০ মিনিট',
                       price: 0,
-                      thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80',
-                      meetingLink: 'https://zoom.us/j/noorfiqh',
+                      thumbnail: '',
+                      meetingLink: '',
                       platform: 'Zoom',
                       status: 'upcoming',
                       enrolledStudentsCount: 45
@@ -2676,8 +2688,8 @@ export default function AdminDashboardPage() {
             <div className="space-y-6 animate-in fade-in">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-black text-[#112734]">শিক্ষার্থীদের মতামত ও প্রশংসাপত্র</h2>
-                  <p className="text-xs text-[#8a817c]">হোমপেজে প্রদর্শিত শিক্ষার্থীদের রিভিউ যোগ ও এডিট করুন</p>
+                  <h2 className="text-2xl font-black text-[#112734]">শিক্ষার্থীদের মূল্যায়ন ও প্রশংসাপত্র</h2>
+                  <p className="text-xs text-[#8a817c]">ওয়েবসাইটে প্রদর্শিত শিক্ষার্থীদের মূল্যায়ন ও রিভিউ ব্যবস্থাপনা করুন</p>
                 </div>
 
                 <button
@@ -2688,7 +2700,7 @@ export default function AdminDashboardPage() {
                       name: '',
                       role: '',
                       location: '',
-                      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+                      avatar: '',
                       rating: 5,
                       content: '',
                       courseTitle: ''
@@ -2701,19 +2713,66 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
 
+              {/* Student Evaluations Overview Banner */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white p-5 rounded-2xl border border-[#ece8e0] shadow-xs flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-[#8a817c]">মোট শিক্ষার্থী মূল্যায়ন</span>
+                    <div className="text-3xl font-black text-[#112734] mt-1 font-anek">
+                      {toBengaliNumber(reviews.length)} <span className="text-sm font-normal text-slate-500">জন</span>
+                    </div>
+                  </div>
+                  <div className="w-11 h-11 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 font-bold">
+                    ★
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-[#ece8e0] shadow-xs flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-[#8a817c]">গড় মূল্যায়ন রেটিং</span>
+                    <div className="text-3xl font-black text-amber-600 mt-1 font-anek">
+                      {toBengaliNumber((reviews.length > 0 ? (reviews.reduce((s, r) => s + (Number(r.rating) || 5), 0) / reviews.length).toFixed(1) : '5.0'))} <span className="text-sm font-normal text-slate-400">/ ৫.০</span>
+                    </div>
+                  </div>
+                  <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 font-bold text-sm">
+                    ৯৯%
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-[#ece8e0] shadow-xs flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-[#8a817c]">৫-স্টার রেটিং অনুপাত</span>
+                    <div className="text-3xl font-black text-emerald-600 mt-1 font-anek">
+                      {toBengaliNumber(reviews.filter(r => Number(r.rating) >= 5).length)} <span className="text-sm font-normal text-slate-500">টি</span>
+                    </div>
+                  </div>
+                  <div className="w-11 h-11 rounded-xl bg-teal-500/10 flex items-center justify-center text-teal-600 font-bold text-sm">
+                    ১০০%
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {reviews.map((rev) => (
                   <div key={rev.id} className="bg-white p-6 rounded-3xl border border-[#ece8e0] card-natural-shadow space-y-3 flex flex-col justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center gap-3">
-                        <img 
-                          src={formatImageUrl(rev.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80')} 
-                          alt={rev.name} 
-                          referrerPolicy="no-referrer"
-                          crossOrigin="anonymous"
-                          onError={(e) => handleImageError(e, rev.avatar)}
-                          className="w-10 h-10 rounded-full object-cover border" 
-                        />
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-[#17A2B8]/40 shrink-0 bg-slate-100 flex items-center justify-center">
+                          {rev.avatar && isValidImageUrl(rev.avatar) && formatImageUrl(rev.avatar) ? (
+                            <img 
+                              src={formatImageUrl(rev.avatar) || null} 
+                              alt={rev.name} 
+                              referrerPolicy="no-referrer"
+                              crossOrigin="anonymous"
+                              onError={(e) => handleImageError(e, rev.avatar)}
+                              className="w-full h-full object-cover" 
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-[#112734] text-amber-300 font-bold text-sm flex items-center justify-center font-anek">
+                              {(rev.name || 'র').charAt(0)}
+                            </div>
+                          )}
+                        </div>
                         <div>
                           <h4 className="font-extrabold text-sm text-[#2c3e50]">{rev.name}</h4>
                           <p className="text-[10px] text-[#8a817c] flex items-center gap-1 flex-wrap">
@@ -2870,7 +2929,7 @@ export default function AdminDashboardPage() {
                         <label className="block font-bold mb-1 text-[#2c3e50]">প্রোফাইল ছবি / Avatar URL (ঐচ্ছিক)</label>
                         <input
                           type="text"
-                          placeholder="https://images.unsplash.com/... অথবা খালি রাখুন"
+                          placeholder="https://... অথবা খালি রাখুন"
                           value={editingReview.avatar || ''}
                           onChange={(e) => setEditingReview({ ...editingReview, avatar: e.target.value })}
                           className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] focus:ring-2 focus:ring-[#17A2B8] outline-none text-[11px]"
@@ -3303,10 +3362,10 @@ export default function AdminDashboardPage() {
                         </span>
                         
                         <div className="flex items-center justify-center min-h-16 bg-white/10 p-3.5 rounded-2xl backdrop-blur-sm border border-white/20 w-full">
-                          {siteSettings.logoType === 'image' && siteSettings.logoImageUrl ? (
+                          {siteSettings.logoType === 'image' && siteSettings.logoImageUrl && isValidImageUrl(siteSettings.logoImageUrl) && formatImageUrl(siteSettings.logoImageUrl) ? (
                             <div className="h-12 flex items-center justify-center py-0.5">
                               <img
-                                src={formatImageUrl(siteSettings.logoImageUrl)}
+                                src={formatImageUrl(siteSettings.logoImageUrl) || null}
                                 alt="Logo Preview"
                                 referrerPolicy="no-referrer"
                                 crossOrigin="anonymous"
@@ -3414,7 +3473,7 @@ export default function AdminDashboardPage() {
                         <label className="block font-bold text-[#2c3e50] mb-1">অথবা অনলাইন ইমেজ লিংক / URL প্রদান করুন</label>
                         <input
                           type="text"
-                          placeholder="https://images.unsplash.com/photo-... বা যেকোনো ক্লাউড ইমেজ লিংক"
+                          placeholder="https://... যেকোনো ক্লাউড ইমেজ লিংক"
                           value={siteSettings.heroBgImage || ''}
                           onChange={(e) => setSiteSettings({ ...siteSettings, heroBgImage: e.target.value })}
                           className="w-full px-3.5 py-2.5 rounded-xl border border-[#ece8e0] font-mono text-xs"
@@ -3875,9 +3934,9 @@ export default function AdminDashboardPage() {
                         <span className="text-[10px] font-bold text-[#8a817c] uppercase tracking-wider mb-2">আর্চ কার্ড প্রিভিউ</span>
                         <div className="w-full max-w-xs bg-white rounded-t-[70px] border border-[#ece8e0] shadow-md p-5 text-center space-y-3">
                           <div className="w-12 h-12 bg-[#112734] rounded-full mx-auto flex items-center justify-center text-[#17A2B8] shadow overflow-hidden border-2 border-[#17A2B8]/40">
-                            {siteSettings.heroCard?.iconImage ? (
+                            {siteSettings.heroCard?.iconImage && isValidImageUrl(siteSettings.heroCard.iconImage) && formatImageUrl(siteSettings.heroCard.iconImage) ? (
                               <img
-                                src={formatImageUrl(siteSettings.heroCard.iconImage)}
+                                src={formatImageUrl(siteSettings.heroCard.iconImage) || null}
                                 alt="Icon"
                                 referrerPolicy="no-referrer"
                                 crossOrigin="anonymous"
@@ -4011,14 +4070,14 @@ export default function AdminDashboardPage() {
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                           <input
                             type="checkbox"
-                            checked={siteSettings.coursesPage?.showHeroImage !== false}
+                            checked={siteSettings.coursesPage?.showHeroImage !== false && !!siteSettings.coursesPage?.heroImage}
                             onChange={(e) => {
                               const curr = siteSettings.coursesPage || {
                                 badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
                                 titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
                                 subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।',
-                                heroImage: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80',
-                                showHeroImage: true,
+                                heroImage: '',
+                                showHeroImage: false,
                                 heroImagePosition: 'right'
                               };
                               setSiteSettings({
@@ -4096,47 +4155,6 @@ export default function AdminDashboardPage() {
                               }}
                               className="w-full px-3 py-2 rounded-xl border border-[#ece8e0] font-mono text-xs bg-white focus:outline-none focus:border-indigo-600"
                             />
-                          </div>
-                        </div>
-
-                        {/* Preset Quick Images */}
-                        <div className="pt-2 border-t border-[#ece8e0]/70 space-y-1.5">
-                          <span className="text-[11px] font-bold text-[#5a524d] block">
-                            পছন্দসই ইসলামিক ও একাডেমিক ছবি নির্বাচন করুন (এক-ক্লিক প্রিসেট):
-                          </span>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            {[
-                              { label: '📚 কিতাব ও লাইব্রেরী', url: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80' },
-                              { label: '🏛️ ইসলামিক আর্চ', url: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=1200&q=80' },
-                              { label: '📖 কুরআন ও ফিকহ স্টাডি', url: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80' },
-                              { label: '🕌 মনোরম একাডেমি ক্যাম্পাস', url: 'https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=1200&q=80' }
-                            ].map((preset, pIdx) => (
-                              <button
-                                key={pIdx}
-                                type="button"
-                                onClick={() => {
-                                  const curr = siteSettings.coursesPage || {
-                                    badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
-                                    titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
-                                    subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।',
-                                    heroImage: '',
-                                    showHeroImage: true,
-                                    heroImagePosition: 'right'
-                                  };
-                                  setSiteSettings({
-                                    ...siteSettings,
-                                    coursesPage: { ...curr, heroImage: preset.url, showHeroImage: true }
-                                  });
-                                }}
-                                className={`p-1.5 rounded-xl border text-[10px] font-bold text-center transition-all ${
-                                  siteSettings.coursesPage?.heroImage === preset.url
-                                    ? 'border-indigo-600 bg-indigo-50 text-indigo-900 shadow-sm'
-                                    : 'border-[#ece8e0] bg-white text-slate-700 hover:bg-slate-50'
-                                }`}
-                              >
-                                {preset.label}
-                              </button>
-                            ))}
                           </div>
                         </div>
 
@@ -4453,10 +4471,10 @@ export default function AdminDashboardPage() {
                       <div className="rounded-2xl border border-[#ece8e0] bg-[#fdfcf9] p-3 shadow-inner overflow-hidden">
                         
                         {/* Mock Hero Container */}
-                        {siteSettings.coursesPage?.heroImagePosition === 'background' && siteSettings.coursesPage?.showHeroImage !== false && siteSettings.coursesPage?.heroImage ? (
+                        {siteSettings.coursesPage?.heroImagePosition === 'background' && siteSettings.coursesPage?.showHeroImage !== false && siteSettings.coursesPage?.heroImage && isValidImageUrl(siteSettings.coursesPage.heroImage) && formatImageUrl(siteSettings.coursesPage.heroImage) ? (
                           <div className="relative rounded-xl overflow-hidden p-4 text-white bg-[#112734] border border-[#23626F] shadow-sm">
                             <img
-                              src={formatImageUrl(siteSettings.coursesPage?.heroImage)}
+                              src={formatImageUrl(siteSettings.coursesPage?.heroImage) || null}
                               alt="Courses Hero Preview"
                               referrerPolicy="no-referrer"
                               crossOrigin="anonymous"
@@ -4480,7 +4498,7 @@ export default function AdminDashboardPage() {
                               </p>
                             </div>
                           </div>
-                        ) : siteSettings.coursesPage?.showHeroImage !== false && siteSettings.coursesPage?.heroImage ? (
+                        ) : siteSettings.coursesPage?.showHeroImage !== false && siteSettings.coursesPage?.heroImage && isValidImageUrl(siteSettings.coursesPage.heroImage) && formatImageUrl(siteSettings.coursesPage.heroImage) ? (
                           <div className="bg-white rounded-xl p-3.5 border border-[#ece8e0] shadow-sm space-y-2.5">
                             <div className={`flex flex-col sm:flex-row gap-3 items-center ${siteSettings.coursesPage?.heroImagePosition === 'left' ? 'sm:flex-row-reverse' : ''}`}>
                               <div className="flex-1 space-y-1.5">
@@ -4496,7 +4514,7 @@ export default function AdminDashboardPage() {
                               </div>
                               <div className="w-24 h-16 rounded-lg overflow-hidden border border-[#ece8e0] shrink-0 bg-slate-100">
                                 <img
-                                  src={formatImageUrl(siteSettings.coursesPage?.heroImage)}
+                                  src={formatImageUrl(siteSettings.coursesPage?.heroImage) || null}
                                   alt="Course Hero Preview"
                                   referrerPolicy="no-referrer"
                                   crossOrigin="anonymous"
@@ -4599,14 +4617,14 @@ export default function AdminDashboardPage() {
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                           <input
                             type="checkbox"
-                            checked={siteSettings.booksPage?.showHeroImage !== false}
+                            checked={siteSettings.booksPage?.showHeroImage !== false && !!siteSettings.booksPage?.heroImage}
                             onChange={(e) => {
                               const curr = siteSettings.booksPage || {
                                 badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
                                 titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                 subtitleBn: 'বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন ঘরে বসেই নির্ভরযোগ্য হোম ডেলিভারির মাধ্যমে।',
-                                heroImage: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80',
-                                showHeroImage: true,
+                                heroImage: '',
+                                showHeroImage: false,
                                 heroImagePosition: 'right'
                               };
                               setSiteSettings({
@@ -4688,12 +4706,12 @@ export default function AdminDashboardPage() {
                         </div>
 
                         {/* Image Preview / Remove Row */}
-                        {siteSettings.booksPage?.heroImage && (
+                        {siteSettings.booksPage?.heroImage && isValidImageUrl(siteSettings.booksPage.heroImage) && formatImageUrl(siteSettings.booksPage.heroImage) && (
                           <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-[#ece8e0]">
                             <div className="flex items-center gap-2.5">
                               <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#ece8e0] bg-slate-100 shrink-0">
                                 <img
-                                  src={formatImageUrl(siteSettings.booksPage.heroImage)}
+                                  src={formatImageUrl(siteSettings.booksPage.heroImage) || null}
                                   alt="Books Hero Banner"
                                   referrerPolicy="no-referrer"
                                   crossOrigin="anonymous"
@@ -4732,45 +4750,6 @@ export default function AdminDashboardPage() {
                             </button>
                           </div>
                         )}
-
-                        {/* Quick Presets */}
-                        <div className="pt-2 border-t border-[#ece8e0]/70">
-                          <label className="block text-[11px] font-bold text-[#5a524d] mb-1.5">রেডিমেড প্রিসেট ইমেজসমূহ (ক্লিক করে নির্বাচন করুন)</label>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            {[
-                              { label: '📚 মাকতাবা ও কিতাব', url: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1200&q=80' },
-                              { label: '📖 ইসলামি পাঠ ও গবেষণা', url: 'https://images.unsplash.com/photo-1506880018603-83d5b814b5a6?auto=format&fit=crop&w=1200&q=80' },
-                              { label: '✨ পবিত্র কুরআন ও কিতাব', url: 'https://images.unsplash.com/photo-1585776245991-cf89dd7fc73a?auto=format&fit=crop&w=1200&q=80' },
-                              { label: '🏛️ ক্লাসিক লাইব্রেরি', url: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=1200&q=80' }
-                            ].map((preset) => (
-                              <button
-                                key={preset.url}
-                                type="button"
-                                onClick={() => {
-                                  const curr = siteSettings.booksPage || {
-                                    badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
-                                    titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
-                                    subtitleBn: 'বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন ঘরে বসেই নির্ভরযোগ্য হোম ডেলিভারির মাধ্যমে।',
-                                    heroImage: preset.url,
-                                    showHeroImage: true,
-                                    heroImagePosition: 'right'
-                                  };
-                                  setSiteSettings({
-                                    ...siteSettings,
-                                    booksPage: { ...curr, heroImage: preset.url, showHeroImage: true }
-                                  });
-                                }}
-                                className={`p-1.5 rounded-xl border text-[10px] font-bold text-center transition-all ${
-                                  siteSettings.booksPage?.heroImage === preset.url
-                                    ? 'border-amber-600 bg-amber-50 text-amber-900 shadow-sm'
-                                    : 'border-[#ece8e0] bg-white text-slate-700 hover:bg-slate-50'
-                                }`}
-                              >
-                                {preset.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
 
                         {/* Image Layout Position */}
                         <div className="pt-2 border-t border-[#ece8e0]/70">
@@ -5150,13 +5129,13 @@ export default function AdminDashboardPage() {
                         {/* Preview Body */}
                         <div className="p-4 bg-gradient-to-b from-[#f8f9fa] to-white relative overflow-hidden space-y-3.5">
                           {/* Background image preview if background mode */}
-                          {siteSettings.booksPage?.heroImage && siteSettings.booksPage?.heroImagePosition === 'background' && siteSettings.booksPage?.showHeroImage !== false && (
+                          {siteSettings.booksPage?.heroImage && isValidImageUrl(siteSettings.booksPage.heroImage) && formatImageUrl(siteSettings.booksPage.heroImage) && siteSettings.booksPage?.heroImagePosition === 'background' && siteSettings.booksPage?.showHeroImage !== false && (
                             <div 
                               className="absolute inset-0 pointer-events-none transition-opacity"
                               style={{ opacity: (siteSettings.booksPage?.heroImageOpacity ?? 35) / 100 }}
                             >
                               <img
-                                src={formatImageUrl(siteSettings.booksPage.heroImage)}
+                                src={formatImageUrl(siteSettings.booksPage.heroImage) || null}
                                 alt="bg"
                                 referrerPolicy="no-referrer"
                                 crossOrigin="anonymous"
@@ -5207,10 +5186,10 @@ export default function AdminDashboardPage() {
                             </div>
 
                             {/* Image side mock */}
-                            {siteSettings.booksPage?.heroImage && siteSettings.booksPage?.showHeroImage !== false && siteSettings.booksPage?.heroImagePosition !== 'background' && (
+                            {siteSettings.booksPage?.heroImage && isValidImageUrl(siteSettings.booksPage.heroImage) && formatImageUrl(siteSettings.booksPage.heroImage) && siteSettings.booksPage?.showHeroImage !== false && siteSettings.booksPage?.heroImagePosition !== 'background' && (
                               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden border-2 border-white shadow-md bg-slate-100 shrink-0">
                                 <img
-                                  src={formatImageUrl(siteSettings.booksPage.heroImage)}
+                                  src={formatImageUrl(siteSettings.booksPage.heroImage) || null}
                                   alt="Preview"
                                   referrerPolicy="no-referrer"
                                   crossOrigin="anonymous"
@@ -5298,14 +5277,14 @@ export default function AdminDashboardPage() {
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                           <input
                             type="checkbox"
-                            checked={siteSettings.fatwaPage?.showHeroImage !== false}
+                            checked={siteSettings.fatwaPage?.showHeroImage !== false && !!siteSettings.fatwaPage?.heroImage}
                             onChange={(e) => {
                               const curr = siteSettings.fatwaPage || {
                                 badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
                                 titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                 subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
-                                heroImage: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80',
-                                showHeroImage: true,
+                                heroImage: '',
+                                showHeroImage: false,
                                 heroImagePosition: 'right'
                               };
                               setSiteSettings({
@@ -5387,12 +5366,12 @@ export default function AdminDashboardPage() {
                         </div>
 
                         {/* Image Preview / Remove Row */}
-                        {siteSettings.fatwaPage?.heroImage && (
+                        {siteSettings.fatwaPage?.heroImage && isValidImageUrl(siteSettings.fatwaPage.heroImage) && formatImageUrl(siteSettings.fatwaPage.heroImage) && (
                           <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-[#ece8e0]">
                             <div className="flex items-center gap-2.5">
                               <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#ece8e0] bg-slate-100 shrink-0">
                                 <img
-                                  src={formatImageUrl(siteSettings.fatwaPage.heroImage)}
+                                  src={formatImageUrl(siteSettings.fatwaPage.heroImage) || null}
                                   alt="Fatwa Hero Banner"
                                   referrerPolicy="no-referrer"
                                   crossOrigin="anonymous"
@@ -5429,57 +5408,6 @@ export default function AdminDashboardPage() {
                             </button>
                           </div>
                         )}
-
-                        {/* Presets Grid */}
-                        <div className="pt-2">
-                          <label className="block text-[11px] font-bold text-[#5a524d] mb-1.5">প্রিসেট ইসলামিক ছবি থেকে বেছে নিন:</label>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            {[
-                              {
-                                label: 'প্রামাণ্য কিতাব ও লাইব্রেরী',
-                                url: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80'
-                              },
-                              {
-                                label: 'ইসলামিক আর্চ ও মসজিদ',
-                                url: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80'
-                              },
-                              {
-                                label: 'কুরআন ও রিডিং ডেস্ক',
-                                url: 'https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=1200&q=80'
-                              },
-                              {
-                                label: 'দারুল ইফতা স্টাডি',
-                                url: 'https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=1200&q=80'
-                              }
-                            ].map((preset, pIdx) => (
-                              <button
-                                key={pIdx}
-                                type="button"
-                                onClick={() => {
-                                  const curr = siteSettings.fatwaPage || {
-                                    badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
-                                    titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
-                                    subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
-                                    heroImage: '',
-                                    showHeroImage: true,
-                                    heroImagePosition: 'right'
-                                  };
-                                  setSiteSettings({
-                                    ...siteSettings,
-                                    fatwaPage: { ...curr, heroImage: preset.url, showHeroImage: true }
-                                  });
-                                }}
-                                className={`p-1.5 rounded-xl border text-[10px] font-bold text-center transition-all ${
-                                  siteSettings.fatwaPage?.heroImage === preset.url
-                                    ? 'border-teal-600 bg-teal-50 text-teal-900 shadow-sm'
-                                    : 'border-[#ece8e0] bg-white text-slate-700 hover:bg-slate-50'
-                                }`}
-                              >
-                                {preset.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
 
                         {/* Image Layout Position */}
                         <div className="pt-2 border-t border-[#ece8e0]/70">
@@ -5917,10 +5845,10 @@ export default function AdminDashboardPage() {
                         </div>
 
                         {/* Hero Section Preview Rendering */}
-                        {siteSettings.fatwaPage?.heroImagePosition === 'background' && siteSettings.fatwaPage?.showHeroImage !== false && siteSettings.fatwaPage?.heroImage ? (
+                        {siteSettings.fatwaPage?.heroImagePosition === 'background' && siteSettings.fatwaPage?.showHeroImage !== false && siteSettings.fatwaPage?.heroImage && isValidImageUrl(siteSettings.fatwaPage.heroImage) && formatImageUrl(siteSettings.fatwaPage.heroImage) ? (
                           <div className="relative rounded-2xl overflow-hidden min-h-[160px] p-5 flex items-center justify-center text-center shadow-inner border border-[#23626F] bg-[#112734]">
                             <img
-                              src={formatImageUrl(siteSettings.fatwaPage?.heroImage)}
+                              src={formatImageUrl(siteSettings.fatwaPage?.heroImage) || null}
                               alt="Fatwa Hero Preview"
                               referrerPolicy="no-referrer"
                               crossOrigin="anonymous"
@@ -5945,7 +5873,7 @@ export default function AdminDashboardPage() {
                               </p>
                             </div>
                           </div>
-                        ) : siteSettings.fatwaPage?.showHeroImage !== false && siteSettings.fatwaPage?.heroImage ? (
+                        ) : siteSettings.fatwaPage?.showHeroImage !== false && siteSettings.fatwaPage?.heroImage && isValidImageUrl(siteSettings.fatwaPage.heroImage) && formatImageUrl(siteSettings.fatwaPage.heroImage) ? (
                           <div className="bg-white rounded-xl p-3.5 border border-[#ece8e0] shadow-sm space-y-2.5">
                             <div className={`flex flex-col sm:flex-row gap-3 items-center ${siteSettings.fatwaPage?.heroImagePosition === 'left' ? 'sm:flex-row-reverse' : ''}`}>
                               <div className="flex-1 space-y-1.5">
@@ -5961,7 +5889,7 @@ export default function AdminDashboardPage() {
                               </div>
                               <div className="w-24 h-16 rounded-lg overflow-hidden border border-[#ece8e0] shrink-0 bg-slate-100">
                                 <img
-                                  src={formatImageUrl(siteSettings.fatwaPage?.heroImage)}
+                                  src={formatImageUrl(siteSettings.fatwaPage?.heroImage) || null}
                                   alt="Fatwa Hero Preview"
                                   referrerPolicy="no-referrer"
                                   crossOrigin="anonymous"
@@ -6379,12 +6307,12 @@ export default function AdminDashboardPage() {
                       </div>
 
                       {/* Image Preview */}
-                      {siteSettings.aboutPage?.heroImage && (
+                      {siteSettings.aboutPage?.heroImage && isValidImageUrl(siteSettings.aboutPage.heroImage) && formatImageUrl(siteSettings.aboutPage.heroImage) && (
                         <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-[#ece8e0]">
                           <div className="flex items-center gap-2.5">
                             <div className="w-12 h-12 rounded-lg overflow-hidden border border-[#ece8e0] bg-slate-100 shrink-0">
                               <img
-                                src={formatImageUrl(siteSettings.aboutPage.heroImage)}
+                                src={formatImageUrl(siteSettings.aboutPage.heroImage) || null}
                                 alt="About Hero Banner"
                                 referrerPolicy="no-referrer"
                                 crossOrigin="anonymous"
@@ -7118,14 +7046,20 @@ export default function AdminDashboardPage() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="relative">
                             <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-[#17A2B8]/20 shadow-inner bg-slate-50">
-                              <img
-                                src={formatImageUrl(member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80')}
-                                alt={member.nameBn || member.name}
-                                referrerPolicy="no-referrer"
-                                crossOrigin="anonymous"
-                                onError={(e) => handleImageError(e, member.avatar)}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                              />
+                              {member.avatar && isValidImageUrl(member.avatar) && formatImageUrl(member.avatar) ? (
+                                <img
+                                  src={formatImageUrl(member.avatar) || null}
+                                  alt={member.nameBn || member.name}
+                                  referrerPolicy="no-referrer"
+                                  crossOrigin="anonymous"
+                                  onError={(e) => handleImageError(e, member.avatar)}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-[#112734] to-[#23626F] text-amber-300 flex items-center justify-center font-bold text-2xl font-anek">
+                                  {(member.nameBn || member.name).charAt(0)}
+                                </div>
+                              )}
                             </div>
                             {member.order && (
                               <span className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-[#17A2B8] text-slate-950 font-black text-[10px] rounded-full flex items-center justify-center shadow">
@@ -8780,15 +8714,21 @@ function FacultyEditorModal({ faculty, isNew, onClose, onSave }: FacultyEditorMo
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5 text-xs">
           {/* Avatar Upload & Preview */}
           <div className="bg-[#fdfcf9] p-4 rounded-2xl border border-[#ece8e0] flex flex-col sm:flex-row items-center gap-5">
-            <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-[#17A2B8] bg-white shrink-0 shadow-inner">
-              <img
-                src={formatImageUrl(formData.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80')}
-                alt="Avatar preview"
-                referrerPolicy="no-referrer"
-                crossOrigin="anonymous"
-                onError={(e) => handleImageError(e, formData.avatar)}
-                className="w-full h-full object-cover"
-              />
+            <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-[#17A2B8] bg-white shrink-0 shadow-inner flex items-center justify-center">
+              {formData.avatar && isValidImageUrl(formData.avatar) && formatImageUrl(formData.avatar) ? (
+                <img
+                  src={formatImageUrl(formData.avatar) || null}
+                  alt="Avatar preview"
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
+                  onError={(e) => handleImageError(e, formData.avatar)}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-[#112734] to-[#23626F] text-amber-300 flex items-center justify-center font-bold text-3xl font-anek">
+                  {(formData.nameBn || formData.name || 'উ').charAt(0)}
+                </div>
+              )}
             </div>
             <div className="space-y-2 flex-1 w-full">
               <label className="block font-bold text-[#2c3e50]">প্রোফাইল ছবি (URL বা আপলোড)</label>

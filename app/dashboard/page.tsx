@@ -37,7 +37,7 @@ import {
 import { LiveClassCard } from '@/components/LiveClassCard';
 import { PaymentModal } from '@/components/PaymentModal';
 import { LiveClass } from '@/lib/types';
-import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { formatImageUrl, handleImageError, isValidImageUrl } from '@/lib/utils';
 import { db, collection, query, where, onSnapshot, handleFirestoreError, OperationType } from '@/lib/firebase';
 
 export default function DashboardPage() {
@@ -553,9 +553,9 @@ export default function DashboardPage() {
         <div className="bg-[#112734] text-white p-6 sm:p-8 rounded-3xl shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-[#17A2B8] text-slate-950 flex items-center justify-center text-xl font-bold overflow-hidden shadow-md">
-              {user.avatar ? (
+              {user.avatar && isValidImageUrl(user.avatar) && formatImageUrl(user.avatar) ? (
                 <img
-                  src={formatImageUrl(user.avatar)}
+                  src={formatImageUrl(user.avatar) || null}
                   alt={user.name || 'User Profile'}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
@@ -754,15 +754,21 @@ export default function DashboardPage() {
                         className="bg-white p-5 rounded-3xl border border-[#ece8e0] card-natural-shadow flex flex-col justify-between"
                       >
                         <div>
-                          <div className="relative aspect-video rounded-2xl overflow-hidden mb-3">
-                            <img
-                              src={formatImageUrl(course.thumbnail)}
-                              alt={course.titleBn}
-                              referrerPolicy="no-referrer"
-                              crossOrigin="anonymous"
-                              onError={(e) => handleImageError(e, course.thumbnail)}
-                              className="w-full h-full object-cover"
-                            />
+                          <div className="relative aspect-video rounded-2xl overflow-hidden mb-3 bg-slate-900">
+                            {formatImageUrl(course.thumbnail) ? (
+                              <img
+                                src={formatImageUrl(course.thumbnail) || null}
+                                alt={course.titleBn}
+                                referrerPolicy="no-referrer"
+                                crossOrigin="anonymous"
+                                onError={(e) => handleImageError(e, course.thumbnail)}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-[#112734] to-[#23626F] flex items-center justify-center text-amber-300">
+                                <span className="text-arabic text-3xl font-black">ن</span>
+                              </div>
+                            )}
                             {isFinished && (
                               <div className="absolute top-2 right-2 bg-emerald-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
                                 <CheckCircle size={12} />
@@ -899,15 +905,21 @@ export default function DashboardPage() {
                 return (
                   <div key={book.id} className="bg-white p-5 rounded-3xl border border-[#ece8e0] card-natural-shadow flex flex-col justify-between relative overflow-hidden group">
                     <div className="flex gap-4 mb-4">
-                      <div className="w-20 aspect-[3/4] rounded-xl overflow-hidden shadow-md shrink-0 border border-slate-100 bg-slate-50">
-                        <img 
-                          src={formatImageUrl(book.coverImage)} 
-                          alt={book.titleBn} 
-                          referrerPolicy="no-referrer"
-                          crossOrigin="anonymous"
-                          onError={(e) => handleImageError(e, book.coverImage)}
-                          className="w-full h-full object-cover" 
-                        />
+                      <div className="w-20 aspect-[3/4] rounded-xl overflow-hidden shadow-md shrink-0 border border-slate-100 bg-slate-50 flex items-center justify-center">
+                        {formatImageUrl(book.coverImage) ? (
+                          <img 
+                            src={formatImageUrl(book.coverImage) || null} 
+                            alt={book.titleBn} 
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous"
+                            onError={(e) => handleImageError(e, book.coverImage)}
+                            className="w-full h-full object-cover" 
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-[#112734] to-[#23626F] flex flex-col items-center justify-center p-2 text-center text-white">
+                            <BookOpen size={20} className="text-[#17A2B8]" />
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-1.5 flex-grow min-w-0">
                         <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#17A2B8]/10 text-[#23626F] text-[9px] font-black uppercase rounded-md border border-[#17A2B8]/20">
@@ -1176,11 +1188,17 @@ export default function DashboardPage() {
                       return (
                         <div key={course.id} className="p-4 rounded-2xl bg-[#faf8f5] border border-[#ece8e0] flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            <img
-                              src={formatImageUrl(course.thumbnail)}
-                              alt={course.titleBn}
-                              className="w-12 h-12 rounded-xl object-cover shrink-0 border border-[#ece8e0]"
-                            />
+                            {formatImageUrl(course.thumbnail) ? (
+                              <img
+                                src={formatImageUrl(course.thumbnail) || null}
+                                alt={course.titleBn}
+                                className="w-12 h-12 rounded-xl object-cover shrink-0 border border-[#ece8e0]"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-xl bg-[#112734] text-amber-300 flex items-center justify-center font-bold text-base shrink-0 border border-[#ece8e0]">
+                                <span className="text-arabic font-black">ن</span>
+                              </div>
+                            )}
                             <div className="min-w-0">
                               <h5 className="font-extrabold text-xs text-[#112734] truncate">{course.titleBn}</h5>
                               <div className="flex items-center gap-1.5 mt-0.5">
@@ -1326,9 +1344,9 @@ export default function DashboardPage() {
             {/* Embedded PDF Viewer */}
             <div className="flex-1 bg-slate-900 relative">
               <iframe
-                src={readingBookPdf.pdfUrl.includes('drive.google.com') && !readingBookPdf.pdfUrl.includes('/preview') 
+                src={(readingBookPdf.pdfUrl && readingBookPdf.pdfUrl.includes('drive.google.com') && !readingBookPdf.pdfUrl.includes('/preview') 
                   ? readingBookPdf.pdfUrl.replace('/view', '/preview') 
-                  : readingBookPdf.pdfUrl}
+                  : readingBookPdf.pdfUrl) || 'about:blank'}
                 className="w-full h-full border-none"
                 title={readingBookPdf.titleBn}
                 allow="autoplay"

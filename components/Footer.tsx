@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { AppStore, DEFAULT_SETTINGS } from '@/lib/store';
 import { SiteSettings } from '@/lib/types';
-import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { formatImageUrl, handleImageError, isValidImageUrl } from '@/lib/utils';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -48,10 +48,10 @@ export function Footer() {
           {/* Col 1 & 2: Brand Identity */}
           <div className="lg:col-span-2 space-y-5">
             <Link href="/" className="flex items-center gap-3.5 group shrink-0">
-              {siteSettings.logoType === 'image' && siteSettings.logoImageUrl ? (
+              {siteSettings.logoType === 'image' && siteSettings.logoImageUrl && isValidImageUrl(siteSettings.logoImageUrl) && formatImageUrl(siteSettings.logoImageUrl) ? (
                 <div className="h-14 flex items-center py-1 group-hover:opacity-90 transition-opacity">
                   <img
-                    src={formatImageUrl(siteSettings.logoImageUrl)}
+                    src={formatImageUrl(siteSettings.logoImageUrl) || null}
                     alt={siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'}
                     referrerPolicy="no-referrer"
                     crossOrigin="anonymous"

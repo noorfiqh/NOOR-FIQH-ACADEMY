@@ -12,7 +12,7 @@ export function SeoSchema({ type = 'Organization', data }: SeoSchemaProps) {
     name: 'Noor Fiqh Academy',
     alternateName: 'নূর ফিকহ একাডেমি',
     url: 'https://noorfiqhacademy.com',
-    logo: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=400&q=80',
+    logo: 'https://noorfiqhacademy.com/icon.png',
     description: 'Noor Fiqh Academy is an online Islamic institution for classical Islamic jurisprudence, contemporary fatwa consultations, and digital education.',
     sameAs: [
       'https://www.facebook.com/profile.php?id=61591404045439'

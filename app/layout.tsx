@@ -45,18 +45,18 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80',
-        width: 1200,
-        height: 630,
-        alt: 'Noor Fiqh Academy Banner'
+        url: '/icon.png',
+        width: 512,
+        height: 512,
+        alt: 'Noor Fiqh Academy Logo'
       }
     ]
   },
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'নূর ফিকহ একাডেমি (Noor Fiqh Academy)',
     description: 'অনলাইন ইসলামিক ফিকহ ও সমকালীন মাসআলা সমাধান একাডেমি।',
-    images: ['https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80'],
+    images: ['/icon.png'],
   },
   robots: {
     index: true,

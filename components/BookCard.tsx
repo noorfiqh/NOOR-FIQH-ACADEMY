@@ -17,15 +17,22 @@ export function BookCard({ book, onBuy }: BookCardProps) {
       {/* Book Cover */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100 p-4 flex items-center justify-center">
         <div className="relative w-full h-full rounded-xl overflow-hidden shadow-md group-hover:scale-105 transition-transform duration-500">
-          <img
-            src={formatImageUrl(book.coverImage)}
-            alt={book.titleBn || book.title}
-            referrerPolicy="no-referrer"
-            crossOrigin="anonymous"
-            onError={(e) => handleImageError(e, book.coverImage)}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
+          {formatImageUrl(book.coverImage) ? (
+            <img
+              src={formatImageUrl(book.coverImage) || null}
+              alt={book.titleBn || book.title}
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+              onError={(e) => handleImageError(e, book.coverImage)}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-[#112734] to-[#23626F] flex flex-col items-center justify-center p-3 text-center text-white">
+              <BookOpen size={28} className="text-[#17A2B8] mb-2" />
+              <span className="text-[11px] font-bold line-clamp-2 font-anek leading-tight">{book.titleBn || book.title}</span>
+            </div>
+          )}
         </div>
 
         <span className="absolute top-3 left-3 px-2.5 py-0.5 bg-[#112734] text-[#17A2B8] text-[10px] font-bold rounded-full shadow-sm">

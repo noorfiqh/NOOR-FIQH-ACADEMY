@@ -6,7 +6,7 @@ import { AppStore, INITIAL_BOOKS, DEFAULT_SETTINGS } from '@/lib/store';
 import { Book, SiteSettings } from '@/lib/types';
 import { BookCard } from '@/components/BookCard';
 import { PaymentModal } from '@/components/PaymentModal';
-import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { formatImageUrl, handleImageError, isValidImageUrl } from '@/lib/utils';
 import { db, collection, onSnapshot, handleFirestoreError, OperationType, doc } from '@/lib/firebase';
 import { 
   Search, 
@@ -74,8 +74,8 @@ export default function BooksPage() {
     badgeText: 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি',
     titleBn: 'ফিকহ কিতাব ও গবেষণাপত্র',
     subtitleBn: 'দারুল ইফতা ও ফিকহ বোর্ড কর্তৃক রচিত প্রামাণ্য কিতাবের পিডিএফ ও হোম ডেলিভারি হার্ডকভার কপি সংগ্রহ করুন।',
-    heroImage: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1200&q=80',
-    showHeroImage: true,
+    heroImage: '',
+    showHeroImage: false,
     heroImagePosition: 'right',
     searchPlaceholder: 'কিতাবের নাম বা লেখক দিয়ে খুঁজুন...',
     highlight1: 'দারুল ইফতা অনুমোদিত নির্ভরযোগ্য পাণ্ডুলিপি',
@@ -108,10 +108,10 @@ export default function BooksPage() {
       {/* 1. EDGE-TO-EDGE HERO SECTION */}
       <section className="relative w-full overflow-hidden bg-[#112734] text-white py-12 sm:py-16 lg:py-20 border-b border-[#23626F]">
         {/* Background image if set as background */}
-        {bp.heroImagePosition === 'background' && bp.showHeroImage !== false && bp.heroImage && (
+        {bp.heroImagePosition === 'background' && bp.showHeroImage !== false && bp.heroImage && isValidImageUrl(bp.heroImage) && formatImageUrl(bp.heroImage) && (
           <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
             <img
-              src={formatImageUrl(bp.heroImage)}
+              src={formatImageUrl(bp.heroImage) || null}
               alt="Books Background Hero"
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
@@ -138,7 +138,7 @@ export default function BooksPage() {
         <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          {bp.heroImagePosition === 'background' && bp.showHeroImage !== false && bp.heroImage ? (
+          {bp.heroImagePosition === 'background' && bp.showHeroImage !== false && bp.heroImage && isValidImageUrl(bp.heroImage) ? (
             /* Full Background Hero Layout */
             <div className="max-w-3xl space-y-4 text-left">
               <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/20 text-amber-200 text-xs font-bold uppercase tracking-wider border border-amber-400/40 backdrop-blur-sm">
@@ -176,7 +176,7 @@ export default function BooksPage() {
                 )}
               </div>
             </div>
-          ) : bp.showHeroImage !== false && bp.heroImage ? (
+          ) : bp.showHeroImage !== false && bp.heroImage && isValidImageUrl(bp.heroImage) && formatImageUrl(bp.heroImage) ? (
             /* Split Grid Hero with Image */
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
               
@@ -223,7 +223,7 @@ export default function BooksPage() {
                 <div className="w-full max-w-lg relative rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-white/20 shadow-2xl group bg-[#0b1b24]">
                   <div className="aspect-[16/10] w-full relative">
                     <img
-                      src={formatImageUrl(bp.heroImage)}
+                      src={formatImageUrl(bp.heroImage) || null}
                       alt={bp.titleBn || 'Books Hero Banner'}
                       referrerPolicy="no-referrer"
                       crossOrigin="anonymous"

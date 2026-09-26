@@ -20,7 +20,7 @@ import confetti from 'canvas-confetti';
 import { jsPDF } from 'jspdf';
 import { AppStore, DEFAULT_SETTINGS } from '@/lib/store';
 import { SiteSettings } from '@/lib/types';
-import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { formatImageUrl, handleImageError, isValidImageUrl } from '@/lib/utils';
 
 interface CertificateViewProps {
   userName: string;
@@ -795,12 +795,12 @@ export function CertificateView({
           {/* ========================================================================= */}
           {/* VIEW MODE 1: CATALOG OVERLAY DESIGN (আসল ক্যাটালগের ওপর নাম, কোর্স, গ্রেড ও তারিখ) */}
           {/* ========================================================================= */}
-          {hasCatalogImage && viewMode === 'catalog_overlay' && activeImageUrl && (
+          {hasCatalogImage && viewMode === 'catalog_overlay' && activeImageUrl && isValidImageUrl(activeImageUrl) && formatImageUrl(activeImageUrl) && (
             <div className="relative w-full h-full bg-white overflow-hidden flex flex-col justify-between">
               
               {/* High Quality Background Catalog Template Image */}
               <img
-                src={formatImageUrl(activeImageUrl)}
+                src={formatImageUrl(activeImageUrl) || null}
                 alt="Certificate Template"
                 className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none z-0 block"
                 referrerPolicy="no-referrer"
@@ -905,10 +905,10 @@ export function CertificateView({
 
               {/* Header Section */}
               <div className="relative z-10 space-y-1.5 pt-1">
-                {siteSettings.logoType === 'image' && siteSettings.logoImageUrl ? (
+                {siteSettings.logoType === 'image' && siteSettings.logoImageUrl && isValidImageUrl(siteSettings.logoImageUrl) && formatImageUrl(siteSettings.logoImageUrl) ? (
                   <div className="flex justify-center pb-1">
                     <img
-                      src={formatImageUrl(siteSettings.logoImageUrl)}
+                      src={formatImageUrl(siteSettings.logoImageUrl) || null}
                       alt={siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'}
                       referrerPolicy="no-referrer"
                       crossOrigin="anonymous"

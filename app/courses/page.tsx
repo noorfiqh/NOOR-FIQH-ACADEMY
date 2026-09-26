@@ -7,7 +7,7 @@ import { AppStore, INITIAL_COURSES, DEFAULT_COURSE_CATEGORIES, DEFAULT_SETTINGS 
 import { Course, CourseCategory, SiteSettings, CoursesPageSettings } from '@/lib/types';
 import { CourseCard } from '@/components/CourseCard';
 import { PaymentModal } from '@/components/PaymentModal';
-import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { formatImageUrl, handleImageError, isValidImageUrl } from '@/lib/utils';
 import { db, collection, onSnapshot, handleFirestoreError, OperationType, doc } from '@/lib/firebase';
 import { Search, Filter, BookOpen, Sparkles, CheckCircle2, ShieldCheck, GraduationCap, Award, Compass } from 'lucide-react';
 
@@ -68,8 +68,8 @@ export default function CoursesPage() {
     badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
     titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
     subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান। অভিজ্ঞ মুফতীগণের তত্ত্বাবধানে সহিহ ইলম অর্জন করুন।',
-    heroImage: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80',
-    showHeroImage: true,
+    heroImage: '',
+    showHeroImage: false,
     heroImagePosition: 'right',
     searchPlaceholder: 'কোর্সের নাম বা বিষয় খুঁজুন...',
     highlight1: 'সহিহ সুন্নাহ ও দলীলভিত্তিক পাঠ্যক্রম',
@@ -81,7 +81,7 @@ export default function CoursesPage() {
   const titleBn = coursesPageSettings.titleBn || 'নূর ফিকহ একাডেমি কোর্সসমূহ';
   const subtitleBn = coursesPageSettings.subtitleBn || 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।';
   const heroImage = coursesPageSettings.heroImage || '';
-  const showHeroImage = coursesPageSettings.showHeroImage !== false && !!heroImage;
+  const showHeroImage = coursesPageSettings.showHeroImage !== false && !!heroImage && isValidImageUrl(heroImage) && !!formatImageUrl(heroImage);
   const heroImagePosition = coursesPageSettings.heroImagePosition || 'right';
   const heroImageOpacity = coursesPageSettings.heroImageOpacity ?? 35;
   const heroOverlayOpacity = coursesPageSettings.heroOverlayOpacity ?? 80;
@@ -113,7 +113,7 @@ export default function CoursesPage() {
         {heroImagePosition === 'background' && showHeroImage && (
           <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
             <img
-              src={formatImageUrl(heroImage)}
+              src={formatImageUrl(heroImage) || null}
               alt="Background Hero"
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
@@ -223,7 +223,7 @@ export default function CoursesPage() {
                 <div className="w-full max-w-lg relative rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-white/20 shadow-2xl group bg-[#0b1b24]">
                   <div className="aspect-[16/10] w-full relative">
                     <img
-                      src={formatImageUrl(heroImage)}
+                      src={formatImageUrl(heroImage) || null}
                       alt={titleBn}
                       referrerPolicy="no-referrer"
                       crossOrigin="anonymous"

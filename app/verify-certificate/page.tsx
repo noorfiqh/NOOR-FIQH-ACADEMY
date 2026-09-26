@@ -6,7 +6,7 @@ import { AppStore, DEFAULT_SETTINGS } from '@/lib/store';
 import { Certificate, SiteSettings } from '@/lib/types';
 import { CertificateView } from '@/components/CertificateView';
 import { Search, CheckCircle2, ShieldCheck, AlertCircle } from 'lucide-react';
-import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { formatImageUrl, handleImageError, isValidImageUrl } from '@/lib/utils';
 
 function VerifyCertificateContent() {
   const searchParams = useSearchParams();
@@ -45,9 +45,9 @@ function VerifyCertificateContent() {
           
           {/* Main Academy Logo */}
           <div className="flex flex-col items-center justify-center pt-2">
-            {siteSettings.logoType === 'image' && siteSettings.logoImageUrl ? (
+            {siteSettings.logoType === 'image' && siteSettings.logoImageUrl && isValidImageUrl(siteSettings.logoImageUrl) && formatImageUrl(siteSettings.logoImageUrl) ? (
               <img
-                src={formatImageUrl(siteSettings.logoImageUrl)}
+                src={formatImageUrl(siteSettings.logoImageUrl) || null}
                 alt={siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'}
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous"

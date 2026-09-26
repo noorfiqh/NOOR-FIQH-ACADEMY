@@ -17,6 +17,9 @@ import {
   GraduationCap,
   Users,
   ShieldCheck,
+  Sparkles,
+  ThumbsUp,
+  Award,
   X
 } from 'lucide-react';
 import { 
@@ -36,7 +39,7 @@ import { BookCard } from '@/components/BookCard';
 import { LiveClassCard } from '@/components/LiveClassCard';
 import { PaymentModal } from '@/components/PaymentModal';
 import { TeacherContactButtons } from '@/components/TeacherContactButtons';
-import { formatImageUrl, handleImageError, formatBengaliNumberWithComma, toBengaliNumber } from '@/lib/utils';
+import { formatImageUrl, handleImageError, formatBengaliNumberWithComma, toBengaliNumber, isValidImageUrl } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 
 export default function HomePage() {
@@ -109,7 +112,7 @@ export default function HomePage() {
     categoryLabelBn: 'প্রতিষ্ঠাতা ও পরিচালক',
     qualifications: 'পোস্ট গ্র্যাজুয়েট ইন ইসলামিক ল, জামিয়া শারঈয়্যাহ মালিবাগ।',
     bio: 'নূর ফিকহ একাডেমির প্রতিষ্ঠাতা ও পরিচালক। সমকালীন ফিকহি গবেষণা, আধুনিক অর্থনৈতিক লেনদেন, চিকিৎসা ফিকহ ও যুগোপযোগী ইসলামিক আইনের প্রামাণ্য বিশ্লেষণে নিবেদিতপ্রাণ গবেষক ও প্রশিক্ষক।',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+    avatar: '',
     email: 'noorfiqhaca@gmail.com',
     phone: '+8801348161517',
     order: 1
@@ -276,31 +279,32 @@ export default function HomePage() {
                 </div>
 
                 {/* 3. Student Evaluation Card (Based on overall student reviews) */}
-                <div className="relative bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 hover:border-amber-300/50 p-4 rounded-2xl transition-all duration-300 shadow-md group flex flex-col justify-between text-left">
-                  <div className="flex items-center justify-between gap-2 mb-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-300 group-hover:scale-105 transition-transform shrink-0">
-                      <Star size={19} className="fill-amber-300 text-amber-300" />
+                <div className="relative bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/20 hover:border-amber-300/50 p-4 sm:p-5 rounded-2xl transition-all duration-300 shadow-md group flex flex-col justify-between text-left">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/25 border border-amber-400/40 flex items-center justify-center text-amber-300 group-hover:scale-110 transition-transform shrink-0 shadow-inner">
+                      <Star size={20} className="fill-amber-300 text-amber-300" />
                     </div>
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-amber-300 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-500/30 font-tiro whitespace-nowrap">
-                      <span>সরাসরি ফিডব্যাক</span>
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-amber-200 bg-amber-950/70 px-2.5 py-1 rounded-full border border-amber-500/40 font-tiro whitespace-nowrap shadow-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      <span>ভেরিফাইড মূল্যায়ন</span>
                     </span>
                   </div>
                   <div>
-                    <div className="flex items-baseline justify-between gap-1.5">
-                      <div className="text-2xl sm:text-3xl font-black text-white font-anek tracking-tight group-hover:text-amber-300 transition-colors">
-                        {toBengaliNumber(totalReviewsCount)} <span className="text-sm font-normal text-amber-200/90">জন</span>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <div className="text-3xl sm:text-4xl font-black text-amber-300 font-anek tracking-tight group-hover:text-amber-200 transition-colors drop-shadow-sm">
+                        {toBengaliNumber(totalReviewsCount)} <span className="text-base sm:text-lg font-bold text-amber-100">জন</span>
                       </div>
-                      <div className="flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-amber-950/70 px-2 py-0.5 rounded-lg border border-amber-500/30 font-anek shrink-0">
-                        <Star size={11} className="fill-amber-300 text-amber-300 shrink-0" />
+                      <div className="flex items-center gap-1 text-xs font-bold text-amber-300 bg-amber-950/80 px-2.5 py-1 rounded-lg border border-amber-400/40 font-anek shrink-0 shadow-xs">
+                        <Star size={13} className="fill-amber-300 text-amber-300 shrink-0" />
                         <span>{formattedRatingBn} / ৫.০</span>
                       </div>
                     </div>
-                    <div className="text-xs sm:text-[13px] font-bold text-white font-anek mt-0.5">
-                      শিক্ষার্থী মূল্যায়ন
+                    <div className="text-sm font-extrabold text-white font-anek mt-1">
+                      শিক্ষার্থী মূল্যায়ন সম্পন্ন
                     </div>
-                    <div className="text-[11px] text-emerald-100/75 font-tiro mt-1 line-clamp-1">
+                    <div className="text-[11px] text-emerald-100/80 font-tiro mt-0.5 line-clamp-1">
                       {totalReviewsCount > 0 
-                        ? `মোট ${toBengaliNumber(totalReviewsCount)} জন শিক্ষার্থীর সরাসরি মতামত ও রেটিং` 
+                        ? `মোট ${toBengaliNumber(totalReviewsCount)} জন শিক্ষার্থীর বিশদ পর্যালোচনা ও রেটিং` 
                         : '১০০% সন্তোষজনক ইতিবাচক মতামত'}
                     </div>
                   </div>
@@ -316,9 +320,9 @@ export default function HomePage() {
                   <div className="w-full rounded-t-[85px] bg-white overflow-hidden flex flex-col p-6 text-center text-[#2c3e50] shadow-md border border-[#ece8e0]">
                     {/* Badge Icon / Image */}
                     <div className="w-16 h-16 bg-[#112734] rounded-full mx-auto mb-4 flex items-center justify-center text-[#17A2B8] shadow-md border-2 border-[#17A2B8]/40 overflow-hidden">
-                      {heroCard.iconImage ? (
+                      {heroCard.iconImage && isValidImageUrl(heroCard.iconImage) && formatImageUrl(heroCard.iconImage) ? (
                         <img
-                          src={formatImageUrl(heroCard.iconImage)}
+                          src={formatImageUrl(heroCard.iconImage) || null}
                           alt={heroCard.title || 'Icon'}
                           referrerPolicy="no-referrer"
                           crossOrigin="anonymous"
@@ -678,14 +682,32 @@ export default function HomePage() {
                 <div className="relative w-full max-w-xs sm:max-w-sm">
                   {/* Photo Frame */}
                   <div className="aspect-[4/5] rounded-3xl overflow-hidden border-4 border-white shadow-xl bg-slate-100 relative group/img">
-                    <img
-                      src={formatImageUrl(founder.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80')}
-                      alt={founder.nameBn || founder.name}
-                      referrerPolicy="no-referrer"
-                      crossOrigin="anonymous"
-                      onError={(e) => handleImageError(e, founder.avatar)}
-                      className="w-full h-full object-cover group-hover/img:scale-103 transition-transform duration-500"
-                    />
+                    {founder.avatar && isValidImageUrl(founder.avatar) && formatImageUrl(founder.avatar) ? (
+                      <img
+                        src={formatImageUrl(founder.avatar) || null}
+                        alt={founder.nameBn || founder.name}
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
+                        onError={(e) => handleImageError(e, founder.avatar)}
+                        className="w-full h-full object-cover group-hover/img:scale-103 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-[#112734] via-[#1a3848] to-[#0d1e28] flex flex-col items-center justify-center p-6 text-center text-white relative overflow-hidden">
+                        <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#17A2B8]/10 rounded-full blur-2xl pointer-events-none" />
+                        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-4xl shadow-xl border-4 border-white/20 mb-4">
+                          <span className="text-arabic pb-1">ن</span>
+                        </div>
+                        <h4 className="text-xl font-black text-white font-anek tracking-tight mb-1">
+                          {founder.nameBn || founder.name}
+                        </h4>
+                        <p className="text-xs text-amber-300 font-bold font-tiro mb-2">
+                          {founder.designation}
+                        </p>
+                        <span className="text-[11px] text-slate-300 font-tiro line-clamp-2 max-w-[220px]">
+                          {founder.categoryLabelBn || 'প্রতিষ্ঠাতা ও পরিচালক'} • নূর ফিকহ একাডেমি
+                        </span>
+                      </div>
+                    )}
                     {/* Badge on Photo */}
                     <div className="absolute top-3 left-3 bg-[#112734]/90 backdrop-blur-sm text-white px-3.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 shadow-md font-anek">
                       <ShieldCheck size={14} className="text-[#17A2B8]" />
@@ -885,14 +907,20 @@ export default function HomePage() {
                     >
                       <div className="flex gap-4 items-start">
                         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border-2 border-[#17A2B8]/30 shrink-0 bg-slate-100">
-                          <img
-                            src={formatImageUrl(member.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80')}
-                            alt={member.nameBn || member.name}
-                            referrerPolicy="no-referrer"
-                            crossOrigin="anonymous"
-                            onError={(e) => handleImageError(e, member.avatar)}
-                            className="w-full h-full object-cover"
-                          />
+                          {member.avatar && isValidImageUrl(member.avatar) && formatImageUrl(member.avatar) ? (
+                            <img
+                              src={formatImageUrl(member.avatar) || null}
+                              alt={member.nameBn || member.name}
+                              referrerPolicy="no-referrer"
+                              crossOrigin="anonymous"
+                              onError={(e) => handleImageError(e, member.avatar)}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-[#112734] to-[#23626F] text-amber-300 flex items-center justify-center font-bold text-2xl font-anek">
+                              {(member.nameBn || member.name).charAt(0)}
+                            </div>
+                          )}
                         </div>
                         <div className="space-y-1 min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -956,20 +984,96 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* 7. STUDENT TESTIMONIALS (Natural Theme Review Carousel) */}
+      {/* 7. STUDENT TESTIMONIALS & EVALUATION (Natural Theme Review Carousel) */}
       {reviews.length > 0 && (
         <section className="py-14 sm:py-16 lg:py-20 bg-[#f8faf7] border-t border-[#ece8e0] overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
             <div className="text-center space-y-2">
-              <span className="text-xs font-bold text-[#0f8293] uppercase tracking-wider font-tiro">
-                শিক্ষার্থীদের অভিজ্ঞতা
+              <span className="text-xs font-bold text-[#0f8293] uppercase tracking-wider font-tiro inline-flex items-center gap-1.5">
+                <Sparkles size={13} className="text-[#0f8293]" />
+                <span>শিক্ষার্থীদের অভিজ্ঞতা ও মতামত</span>
               </span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-[#112734] font-anek">
                 নূর ফিকহ একাডেমি নিয়ে শিক্ষার্থীদের মূল্যায়ন
               </h2>
+              <p className="text-xs sm:text-sm text-[#5a524d] font-tiro max-w-xl mx-auto">
+                কোর্স সম্পন্নকারী ভেরিফায়েড শিক্ষার্থীদের সরাসরি পর্যালোচনা, পর্যবেক্ষণ ও গঠনমূলক অভিজ্ঞতা
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            {/* GRAND STUDENT EVALUATION METRICS CARD (কতজন শিক্ষার্থী মূল্যায়ন করছে তা বড় করে প্রদর্শন) */}
+            <div className="bg-gradient-to-br from-[#112734] via-[#163547] to-[#0d222f] rounded-3xl p-6 sm:p-8 lg:p-10 border border-[#23626F]/60 text-white shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#17A2B8]/15 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-center divide-y md:divide-y-0 md:divide-x divide-white/10">
+                {/* 1. Giant Total Students Evaluated Stat */}
+                <div className="text-center md:text-left space-y-2 pb-6 md:pb-0 md:pr-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-300/30 text-amber-300 text-xs font-bold font-tiro">
+                    <Users size={14} />
+                    <span>মোট শিক্ষার্থী মূল্যায়ন</span>
+                  </div>
+                  <div className="flex items-baseline justify-center md:justify-start gap-2 pt-1">
+                    <span className="text-5xl sm:text-6xl lg:text-7xl font-black text-amber-300 font-anek tracking-tight drop-shadow-md">
+                      {toBengaliNumber(totalReviewsCount)}
+                    </span>
+                    <span className="text-2xl sm:text-3xl font-extrabold text-amber-100 font-anek">জন</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-300 font-tiro leading-relaxed">
+                    সরাসরি নূর ফিকহ একাডেমির পাঠ্যক্রম ও ওস্তাদদের পাঠদান মূল্যায়ন করেছেন
+                  </p>
+                </div>
+
+                {/* 2. Average Rating Score */}
+                <div className="text-center space-y-2 py-6 md:py-0 md:px-6">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold font-tiro">
+                    <Star size={14} className="fill-amber-400 text-amber-400" />
+                    <span>গড় রেটিং স্কোর</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    <span className="text-5xl sm:text-6xl font-black text-white font-anek tracking-tight">
+                      {formattedRatingBn}
+                    </span>
+                    <span className="text-xl sm:text-2xl font-bold text-slate-400 font-anek">/ ৫.০</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-1 text-amber-400">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star key={s} size={18} className="fill-amber-400 text-amber-400" />
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-300 font-tiro">
+                    ১০০% খাঁটি ও দলীলভিত্তিক পাঠ্যক্রমের জন্য সর্বোচ্চ সন্তুষ্টি
+                  </p>
+                </div>
+
+                {/* 3. Satisfaction Rate & CTA */}
+                <div className="text-center md:text-right space-y-3 pt-6 md:pt-0 md:pl-6 flex flex-col justify-between h-full">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/20 border border-teal-400/30 text-teal-300 text-xs font-bold font-tiro">
+                      <CheckCircle2 size={14} />
+                      <span>সন্তুষ্টির হার</span>
+                    </div>
+                    <div className="text-4xl sm:text-5xl font-black text-[#17A2B8] font-anek tracking-tight pt-1">
+                      {toBengaliNumber(fiveStarPercentage)}%
+                    </div>
+                    <p className="text-xs text-slate-300 font-tiro">
+                      ইতিবাচক অভিজ্ঞতা ও কোর্সের উচ্চ প্রশংসা
+                    </p>
+                  </div>
+                  <div className="pt-2">
+                    <Link
+                      href={currentUser ? "/dashboard?tab=courses" : "/login"}
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-xs font-anek shadow-md transition-all cursor-pointer"
+                    >
+                      <Star size={14} className="fill-slate-950" />
+                      <span>আপনার মূল্যায়ন লিখুন</span>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {reviews.map((rev) => (
                 <div key={rev.id} className="bg-white p-6 sm:p-7 rounded-3xl border border-[#ece8e0] card-natural-shadow card-natural-shadow-hover flex flex-col justify-between h-full transition-all duration-300">
                   <div>
@@ -978,20 +1082,33 @@ export default function HomePage() {
                         <Star key={i} size={14} className="fill-amber-400 text-[#17A2B8]" />
                       ))}
                     </div>
+                    {rev.courseTitle && (
+                      <span className="inline-block text-[10px] font-bold text-[#0f8293] bg-[#0f8293]/10 px-2 py-0.5 rounded-md mb-2 font-tiro line-clamp-1">
+                        {rev.courseTitle}
+                      </span>
+                    )}
                     <p className="text-xs sm:text-sm text-[#5a524d] leading-relaxed italic mb-6 font-tiro">
                       &ldquo;{rev.content}&rdquo;
                     </p>
                   </div>
 
                   <div className="flex items-center gap-3 pt-4 border-t border-[#ece8e0]">
-                    <img
-                      src={formatImageUrl(rev.avatar)}
-                      alt={rev.nameBn || rev.name}
-                      referrerPolicy="no-referrer"
-                      crossOrigin="anonymous"
-                      onError={(e) => handleImageError(e, rev.avatar)}
-                      className="w-10 h-10 rounded-full object-cover border border-[#17A2B8]/40"
-                    />
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-[#17A2B8]/40 shrink-0 bg-slate-100 flex items-center justify-center">
+                      {rev.avatar && isValidImageUrl(rev.avatar) && formatImageUrl(rev.avatar) ? (
+                        <img
+                          src={formatImageUrl(rev.avatar) || null}
+                          alt={rev.nameBn || rev.name}
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          onError={(e) => handleImageError(e, rev.avatar)}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-[#112734] text-amber-400 font-bold text-sm flex items-center justify-center font-anek">
+                          {(rev.nameBn || rev.name || 'র').charAt(0)}
+                        </div>
+                      )}
+                    </div>
                     <div>
                       <h4 className="text-xs font-extrabold text-[#2c3e50] font-anek">{rev.nameBn || rev.name}</h4>
                       <p className="text-[10px] text-[#8a817c] font-tiro flex items-center gap-1 flex-wrap mt-0.5">

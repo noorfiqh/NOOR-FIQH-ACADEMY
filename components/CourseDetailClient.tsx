@@ -10,7 +10,7 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { CourseCard } from '@/components/CourseCard';
 import { PaymentModal } from '@/components/PaymentModal';
 import { TeacherContactButtons } from '@/components/TeacherContactButtons';
-import { formatImageUrl, handleImageError } from '@/lib/utils';
+import { formatImageUrl, handleImageError, isValidImageUrl } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
 import { 
   Clock, 
@@ -519,14 +519,20 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
                   </div>
                 ) : (
                   <>
-                    <img
-                      src={formatImageUrl(course.thumbnail)}
-                      alt={course.titleBn}
-                      referrerPolicy="no-referrer"
-                      crossOrigin="anonymous"
-                      onError={(e) => handleImageError(e, course.thumbnail)}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                    {formatImageUrl(course.thumbnail) ? (
+                      <img
+                        src={formatImageUrl(course.thumbnail) || null}
+                        alt={course.titleBn}
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
+                        onError={(e) => handleImageError(e, course.thumbnail)}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-[#112734] via-[#1a3848] to-[#23626F] flex items-center justify-center text-amber-300">
+                        <span className="text-arabic text-5xl font-black">ن</span>
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-between p-3.5">
                       <div className="flex justify-between items-start">
                         <span className="bg-[#112734]/90 text-[#17A2B8] border border-[#17A2B8]/40 text-xs font-bold font-tiro px-3 py-0.5 rounded-full backdrop-blur-md shadow">
@@ -716,10 +722,27 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
             </div>
 
             {/* Overall Rating Stats Header */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 rounded-2xl bg-[#faf8f5] border border-[#ece8e0]">
-              <div className="text-center sm:border-r border-[#ece8e0] pr-4 space-y-1">
-                <div className="text-4xl font-black text-[#112734] font-anek tracking-tight">
-                  {toBengaliNumber(avgRating)}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 sm:p-6 rounded-2xl bg-[#faf8f5] border border-[#ece8e0] items-center">
+              {/* Evaluated Students Count (বড় করে) */}
+              <div className="text-center sm:border-r border-[#ece8e0] sm:pr-4 space-y-1">
+                <span className="text-[11px] font-bold text-[#0f8293] uppercase tracking-wider font-tiro block">
+                  মোট শিক্ষার্থী মূল্যায়ন
+                </span>
+                <div className="text-4xl sm:text-5xl font-black text-[#112734] font-anek tracking-tight">
+                  {toBengaliNumber(totalReviewsCount)} <span className="text-lg font-bold text-[#5a524d]">জন</span>
+                </div>
+                <p className="text-xs text-[#8a817c] font-noto">
+                  {totalReviewsCount > 0 ? 'সরাসরি মতামত প্রদান করেছেন' : 'কোর্স সম্পন্ন করে মূল্যায়ন দিন'}
+                </p>
+              </div>
+
+              {/* Average Rating Score */}
+              <div className="text-center sm:border-r border-[#ece8e0] sm:px-4 space-y-1">
+                <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider font-tiro block">
+                  গড় মূল্যায়ন স্কোর
+                </span>
+                <div className="text-3xl sm:text-4xl font-black text-amber-500 font-anek tracking-tight">
+                  {toBengaliNumber(avgRating)} <span className="text-sm font-bold text-slate-400">/ ৫.০</span>
                 </div>
                 <div className="flex items-center justify-center gap-1 text-amber-500">
                   {[1, 2, 3, 4, 5].map((s) => (
@@ -730,12 +753,9 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
                     />
                   ))}
                 </div>
-                <p className="text-xs text-[#8a817c] font-noto">
-                  {totalReviewsCount > 0 ? `${toBengaliNumber(totalReviewsCount)} টি ভেরিফাইড ছাত্র রিভিউ` : 'এখনও কোনো ছাত্র রিভিউ নেই'}
-                </p>
               </div>
 
-              <div className="sm:col-span-2 flex flex-col justify-center space-y-2">
+              <div className="flex flex-col justify-center space-y-2 sm:pl-4">
                 <div className="flex items-center justify-between text-xs font-bold text-[#5a524d] font-noto">
                   <span>কোর্স সন্তুষ্টির হার</span>
                   <span className="text-emerald-700 font-bold">
@@ -744,7 +764,7 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
                       : '১০০% প্রামাণ্য পাঠ্যক্রম'}
                   </span>
                 </div>
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
                   <div 
                     className="bg-amber-500 h-full rounded-full transition-all duration-500" 
                     style={{ 
@@ -794,11 +814,19 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={rev.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(rev.name || 'Student')}`}
-                          alt={rev.nameBn || rev.name}
-                          className="w-10 h-10 rounded-full object-cover border border-[#ece8e0]"
-                        />
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-[#ece8e0] shrink-0 bg-slate-100 flex items-center justify-center">
+                          {rev.avatar && isValidImageUrl(rev.avatar) && formatImageUrl(rev.avatar) ? (
+                            <img
+                              src={formatImageUrl(rev.avatar) || null}
+                              alt={rev.nameBn || rev.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-[#112734] text-amber-300 font-bold text-sm flex items-center justify-center font-anek">
+                              {(rev.nameBn || rev.name || 'র').charAt(0)}
+                            </div>
+                          )}
+                        </div>
                         <div>
                           <div className="flex items-center gap-2">
                             <h5 className="font-extrabold text-sm text-[#112734] font-anek">
@@ -891,14 +919,20 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
             </h4>
 
             <div className="flex items-center gap-4">
-              <img
-                src={formatImageUrl(course.instructor?.avatar || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150')}
-                alt={course.instructor?.nameBn || 'মুফতী আম্মার বিন নূর'}
-                referrerPolicy="no-referrer"
-                crossOrigin="anonymous"
-                onError={(e) => handleImageError(e, course.instructor?.avatar)}
-                className="w-16 h-16 rounded-full object-cover border-2 border-[#17A2B8] shrink-0"
-              />
+              {course.instructor?.avatar && isValidImageUrl(course.instructor.avatar) && formatImageUrl(course.instructor.avatar) ? (
+                <img
+                  src={formatImageUrl(course.instructor.avatar) || null}
+                  alt={course.instructor?.nameBn || 'মুফতী আম্মার বিন নূর'}
+                  referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
+                  onError={(e) => handleImageError(e, course.instructor?.avatar)}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-[#17A2B8] shrink-0"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#112734] to-[#23626F] text-amber-300 flex items-center justify-center font-bold text-2xl font-anek border-2 border-[#17A2B8] shrink-0 shadow-sm">
+                  {(course.instructor?.nameBn || 'মু').charAt(0)}
+                </div>
+              )}
               <div className="space-y-0.5">
                 <h5 className="font-extrabold text-base text-[#2c3e50] font-anek">{course.instructor?.nameBn || 'মুফতী আম্মার বিন নূর'}</h5>
                 <p className="text-xs text-[#112734] font-bold font-noto">{course.instructor?.title || 'মুহাদ্দিস ও ফকিহ'}</p>

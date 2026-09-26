@@ -2,7 +2,7 @@
 
 import { Course, Book, FatwaQuestion, LiveClass, Order, UserProgress, Certificate, SiteReview, HeroCardSettings, UserProfile, FacultyMember, SiteSettings, CourseCategory } from './types';
 import { INITIAL_COURSES, INITIAL_BOOKS, INITIAL_FATWAS, INITIAL_LIVE_CLASSES, INITIAL_REVIEWS } from './seed-data';
-import { formatImageUrl } from './utils';
+import { formatImageUrl, isValidImageUrl } from './utils';
 import { safeJsonStringify } from './safe-json';
 import { db, doc, setDoc, updateDoc, deleteDoc, collection, getDocs, onSnapshot, OperationType, handleFirestoreError } from './firebase';
 
@@ -32,7 +32,7 @@ export const INITIAL_FACULTY: FacultyMember[] = [
     categoryLabelBn: 'প্রতিষ্ঠাতা ও পরিচালক',
     qualifications: 'পোস্ট গ্র্যাজুয়েট ইন ইসলামিক ল, জামিয়া শারঈয়্যাহ মালিবাগ।',
     bio: 'নূর ফিকহ একাডেমির প্রতিষ্ঠাতা ও পরিচালক। সমকালীন ফিকহি গবেষণা, আধুনিক অর্থনৈতিক লেনদেন, চিকিৎসা ফিকহ ও যুগোপযোগী ইসলামিক আইনের প্রামাণ্য বিশ্লেষণে নিবেদিতপ্রাণ গবেষক ও প্রশিক্ষক।',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+    avatar: '',
     email: 'noorfiqhaca@gmail.com',
     phone: '+8801348161517',
     order: 1
@@ -46,7 +46,7 @@ export const INITIAL_FACULTY: FacultyMember[] = [
     categoryLabelBn: 'উপদেষ্টা পরিষদ',
     qualifications: 'পিএইচডি ইন ইসলামিক ফাইন্যান্স, সদস্য: ইসলামিক ব্যাংক শরীয়াহ বোর্ড',
     bio: 'আন্তর্জাতিক ইসলামিক ব্যাংকিং কনসালটেন্ট, ফিনটেক ও হালাল বিনিয়োগ শাস্ত্রের বিশেষজ্ঞ প্রশিক্ষক।',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=400&q=80',
+    avatar: '',
     email: 'tariq.finance@gmail.com',
     phone: '+8801348161517',
     order: 2
@@ -60,7 +60,7 @@ export const INITIAL_FACULTY: FacultyMember[] = [
     categoryLabelBn: 'শিক্ষকবৃন্দ',
     qualifications: 'উসূলে হাদিস ও পাণ্ডুলিপি বিশারদ, সিনিয়র মুহাদ্দিস',
     bio: 'হানাফী মাযহাব, তুলনামূলক ফিকহ ও প্রাচীন ইসলামিক পাণ্ডুলিপির জটিল মাসআলার প্রাঞ্জল ও পদ্ধতিগত উপস্থাপক।',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
+    avatar: '',
     email: 'khalid.usul@gmail.com',
     phone: '+8801348161517',
     order: 3
@@ -74,7 +74,7 @@ export const INITIAL_FACULTY: FacultyMember[] = [
     categoryLabelBn: 'গবেষণা পরিষদ',
     qualifications: 'তাখাসসুস ফিল ফিকহ ওয়াল ইফতা, ঢাকা',
     bio: 'পারিবারিক আইন, উত্তরাধিকার (ফারায়েজ) বণ্টন ও আধুনিক চুক্তি পদ্ধতির ফতোয়া প্রণয়নে বিশেষজ্ঞ।',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+    avatar: '',
     email: 'mahmud.ifta@gmail.com',
     phone: '+8801348161517',
     order: 4
@@ -88,7 +88,7 @@ export const INITIAL_USERS: UserProfile[] = [
     name: 'মুফতী আম্মার বিন নূর (এডমিন)',
     email: 'noorfiqhaca@gmail.com',
     phone: '+8801348161517',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    avatar: '',
     role: 'admin',
     isSuperAdmin: true,
     joinedAt: '2025-10-01'
@@ -98,7 +98,7 @@ export const INITIAL_USERS: UserProfile[] = [
     name: 'মুফতী হাফিজুর রহমান কাসেমী',
     email: 'scholar@noorfiqh.com',
     phone: '+8801348161517',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80',
+    avatar: '',
     role: 'scholar',
     joinedAt: '2025-11-15'
   },
@@ -107,7 +107,7 @@ export const INITIAL_USERS: UserProfile[] = [
     name: 'মুহাম্মদ মাহমুদুল হাসান',
     email: 'student@noorfiqh.com',
     phone: '01712345678',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+    avatar: '',
     role: 'student',
     joinedAt: '2026-01-15'
   },
@@ -175,8 +175,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
     titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
     subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান। অভিজ্ঞ মুফতীগণের তত্ত্বাবধানে সহিহ ইলম অর্জন করুন।',
-    heroImage: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80',
-    showHeroImage: true,
+    heroImage: '',
+    showHeroImage: false,
     heroImagePosition: 'right',
     heroImageOpacity: 35,
     heroOverlayOpacity: 80,
@@ -189,8 +189,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     badgeText: 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি',
     titleBn: 'ফিকহ কিতাব ও গবেষণাপত্র',
     subtitleBn: 'দারুল ইফতা ও ফিকহ বোর্ড কর্তৃক রচিত প্রামাণ্য কিতাবের পিডিএফ ও হোম ডেলিভারি হার্ডকভার কপি সংগ্রহ করুন।',
-    heroImage: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1200&q=80',
-    showHeroImage: true,
+    heroImage: '',
+    showHeroImage: false,
     heroImagePosition: 'right',
     heroImageOpacity: 35,
     heroOverlayOpacity: 80,
@@ -205,8 +205,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
     titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
     subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
-    heroImage: 'https://images.unsplash.com/photo-1542816417-0983c9c9ad53?auto=format&fit=crop&w=1200&q=80',
-    showHeroImage: true,
+    heroImage: '',
+    showHeroImage: false,
     heroImagePosition: 'right',
     heroImageOpacity: 35,
     heroOverlayOpacity: 80,
@@ -489,32 +489,66 @@ function purgeDummyDataOnce(): void {
       window.dispatchEvent(new CustomEvent('noorfiqh_fatwas_updated', { detail: cleanFatwas }));
     }
 
-    const isPurged = localStorage.getItem('nfa_dummy_cleaned_v9');
+    const isPurged = localStorage.getItem('nfa_dummy_cleaned_v12');
     if (!isPurged) {
       const courses = getLocal<Course[]>(STORAGE_KEYS.COURSES, []);
-      setLocal(STORAGE_KEYS.COURSES, courses.filter(c => !DUMMY_ITEM_IDS.has(c.id)));
+      setLocal(STORAGE_KEYS.COURSES, courses.filter(c => !DUMMY_ITEM_IDS.has(c.id)).map(c => ({
+        ...c,
+        thumbnail: isValidImageUrl(c.thumbnail) ? c.thumbnail : '',
+        instructor: c.instructor ? {
+          ...c.instructor,
+          avatar: isValidImageUrl(c.instructor.avatar) ? c.instructor.avatar : ''
+        } : c.instructor
+      })));
 
       const books = getLocal<Book[]>(STORAGE_KEYS.BOOKS, []);
-      setLocal(STORAGE_KEYS.BOOKS, books.filter(b => !DUMMY_ITEM_IDS.has(b.id)));
+      setLocal(STORAGE_KEYS.BOOKS, books.filter(b => !DUMMY_ITEM_IDS.has(b.id)).map(b => ({
+        ...b,
+        coverImage: isValidImageUrl(b.coverImage) ? b.coverImage : ''
+      })));
 
       const live = getLocal<LiveClass[]>(STORAGE_KEYS.LIVE_CLASSES, []);
-      setLocal(STORAGE_KEYS.LIVE_CLASSES, live.filter(l => !DUMMY_ITEM_IDS.has(l.id)));
+      setLocal(STORAGE_KEYS.LIVE_CLASSES, live.filter(l => !DUMMY_ITEM_IDS.has(l.id)).map(l => ({
+        ...l,
+        thumbnail: isValidImageUrl(l.thumbnail) ? l.thumbnail : ''
+      })));
 
       const reviews = getLocal<SiteReview[]>(STORAGE_KEYS.SETTINGS + '_reviews', []);
-      setLocal(STORAGE_KEYS.SETTINGS + '_reviews', reviews.filter(r => !DUMMY_ITEM_IDS.has(r.id)));
+      setLocal(STORAGE_KEYS.SETTINGS + '_reviews', reviews.filter(r => !DUMMY_ITEM_IDS.has(r.id)).map(r => ({
+        ...r,
+        avatar: isValidImageUrl(r.avatar) ? r.avatar : ''
+      })));
+
+      const facultyList = getLocal<FacultyMember[]>(STORAGE_KEYS.FACULTY, INITIAL_FACULTY);
+      setLocal(STORAGE_KEYS.FACULTY, facultyList.map(f => ({
+        ...f,
+        avatar: isValidImageUrl(f.avatar) ? f.avatar : ''
+      })));
+
+      const usersList = getLocal<UserProfile[]>(STORAGE_KEYS.USERS, INITIAL_USERS);
+      setLocal(STORAGE_KEYS.USERS, usersList.map(u => ({
+        ...u,
+        avatar: isValidImageUrl(u.avatar) ? u.avatar : ''
+      })));
 
       const settings = getLocal<SiteSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
-      if (settings && settings.logoImageUrl && (
-        settings.logoImageUrl.includes('placeholder') || 
-        settings.logoImageUrl.includes('dummy') ||
-        settings.logoImageUrl.includes('sample') ||
-        settings.logoImageUrl.includes('unsplash.com')
-      )) {
-        settings.logoImageUrl = '';
+      if (settings) {
+        if (!isValidImageUrl(settings.logoImageUrl)) {
+          settings.logoImageUrl = '';
+        }
+        if (settings.coursesPage && !isValidImageUrl(settings.coursesPage.heroImage)) {
+          settings.coursesPage.heroImage = '';
+        }
+        if (settings.booksPage && !isValidImageUrl(settings.booksPage.heroImage)) {
+          settings.booksPage.heroImage = '';
+        }
+        if (settings.fatwaPage && !isValidImageUrl(settings.fatwaPage.heroImage)) {
+          settings.fatwaPage.heroImage = '';
+        }
         setLocal(STORAGE_KEYS.SETTINGS, settings);
       }
 
-      localStorage.setItem('nfa_dummy_cleaned_v9', 'true');
+      localStorage.setItem('nfa_dummy_cleaned_v12', 'true');
     }
   } catch (e) {
     console.warn('Dummy purge error:', e);
@@ -1240,8 +1274,10 @@ export const AppStore = {
   // Site Reviews
   getReviews: (): SiteReview[] => {
     purgeDummyDataOnce();
-    return getLocal<SiteReview[]>(STORAGE_KEYS.SETTINGS + '_reviews', INITIAL_REVIEWS)
+    const stored = getLocal<SiteReview[]>(STORAGE_KEYS.SETTINGS + '_reviews', INITIAL_REVIEWS);
+    const valid = (stored && stored.length > 0 ? stored : INITIAL_REVIEWS)
       .filter(r => !DUMMY_ITEM_IDS.has(r.id));
+    return valid;
   },
   saveReview: (review: SiteReview): void => {
     const reviews = AppStore.getReviews();

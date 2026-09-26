@@ -41,8 +41,26 @@ export function extractGoogleDriveId(url?: string): string | null {
   return null;
 }
 
+export function isValidImageUrl(url?: string | null): boolean {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim().toLowerCase();
+  if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return false;
+  if (
+    trimmed.includes('unsplash.com') ||
+    trimmed.includes('placeholder') ||
+    trimmed.includes('dummy') ||
+    trimmed.includes('sample') ||
+    trimmed.includes('picsum.photos') ||
+    trimmed.includes('via.placeholder') ||
+    trimmed.includes('example.com')
+  ) {
+    return false;
+  }
+  return true;
+}
+
 export function formatImageUrl(url?: string): string {
-  if (!url) return '';
+  if (!url || !isValidImageUrl(url)) return '';
   let trimmed = url.trim();
   if (!trimmed) return '';
 
