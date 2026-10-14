@@ -38,6 +38,16 @@ export function Navbar() {
   useEffect(() => {
     setMounted(true);
     setSiteSettings(AppStore.getSettings());
+
+    const handleUpdate = () => {
+      setSiteSettings(AppStore.getSettings());
+    };
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('noorfiqh_settings_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('noorfiqh_settings_updated', handleUpdate);
+    };
   }, []);
 
   useEffect(() => {
@@ -116,14 +126,14 @@ export function Navbar() {
                 {siteSettings.notificationText}
               </span>
               {siteSettings.notificationTimerEnabled !== false && (
-                <div className="inline-flex items-center gap-1.5 ml-2 font-mono text-xs">
-                  <span className="bg-red-600 text-white px-2 py-0.5 rounded font-bold shadow-sm">{String(timeLeft.days).padStart(2, '0')}</span>
+                <div className="inline-flex items-center gap-1.5 ml-2 font-mono text-xs" suppressHydrationWarning>
+                  <span className="bg-red-600 text-white px-2 py-0.5 rounded font-bold shadow-sm" suppressHydrationWarning>{String(timeLeft.days).padStart(2, '0')}</span>
                   <span className="text-red-400 font-bold">:</span>
-                  <span className="bg-red-600 text-white px-2 py-0.5 rounded font-bold shadow-sm">{String(timeLeft.hours).padStart(2, '0')}</span>
+                  <span className="bg-red-600 text-white px-2 py-0.5 rounded font-bold shadow-sm" suppressHydrationWarning>{String(timeLeft.hours).padStart(2, '0')}</span>
                   <span className="text-red-400 font-bold">:</span>
-                  <span className="bg-red-600 text-white px-2 py-0.5 rounded font-bold shadow-sm">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                  <span className="bg-red-600 text-white px-2 py-0.5 rounded font-bold shadow-sm" suppressHydrationWarning>{String(timeLeft.minutes).padStart(2, '0')}</span>
                   <span className="text-red-400 font-bold">:</span>
-                  <span className="bg-red-600 text-white px-2 py-0.5 rounded font-bold shadow-sm">{String(timeLeft.seconds).padStart(2, '0')}</span>
+                  <span className="bg-red-600 text-white px-2 py-0.5 rounded font-bold shadow-sm" suppressHydrationWarning>{String(timeLeft.seconds).padStart(2, '0')}</span>
                 </div>
               )}
             </div>
@@ -168,22 +178,9 @@ export function Navbar() {
                 />
               </div>
             ) : (
-              <>
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-2xl shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform duration-300 border-2 border-white/20 shrink-0">
-                  <span className="text-arabic text-3xl pb-1">{siteSettings.logoSymbol || 'ن'}</span>
-                </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-xl sm:text-2xl text-white tracking-tight leading-none group-hover:text-[#17A2B8] transition-colors font-anek">
-                      {siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'}
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-[#17A2B8]/80/90 font-medium tracking-wide leading-tight mt-1 flex items-center gap-1">
-                    <Sparkles size={11} className="text-[#17A2B8]" />
-                    {siteSettings.logoSubtitle || siteSettings.siteName || 'NOOR FIQH ACADEMY'}
-                  </span>
-                </div>
-              </>
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-2xl shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform duration-300 border-2 border-white/20 shrink-0">
+                <span className="text-arabic text-3xl pb-1">{siteSettings.logoSymbol || 'ن'}</span>
+              </div>
             )}
           </Link>
 

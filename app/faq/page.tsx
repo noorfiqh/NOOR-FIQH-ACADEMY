@@ -30,10 +30,6 @@ export default function FaqPage() {
     <div className="min-h-screen bg-[#fdfcf9] font-sans text-[#2c3e50] py-12 px-4 sm:px-8">
       <div className="max-w-4xl mx-auto space-y-10">
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#17A2B8]/10 text-[#112734] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30 font-tiro">
-            <HelpCircle size={14} className="text-amber-500" />
-            <span>সচরাচর জিজ্ঞাসিত প্রশ্নোত্তর</span>
-          </div>
           <h1 className="text-3xl sm:text-5xl font-black text-[#112734] tracking-tight font-anek">
             প্রশ্নোত্তর ও সাধারণ জিজ্ঞাসা (FAQ)
           </h1>

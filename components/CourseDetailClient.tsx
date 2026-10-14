@@ -81,17 +81,8 @@ export default function CourseDetailClient({ id }: CourseDetailClientProps) {
   const params = useParams();
   const router = useRouter();
   const rawId = id || (params?.id as string);
-  
-  const [activeCourseId, setActiveCourseId] = useState<string>(() => {
-    if (rawId && rawId !== '[id]' && rawId !== '%5Bid%5D' && rawId !== 'detail') return rawId;
-    if (typeof window !== 'undefined') {
-      const sId = new URLSearchParams(window.location.search).get('id');
-      if (sId) return sId;
-      const pId = window.location.pathname.replace(/\/+$/, '').split('/').pop() || '';
-      if (pId && pId !== 'detail' && pId !== 'courses') return pId;
-    }
-    return '';
-  });
+  const initialId = (rawId && rawId !== '[id]' && rawId !== '%5Bid%5D' && rawId !== 'detail') ? rawId : '';
+  const [activeCourseId, setActiveCourseId] = useState<string>(initialId);
 
   useEffect(() => {
     if (!activeCourseId && typeof window !== 'undefined') {

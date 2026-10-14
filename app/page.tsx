@@ -194,7 +194,7 @@ export default function HomePage() {
             {/* Left Column: Hero Copy & Actions */}
             <div className={`${heroCard.enabled !== false ? 'lg:col-span-7' : 'lg:col-span-12 max-w-3xl mx-auto text-center'} space-y-6 text-center lg:text-left`}>
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-black text-white leading-[1.2] tracking-tight font-anek">
-                {siteSettings.heroTitleBn || 'নির্ভরযোগ্য ফিকহ চর্চায় এক অনন্য আধুনিক বিদ্যাপীঠ'}
+                {(!siteSettings.heroTitleBn || siteSettings.heroTitleBn === 'সহিহ ইলম ও সমকালীন ফিকহের বিশুদ্ধ আলোকবর্তিকা' || siteSettings.heroTitleBn === 'নির্ভরযোগ্য ফিকহ চর্চায় এক অনন্য আধুনিক বিদ্যাপীঠ' || siteSettings.heroTitleBn.includes('সহিহ ইলম ও সমকালীন ফিকহের')) ? 'নূর ফিকহ একাডেমি' : siteSettings.heroTitleBn}
               </h1>
 
               <p className="text-sm sm:text-base md:text-lg text-emerald-50/90 leading-relaxed max-w-2xl mx-auto lg:mx-0 font-normal font-tiro">

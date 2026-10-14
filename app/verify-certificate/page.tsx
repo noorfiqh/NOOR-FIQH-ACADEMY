@@ -55,29 +55,14 @@ function VerifyCertificateContent() {
                 className="h-16 sm:h-20 w-auto max-w-[300px] object-contain drop-shadow-sm mb-2"
               />
             ) : (
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-2xl shadow-md border-2 border-white/20">
-                  <span className="text-arabic text-3xl pb-1">{siteSettings.logoSymbol || 'ن'}</span>
-                </div>
-                <div className="text-left">
-                  <span className="font-extrabold text-2xl text-[#112734] font-anek block leading-none">
-                    {siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'}
-                  </span>
-                  <span className="text-[11px] text-[#17A2B8] font-bold tracking-widest uppercase block mt-1">
-                    {siteSettings.logoSubtitle || siteSettings.siteName || 'NOOR FIQH ACADEMY'}
-                  </span>
-                </div>
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-2xl shadow-md border-2 border-white/20 mb-2">
+                <span className="text-arabic text-3xl pb-1">{siteSettings.logoSymbol || 'ن'}</span>
               </div>
             )}
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/10 text-[#112734] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
-            <ShieldCheck size={14} className="text-amber-500" />
-            <span>অফিসিয়াল সার্টিফিকেট ভেরিফিকেশন সিস্টেম</span>
-          </div>
-
           <h1 className="text-2xl sm:text-4xl font-black text-[#112734] tracking-tight">
-            সনদপত্র অনলাইন অনলাইন যাচাই ও তথ্য কেন্দ্র
+            সনদপত্র অনলাইন যাচাই ও তথ্য কেন্দ্র
           </h1>
 
           <p className="text-xs sm:text-sm text-[#5a524d] leading-relaxed">

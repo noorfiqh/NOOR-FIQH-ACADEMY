@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Tiro Bangla', 'Noto Serif Bengali', serif;
+  --font-serif: 'Tiro Bangla', 'Noto Serif Bengali', serif;
+}
+
 @layer base {
   :root {
     --bg-natural: #fdfcf9;
@@ -20,27 +25,50 @@
   html {
     scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
+    font-family: 'Tiro Bangla', serif;
   }
 
-  /* সাধারণ টেক্সটে Noto Serif Bengali */
+  /* হেডিং থেকে শুরু করে সব ধরণের টেক্সট Tiro Bangla */
+  *, ::before, ::after {
+    font-family: 'Tiro Bangla', serif;
+  }
+
   body {
-    font-family: 'Noto Serif Bengali', serif;
+    font-family: 'Tiro Bangla', serif !important;
     background-color: var(--bg-natural);
     color: var(--color-text-main);
     overflow-x: hidden;
   }
 
-  p, li, label, input, textarea, select, table, th, td, footer {
-    font-family: 'Noto Serif Bengali', serif;
+  p, li, label, input, textarea, select, table, th, td, footer, a, span, div, strong, b, em, i, blockquote, small {
+    font-family: 'Tiro Bangla', serif !important;
   }
 
-  /* সবধরনের হেডিংয়ে অনিক বাংলা (Anek Bangla) */
+  /* সব পেজের টেক্সট জাস্টিফাই (text-justify) */
+  p, 
+  article, 
+  blockquote, 
+  dd,
+  .whitespace-pre-line,
+  .leading-relaxed,
+  .prose,
+  .prose p,
+  .prose li,
+  main p, 
+  section p,
+  div > p {
+    text-align: justify;
+    text-justify: inter-word;
+    text-align-last: left;
+  }
+
+  /* সবধরনের হেডিংয়ে Tiro Bangla */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Anek Bangla', 'Plus Jakarta Sans', sans-serif !important;
+    font-family: 'Tiro Bangla', serif !important;
     letter-spacing: -0.01em;
   }
 
-  /* সবধরনের বাটনে ও বাটন সদৃশ লিঙ্কে Tiro Bangla */
+  /* সবধরনের বাটন ও বাটন সদৃশ লিঙ্কে Tiro Bangla */
   button, 
   [role="button"], 
   input[type="button"], 
@@ -55,17 +83,30 @@
 
 }
 
-/* Explicit Utility Classes */
-.font-anek, .font-heading {
-  font-family: 'Anek Bangla', 'Plus Jakarta Sans', sans-serif !important;
-}
-
-.font-noto, .font-body {
-  font-family: 'Noto Serif Bengali', serif !important;
-}
-
-.font-tiro, .font-button {
+/* Explicit Utility Classes - সব ধরণের ফন্ট ইউটিলিটি ক্লাস Tiro Bangla তে রিডাইরেক্ট */
+.font-tiro,
+.font-button,
+.font-anek,
+.font-heading,
+.font-noto,
+.font-body,
+.font-sans,
+.font-serif {
   font-family: 'Tiro Bangla', serif !important;
+}
+
+/* আরবী ক্যালিগ্রাফি ও আয়াতের জন্য Amiri ফন্ট সংরক্ষিত */
+.text-arabic,
+.text-arabic * {
+  font-family: 'Amiri', 'Traditional Arabic', serif !important;
+}
+
+/* সার্বজনীন টেক্সট জাস্টিফাই ক্লাস */
+.text-justify,
+[class*="text-justify"] {
+  text-align: justify !important;
+  text-justify: inter-word !important;
+  text-align-last: left !important;
 }
 
 /* Natural Tones Custom Utilities */

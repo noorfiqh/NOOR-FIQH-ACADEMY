@@ -64,6 +64,8 @@ export default function AboutPage() {
     ]
   };
 
+  const aboutBadgeText = (aboutData.badgeText === 'নূর ফিকহ একাডেমি পরিচিতি • NOOR FIQH ACADEMY') ? '' : (aboutData.badgeText || '');
+
   const getIconComponent = (iconName?: string) => {
     switch (iconName) {
       case 'ShieldCheck': return <ShieldCheck size={24} />;
@@ -113,10 +115,12 @@ export default function AboutPage() {
           {aboutData.heroImagePosition === 'background' && aboutData.showHeroImage !== false && aboutData.heroImage && isValidImageUrl(aboutData.heroImage) && formatImageUrl(aboutData.heroImage) ? (
             /* Full Background Hero Layout */
             <div className="max-w-4xl mx-auto text-center space-y-4">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
-                <Sparkles size={14} className="text-amber-400" />
-                <span>{aboutData.badgeText || 'নূর ফিকহ একাডেমি পরিচিতি • NOOR FIQH ACADEMY'}</span>
-              </div>
+              {aboutBadgeText ? (
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>{aboutBadgeText}</span>
+                </div>
+              ) : null}
 
               <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight font-anek">
                 {aboutData.titleBn}
@@ -134,10 +138,12 @@ export default function AboutPage() {
             /* Split Grid Hero with Image */
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
               <div className={`space-y-4 ${aboutData.heroImagePosition === 'left' ? 'lg:col-span-7 lg:order-2' : 'lg:col-span-7'}`}>
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
-                  <Sparkles size={14} className="text-amber-400" />
-                  <span>{aboutData.badgeText || 'নূর ফিকহ একাডেমি পরিচিতি • NOOR FIQH ACADEMY'}</span>
-                </div>
+                {aboutBadgeText ? (
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                    <Sparkles size={14} className="text-amber-400" />
+                    <span>{aboutBadgeText}</span>
+                  </div>
+                ) : null}
 
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.2] font-anek">
                   {aboutData.titleBn}
@@ -178,10 +184,12 @@ export default function AboutPage() {
             </div>
           ) : (
             <div className="text-center space-y-4 max-w-4xl mx-auto py-4">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
-                <Sparkles size={14} className="text-amber-400" />
-                <span>{aboutData.badgeText || 'নূর ফিকহ একাডেমি পরিচিতি • NOOR FIQH ACADEMY'}</span>
-              </div>
+              {aboutBadgeText ? (
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>{aboutBadgeText}</span>
+                </div>
+              ) : null}
 
               <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight font-anek">
                 {aboutData.titleBn}
@@ -260,7 +268,7 @@ export default function AboutPage() {
                       )}
                     </div>
                     {member.bio && (
-                      <p className="text-xs text-[#5a524d] leading-relaxed text-center font-tiro">
+                      <p className="text-xs text-[#5a524d] leading-relaxed text-justify font-tiro">
                         {member.bio}
                       </p>
                     )}
@@ -320,7 +328,7 @@ export default function AboutPage() {
                       )}
                     </div>
                     {member.bio && (
-                      <p className="text-xs text-[#5a524d] leading-relaxed text-center font-tiro">
+                      <p className="text-xs text-[#5a524d] leading-relaxed text-justify font-tiro">
                         {member.bio}
                       </p>
                     )}
@@ -380,7 +388,7 @@ export default function AboutPage() {
                       )}
                     </div>
                     {member.bio && (
-                      <p className="text-xs text-[#5a524d] leading-relaxed text-center font-tiro">
+                      <p className="text-xs text-[#5a524d] leading-relaxed text-justify font-tiro">
                         {member.bio}
                       </p>
                     )}

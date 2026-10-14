@@ -3374,18 +3374,9 @@ export default function AdminDashboardPage() {
                               />
                             </div>
                           ) : (
-                            <div className="flex items-center gap-3 w-full">
+                            <div className="flex items-center justify-center py-1">
                               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-2xl shadow-md border-2 border-white/20 shrink-0">
                                 <span className="text-arabic text-3xl pb-1">{siteSettings.logoSymbol || 'ن'}</span>
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="font-extrabold text-base text-white tracking-tight leading-tight font-anek">
-                                  {siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'}
-                                </span>
-                                <span className="text-[10px] text-[#17A2B8] font-medium tracking-wide flex items-center gap-1 mt-0.5">
-                                  <Sparkles size={10} />
-                                  {siteSettings.logoSubtitle || siteSettings.siteName || 'NOOR FIQH ACADEMY'}
-                                </span>
                               </div>
                             </div>
                           )}
@@ -3524,7 +3515,7 @@ export default function AdminDashboardPage() {
                             {siteSettings.siteNameBn}
                           </span>
                           <h4 className="text-sm sm:text-base font-black text-white leading-tight">
-                            {siteSettings.heroTitleBn || 'সহিহ ইলম ও সমকালীন ফিকহের বিশুদ্ধ আলোকবর্তিকা'}
+                            {siteSettings.heroTitleBn || 'নূর ফিকহ একাডেমি'}
                           </h4>
                           <p className="text-[11px] text-emerald-100/80 line-clamp-2">
                             {siteSettings.heroSubtitleBn || 'কোরআন ও সুন্নাহর প্রামাণ্য দিকনির্দেশনা শিখুন অভিজ্ঞ মুফতী ও ফিকহ বিশেষজ্ঞদের সান্নিধ্যে।'}
@@ -4073,7 +4064,7 @@ export default function AdminDashboardPage() {
                             checked={siteSettings.coursesPage?.showHeroImage !== false && !!siteSettings.coursesPage?.heroImage}
                             onChange={(e) => {
                               const curr = siteSettings.coursesPage || {
-                                badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                badgeText: '',
                                 titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
                                 subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।',
                                 heroImage: '',
@@ -4112,7 +4103,7 @@ export default function AdminDashboardPage() {
                                       const result = uploadEvent.target?.result as string;
                                       if (result) {
                                         const curr = siteSettings.coursesPage || {
-                                          badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                          badgeText: '',
                                           titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
                                           subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।',
                                           heroImage: '',
@@ -4141,7 +4132,7 @@ export default function AdminDashboardPage() {
                               value={siteSettings.coursesPage?.heroImage || ''}
                               onChange={(e) => {
                                 const curr = siteSettings.coursesPage || {
-                                  badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                  badgeText: '',
                                   titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
                                   subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।',
                                   heroImage: '',
@@ -4172,7 +4163,7 @@ export default function AdminDashboardPage() {
                                 type="button"
                                 onClick={() => {
                                   const curr = siteSettings.coursesPage || {
-                                    badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                    badgeText: '',
                                     titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
                                     subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।',
                                     heroImage: '',
@@ -4216,7 +4207,7 @@ export default function AdminDashboardPage() {
                               value={siteSettings.coursesPage?.heroImageOpacity ?? 35}
                               onChange={(e) => {
                                 const curr = siteSettings.coursesPage || {
-                                  badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                  badgeText: '',
                                   titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
                                   subtitleBn: '',
                                   heroImage: ''
@@ -4254,7 +4245,7 @@ export default function AdminDashboardPage() {
                               value={siteSettings.coursesPage?.heroOverlayOpacity ?? 80}
                               onChange={(e) => {
                                 const curr = siteSettings.coursesPage || {
-                                  badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                  badgeText: '',
                                   titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
                                   subtitleBn: '',
                                   heroImage: ''
@@ -4315,7 +4306,7 @@ export default function AdminDashboardPage() {
                           value={siteSettings.coursesPage?.titleBn || ''}
                           onChange={(e) => {
                             const curr = siteSettings.coursesPage || {
-                              badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                              badgeText: '',
                               titleBn: '',
                               subtitleBn: '',
                               heroImage: ''
@@ -4338,7 +4329,7 @@ export default function AdminDashboardPage() {
                           value={siteSettings.coursesPage?.subtitleBn || ''}
                           onChange={(e) => {
                             const curr = siteSettings.coursesPage || {
-                              badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                              badgeText: '',
                               titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
                               subtitleBn: '',
                               heroImage: ''
@@ -4361,7 +4352,7 @@ export default function AdminDashboardPage() {
                           value={siteSettings.coursesPage?.searchPlaceholder || ''}
                           onChange={(e) => {
                             const curr = siteSettings.coursesPage || {
-                              badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                              badgeText: '',
                               titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
                               subtitleBn: '',
                               heroImage: ''
@@ -4392,7 +4383,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.coursesPage?.highlight1 || ''}
                             onChange={(e) => {
                               const curr = siteSettings.coursesPage || {
-                                badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                badgeText: '',
                                 titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -4414,7 +4405,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.coursesPage?.highlight2 || ''}
                             onChange={(e) => {
                               const curr = siteSettings.coursesPage || {
-                                badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                badgeText: '',
                                 titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -4436,7 +4427,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.coursesPage?.highlight3 || ''}
                             onChange={(e) => {
                               const curr = siteSettings.coursesPage || {
-                                badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+                                badgeText: '',
                                 titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -4487,9 +4478,11 @@ export default function AdminDashboardPage() {
                               style={{ opacity: (siteSettings.coursesPage?.heroOverlayOpacity ?? 80) / 100 }}
                             />
                             <div className="relative z-10 space-y-2">
-                              <span className="inline-block px-2 py-0.5 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-[9px] font-bold border border-[#17A2B8]/40">
-                                ✨ {siteSettings.coursesPage?.badgeText || 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ'}
-                              </span>
+                              {siteSettings.coursesPage?.badgeText ? (
+                                <span className="inline-block px-2 py-0.5 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-[9px] font-bold border border-[#17A2B8]/40">
+                                  ✨ {siteSettings.coursesPage.badgeText}
+                                </span>
+                              ) : null}
                               <h4 className="text-sm font-black leading-tight text-white font-anek">
                                 {siteSettings.coursesPage?.titleBn || 'নূর ফিকহ একাডেমি কোর্সসমূহ'}
                               </h4>
@@ -4502,9 +4495,11 @@ export default function AdminDashboardPage() {
                           <div className="bg-white rounded-xl p-3.5 border border-[#ece8e0] shadow-sm space-y-2.5">
                             <div className={`flex flex-col sm:flex-row gap-3 items-center ${siteSettings.coursesPage?.heroImagePosition === 'left' ? 'sm:flex-row-reverse' : ''}`}>
                               <div className="flex-1 space-y-1.5">
-                                <span className="inline-block px-2 py-0.5 rounded-full bg-[#17A2B8]/10 text-[#112734] text-[9px] font-bold border border-[#17A2B8]/30">
-                                  ✨ {siteSettings.coursesPage?.badgeText || 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ'}
-                                </span>
+                                {siteSettings.coursesPage?.badgeText ? (
+                                  <span className="inline-block px-2 py-0.5 rounded-full bg-[#17A2B8]/10 text-[#112734] text-[9px] font-bold border border-[#17A2B8]/30">
+                                    ✨ {siteSettings.coursesPage.badgeText}
+                                  </span>
+                                ) : null}
                                 <h4 className="text-xs font-black text-[#112734] leading-tight font-anek">
                                   {siteSettings.coursesPage?.titleBn || 'নূর ফিকহ একাডেমি কোর্সসমূহ'}
                                 </h4>
@@ -4540,9 +4535,11 @@ export default function AdminDashboardPage() {
                           </div>
                         ) : (
                           <div className="bg-white rounded-xl p-4 border border-[#ece8e0] text-center space-y-2 shadow-sm">
-                            <span className="inline-block px-2 py-0.5 rounded-full bg-[#17A2B8]/10 text-[#112734] text-[9px] font-bold border border-[#17A2B8]/30">
-                              ✨ {siteSettings.coursesPage?.badgeText || 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ'}
-                            </span>
+                            {siteSettings.coursesPage?.badgeText ? (
+                              <span className="inline-block px-2 py-0.5 rounded-full bg-[#17A2B8]/10 text-[#112734] text-[9px] font-bold border border-[#17A2B8]/30">
+                                ✨ {siteSettings.coursesPage.badgeText}
+                              </span>
+                            ) : null}
                             <h4 className="text-sm font-black text-[#112734] leading-tight font-anek">
                               {siteSettings.coursesPage?.titleBn || 'নূর ফিকহ একাডেমি কোর্সসমূহ'}
                             </h4>
@@ -4620,7 +4617,7 @@ export default function AdminDashboardPage() {
                             checked={siteSettings.booksPage?.showHeroImage !== false && !!siteSettings.booksPage?.heroImage}
                             onChange={(e) => {
                               const curr = siteSettings.booksPage || {
-                                badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                badgeText: '',
                                 titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                 subtitleBn: 'বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন ঘরে বসেই নির্ভরযোগ্য হোম ডেলিভারির মাধ্যমে।',
                                 heroImage: '',
@@ -4659,7 +4656,7 @@ export default function AdminDashboardPage() {
                                       const result = uploadEvent.target?.result as string;
                                       if (result) {
                                         const curr = siteSettings.booksPage || {
-                                          badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                          badgeText: '',
                                           titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                           subtitleBn: 'বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন ঘরে বসেই নির্ভরযোগ্য হোম ডেলিভারির মাধ্যমে।',
                                           heroImage: '',
@@ -4688,7 +4685,7 @@ export default function AdminDashboardPage() {
                               value={siteSettings.booksPage?.heroImage || ''}
                               onChange={(e) => {
                                 const curr = siteSettings.booksPage || {
-                                  badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                  badgeText: '',
                                   titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                   subtitleBn: 'বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন ঘরে বসেই নির্ভরযোগ্য হোম ডেলিভারির মাধ্যমে।',
                                   heroImage: '',
@@ -4733,7 +4730,7 @@ export default function AdminDashboardPage() {
                               type="button"
                               onClick={() => {
                                 const curr = siteSettings.booksPage || {
-                                  badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                  badgeText: '',
                                   titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                   subtitleBn: '',
                                   heroImage: ''
@@ -4765,7 +4762,7 @@ export default function AdminDashboardPage() {
                                 type="button"
                                 onClick={() => {
                                   const curr = siteSettings.booksPage || {
-                                    badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                    badgeText: '',
                                     titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                     subtitleBn: 'বিশুদ্ধ আকীদা, নির্ভরযোগ্য ফিকহ, সীরাত, হাদীস এবং সমকালীন গবেষণাধর্মী প্রামাণ্য কিতাবসমূহ সংগ্রহ করুন ঘরে বসেই নির্ভরযোগ্য হোম ডেলিভারির মাধ্যমে।',
                                     heroImage: '',
@@ -4809,7 +4806,7 @@ export default function AdminDashboardPage() {
                               value={siteSettings.booksPage?.heroImageOpacity ?? 35}
                               onChange={(e) => {
                                 const curr = siteSettings.booksPage || {
-                                  badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                  badgeText: '',
                                   titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                   subtitleBn: '',
                                   heroImage: ''
@@ -4847,7 +4844,7 @@ export default function AdminDashboardPage() {
                               value={siteSettings.booksPage?.heroOverlayOpacity ?? 80}
                               onChange={(e) => {
                                 const curr = siteSettings.booksPage || {
-                                  badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                  badgeText: '',
                                   titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                   subtitleBn: '',
                                   heroImage: ''
@@ -4908,7 +4905,7 @@ export default function AdminDashboardPage() {
                           value={siteSettings.booksPage?.titleBn || ''}
                           onChange={(e) => {
                             const curr = siteSettings.booksPage || {
-                              badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                              badgeText: '',
                               titleBn: '',
                               subtitleBn: '',
                               heroImage: ''
@@ -4931,7 +4928,7 @@ export default function AdminDashboardPage() {
                           value={siteSettings.booksPage?.subtitleBn || ''}
                           onChange={(e) => {
                             const curr = siteSettings.booksPage || {
-                              badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                              badgeText: '',
                               titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                               subtitleBn: '',
                               heroImage: ''
@@ -4962,7 +4959,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.booksPage?.highlight1 || ''}
                             onChange={(e) => {
                               const curr = siteSettings.booksPage || {
-                                badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                badgeText: '',
                                 titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -4984,7 +4981,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.booksPage?.highlight2 || ''}
                             onChange={(e) => {
                               const curr = siteSettings.booksPage || {
-                                badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                badgeText: '',
                                 titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5006,7 +5003,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.booksPage?.highlight3 || ''}
                             onChange={(e) => {
                               const curr = siteSettings.booksPage || {
-                                badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                badgeText: '',
                                 titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5038,7 +5035,7 @@ export default function AdminDashboardPage() {
                           value={siteSettings.booksPage?.searchPlaceholder || ''}
                           onChange={(e) => {
                             const curr = siteSettings.booksPage || {
-                              badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                              badgeText: '',
                               titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                               subtitleBn: '',
                               heroImage: ''
@@ -5062,7 +5059,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.booksPage?.featuredSectionTitle || ''}
                             onChange={(e) => {
                               const curr = siteSettings.booksPage || {
-                                badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                badgeText: '',
                                 titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5083,7 +5080,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.booksPage?.featuredSectionSubtitle || ''}
                             onChange={(e) => {
                               const curr = siteSettings.booksPage || {
-                                badgeText: 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ',
+                                badgeText: '',
                                 titleBn: 'প্রামাণ্য ইসলামী কিতাব ও প্রকাশনা সম্ভার',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5152,10 +5149,12 @@ export default function AdminDashboardPage() {
                           )}
 
                           {/* Top Badge */}
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-[9px] font-bold text-amber-900 shadow-sm">
-                            <Library size={10} className="text-amber-700 shrink-0" />
-                            <span className="truncate">{siteSettings.booksPage?.badgeText || 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ'}</span>
-                          </div>
+                          {siteSettings.booksPage?.badgeText ? (
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-[9px] font-bold text-amber-900 shadow-sm">
+                              <Library size={10} className="text-amber-700 shrink-0" />
+                              <span className="truncate">{siteSettings.booksPage.badgeText}</span>
+                            </div>
+                          ) : null}
 
                           {/* Hero flex / grid */}
                           <div className={`flex flex-col gap-3 relative z-10 ${
@@ -5280,7 +5279,7 @@ export default function AdminDashboardPage() {
                             checked={siteSettings.fatwaPage?.showHeroImage !== false && !!siteSettings.fatwaPage?.heroImage}
                             onChange={(e) => {
                               const curr = siteSettings.fatwaPage || {
-                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                badgeText: '',
                                 titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                 subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
                                 heroImage: '',
@@ -5319,7 +5318,7 @@ export default function AdminDashboardPage() {
                                       const result = uploadEvent.target?.result as string;
                                       if (result) {
                                         const curr = siteSettings.fatwaPage || {
-                                          badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                          badgeText: '',
                                           titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                           subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
                                           heroImage: '',
@@ -5348,7 +5347,7 @@ export default function AdminDashboardPage() {
                               value={siteSettings.fatwaPage?.heroImage || ''}
                               onChange={(e) => {
                                 const curr = siteSettings.fatwaPage || {
-                                  badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                  badgeText: '',
                                   titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                   subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
                                   heroImage: '',
@@ -5391,7 +5390,7 @@ export default function AdminDashboardPage() {
                               type="button"
                               onClick={() => {
                                 const curr = siteSettings.fatwaPage || {
-                                  badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                  badgeText: '',
                                   titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                   subtitleBn: '',
                                   heroImage: ''
@@ -5423,7 +5422,7 @@ export default function AdminDashboardPage() {
                                 type="button"
                                 onClick={() => {
                                   const curr = siteSettings.fatwaPage || {
-                                    badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                    badgeText: '',
                                     titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                     subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
                                     heroImage: '',
@@ -5467,7 +5466,7 @@ export default function AdminDashboardPage() {
                               value={siteSettings.fatwaPage?.heroImageOpacity ?? 35}
                               onChange={(e) => {
                                 const curr = siteSettings.fatwaPage || {
-                                  badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                  badgeText: '',
                                   titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                   subtitleBn: '',
                                   heroImage: ''
@@ -5505,7 +5504,7 @@ export default function AdminDashboardPage() {
                               value={siteSettings.fatwaPage?.heroOverlayOpacity ?? 80}
                               onChange={(e) => {
                                 const curr = siteSettings.fatwaPage || {
-                                  badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                  badgeText: '',
                                   titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                   subtitleBn: '',
                                   heroImage: ''
@@ -5566,7 +5565,7 @@ export default function AdminDashboardPage() {
                           value={siteSettings.fatwaPage?.titleBn || ''}
                           onChange={(e) => {
                             const curr = siteSettings.fatwaPage || {
-                              badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                              badgeText: '',
                               titleBn: '',
                               subtitleBn: '',
                               heroImage: ''
@@ -5589,7 +5588,7 @@ export default function AdminDashboardPage() {
                           value={siteSettings.fatwaPage?.subtitleBn || ''}
                           onChange={(e) => {
                             const curr = siteSettings.fatwaPage || {
-                              badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                              badgeText: '',
                               titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                               subtitleBn: '',
                               heroImage: ''
@@ -5620,7 +5619,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.fatwaPage?.highlight1 || ''}
                             onChange={(e) => {
                               const curr = siteSettings.fatwaPage || {
-                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                badgeText: '',
                                 titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5642,7 +5641,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.fatwaPage?.highlight2 || ''}
                             onChange={(e) => {
                               const curr = siteSettings.fatwaPage || {
-                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                badgeText: '',
                                 titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5664,7 +5663,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.fatwaPage?.highlight3 || ''}
                             onChange={(e) => {
                               const curr = siteSettings.fatwaPage || {
-                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                badgeText: '',
                                 titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5697,7 +5696,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.fatwaPage?.askCardTitle || ''}
                             onChange={(e) => {
                               const curr = siteSettings.fatwaPage || {
-                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                badgeText: '',
                                 titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5718,7 +5717,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.fatwaPage?.askCardSubtitle || ''}
                             onChange={(e) => {
                               const curr = siteSettings.fatwaPage || {
-                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                badgeText: '',
                                 titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5743,7 +5742,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.fatwaPage?.trackCardTitle || ''}
                             onChange={(e) => {
                               const curr = siteSettings.fatwaPage || {
-                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                badgeText: '',
                                 titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5764,7 +5763,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.fatwaPage?.trackCardSubtitle || ''}
                             onChange={(e) => {
                               const curr = siteSettings.fatwaPage || {
-                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                badgeText: '',
                                 titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5789,7 +5788,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.fatwaPage?.archiveTitle || ''}
                             onChange={(e) => {
                               const curr = siteSettings.fatwaPage || {
-                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                badgeText: '',
                                 titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5810,7 +5809,7 @@ export default function AdminDashboardPage() {
                             value={siteSettings.fatwaPage?.archiveSubtitle || ''}
                             onChange={(e) => {
                               const curr = siteSettings.fatwaPage || {
-                                badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+                                badgeText: '',
                                 titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
                                 subtitleBn: '',
                                 heroImage: ''
@@ -5862,9 +5861,11 @@ export default function AdminDashboardPage() {
                             />
                             
                             <div className="relative z-10 space-y-2">
-                              <span className="inline-block px-2 py-0.5 rounded-full bg-teal-400/20 text-teal-300 text-[9px] font-bold border border-teal-400/40">
-                                ✨ {siteSettings.fatwaPage?.badgeText || 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY'}
-                              </span>
+                              {siteSettings.fatwaPage?.badgeText ? (
+                                <span className="inline-block px-2 py-0.5 rounded-full bg-teal-400/20 text-teal-300 text-[9px] font-bold border border-teal-400/40">
+                                  ✨ {siteSettings.fatwaPage.badgeText}
+                                </span>
+                              ) : null}
                               <h4 className="text-sm font-black leading-tight text-white font-anek">
                                 {siteSettings.fatwaPage?.titleBn || 'অনলাইন ইফতা ও ফতোয়া সেবা'}
                               </h4>
@@ -5877,9 +5878,11 @@ export default function AdminDashboardPage() {
                           <div className="bg-white rounded-xl p-3.5 border border-[#ece8e0] shadow-sm space-y-2.5">
                             <div className={`flex flex-col sm:flex-row gap-3 items-center ${siteSettings.fatwaPage?.heroImagePosition === 'left' ? 'sm:flex-row-reverse' : ''}`}>
                               <div className="flex-1 space-y-1.5">
-                                <span className="inline-block px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 text-[9px] font-bold border border-teal-200">
-                                  ✨ {siteSettings.fatwaPage?.badgeText || 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY'}
-                                </span>
+                                {siteSettings.fatwaPage?.badgeText ? (
+                                  <span className="inline-block px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 text-[9px] font-bold border border-teal-200">
+                                    ✨ {siteSettings.fatwaPage.badgeText}
+                                  </span>
+                                ) : null}
                                 <h4 className="text-xs font-black text-[#112734] leading-tight font-anek">
                                   {siteSettings.fatwaPage?.titleBn || 'অনলাইন ইফতা ও ফতোয়া সেবা'}
                                 </h4>
@@ -5915,9 +5918,11 @@ export default function AdminDashboardPage() {
                           </div>
                         ) : (
                           <div className="bg-white rounded-xl p-4 border border-[#ece8e0] text-center space-y-2 shadow-sm">
-                            <span className="inline-block px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 text-[9px] font-bold border border-teal-200">
-                              ✨ {siteSettings.fatwaPage?.badgeText || 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY'}
-                            </span>
+                            {siteSettings.fatwaPage?.badgeText ? (
+                              <span className="inline-block px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 text-[9px] font-bold border border-teal-200">
+                                ✨ {siteSettings.fatwaPage.badgeText}
+                              </span>
+                            ) : null}
                             <h4 className="text-sm font-black text-[#112734] leading-tight font-anek">
                               {siteSettings.fatwaPage?.titleBn || 'অনলাইন ইফতা ও ফতোয়া সেবা'}
                             </h4>

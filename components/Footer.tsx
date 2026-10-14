@@ -60,18 +60,8 @@ export function Footer() {
                   />
                 </div>
               ) : (
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-2xl shadow-md border-2 border-white/20 shrink-0">
-                    <span className="text-arabic text-3xl pb-1">{siteSettings.logoSymbol || 'ن'}</span>
-                  </div>
-                  <div>
-                    <span className="font-extrabold text-2xl text-white tracking-tight font-anek">
-                      {siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'}
-                    </span>
-                    <p className="text-xs text-[#17A2B8] font-semibold tracking-widest flex items-center gap-1 mt-0.5">
-                      <Sparkles size={11} /> {siteSettings.logoSubtitle || siteSettings.siteName || 'NOOR FIQH ACADEMY'}
-                    </p>
-                  </div>
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-2xl shadow-md border-2 border-white/20 shrink-0">
+                  <span className="text-arabic text-3xl pb-1">{siteSettings.logoSymbol || 'ن'}</span>
                 </div>
               )}
             </Link>

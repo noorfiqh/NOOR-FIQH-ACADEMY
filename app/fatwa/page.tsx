@@ -156,7 +156,7 @@ function FatwaContent() {
   };
 
   const fp = siteSettings.fatwaPage || {
-    badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+    badgeText: '',
     titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
     subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
     heroImage: '',
@@ -172,6 +172,8 @@ function FatwaContent() {
     archiveTitle: 'উন্মুক্ত ফতোয়া ও গবেষণা আর্কাইভ',
     archiveSubtitle: 'মুফতীগণের স্বাক্ষরিত ও প্রামাণ্য গ্রন্থাবলি থেকে সংকলিত উত্তরসমূহ'
   };
+
+  const fatwaBadgeText = (fp.badgeText === 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY') ? '' : (fp.badgeText || '');
 
   return (
     <div className="min-h-screen bg-[#fdfcf9] font-sans text-[#2c3e50] space-y-0 pb-16">
@@ -212,10 +214,12 @@ function FatwaContent() {
           {fp.heroImagePosition === 'background' && fp.showHeroImage !== false && fp.heroImage && isValidImageUrl(fp.heroImage) && formatImageUrl(fp.heroImage) ? (
             /* Full Background Hero Layout */
             <div className="max-w-3xl space-y-4 text-left">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-teal-500/20 text-teal-200 text-xs font-bold uppercase tracking-wider border border-teal-400/40 backdrop-blur-sm">
-                <Sparkles size={14} className="text-amber-400" />
-                <span>{fp.badgeText || 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY'}</span>
-              </div>
+              {fatwaBadgeText ? (
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-teal-500/20 text-teal-200 text-xs font-bold uppercase tracking-wider border border-teal-400/40 backdrop-blur-sm">
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>{fatwaBadgeText}</span>
+                </div>
+              ) : null}
 
               <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight font-anek">
                 {fp.titleBn || 'অনলাইন ইফতা ও ফতোয়া সেবা'}
@@ -253,10 +257,12 @@ function FatwaContent() {
               
               {/* Text Area */}
               <div className={`space-y-4 ${fp.heroImagePosition === 'left' ? 'lg:col-span-7 lg:order-2' : 'lg:col-span-7'}`}>
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
-                  <Sparkles size={14} className="text-amber-400" />
-                  <span>{fp.badgeText || 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY'}</span>
-                </div>
+                {fatwaBadgeText ? (
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                    <Sparkles size={14} className="text-amber-400" />
+                    <span>{fatwaBadgeText}</span>
+                  </div>
+                ) : null}
 
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.2] font-anek">
                   {fp.titleBn || 'অনলাইন ইফতা ও ফতোয়া সেবা'}
@@ -317,10 +323,12 @@ function FatwaContent() {
             </div>
           ) : (
             <div className="text-center space-y-4 max-w-3xl mx-auto py-4">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
-                <Sparkles size={14} className="text-amber-400" />
-                <span>{fp.badgeText || 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY'}</span>
-              </div>
+              {fatwaBadgeText ? (
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>{fatwaBadgeText}</span>
+                </div>
+              ) : null}
 
               <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight font-anek">
                 {fp.titleBn || 'অনলাইন ইফতা ও ফতোয়া সেবা'}

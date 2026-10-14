@@ -240,18 +240,18 @@ export function CertificateView({
       // 1. Student Name
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = 'bold 64px "Noto Serif Bengali", "Anek Bangla", serif';
+      ctx.font = 'bold 64px "Tiro Bangla", serif';
       ctx.fillStyle = '#112734';
       ctx.fillText(userName, width / 2, centerY - 20);
 
       // 2. Course Title (Directly below name)
-      ctx.font = 'bold 36px "Noto Serif Bengali", "Anek Bangla", serif';
+      ctx.font = 'bold 36px "Tiro Bangla", serif';
       ctx.fillStyle = '#112734';
       ctx.fillText(courseTitle, width / 2, centerY + 55);
 
       // 3. Result / Grade Badge (Directly below course title)
       if (grade) {
-        ctx.font = 'bold 28px "Noto Serif Bengali", "Anek Bangla", serif';
+        ctx.font = 'bold 28px "Tiro Bangla", serif';
         ctx.fillStyle = '#92400e';
         ctx.fillText(`ফলাফল / মূল্যায়ন: ${grade}`, width / 2, centerY + 115);
       }
@@ -269,7 +269,7 @@ export function CertificateView({
 
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
-      ctx.font = 'bold 26px "Noto Serif Bengali", "Anek Bangla", serif';
+      ctx.font = 'bold 26px "Tiro Bangla", serif';
       ctx.fillStyle = '#2c3e50';
       ctx.fillText(`তারিখ: ${issueDate}`, leftX, bottomY);
 
@@ -320,12 +320,12 @@ export function CertificateView({
       ctx.fillText(siteSettings.logoSymbol || 'ن', width / 2, height / 2);
 
       // Header: Academy Name Badge
-      ctx.font = 'bold 24px "Noto Serif Bengali", "Anek Bangla", serif';
+      ctx.font = 'bold 24px "Tiro Bangla", serif';
       ctx.fillStyle = '#17A2B8';
       ctx.fillText(`${siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'} • ${siteSettings.siteName || 'NOOR FIQH ACADEMY'}`, width / 2, 170);
 
       // Header Title
-      ctx.font = 'bold 52px "Anek Bangla", sans-serif';
+      ctx.font = 'bold 52px "Tiro Bangla", serif';
       ctx.fillStyle = '#112734';
       ctx.fillText('সনদপত্র (CERTIFICATE OF COMPLETION)', width / 2, 245);
 
@@ -335,12 +335,12 @@ export function CertificateView({
       ctx.fillText('BOARD OF ISLAMIC JURISPRUDENCE & CONTEMPORARY RESEARCH', width / 2, 290);
 
       // Intro
-      ctx.font = 'italic 26px "Noto Serif Bengali", serif';
+      ctx.font = 'italic 26px "Tiro Bangla", serif';
       ctx.fillStyle = '#5a524d';
       ctx.fillText('এই মর্মে প্রত্যয়ন করা যাচ্ছে যে,', width / 2, 420);
 
       // Student Name
-      ctx.font = 'bold 68px "Noto Serif Bengali", "Anek Bangla", serif';
+      ctx.font = 'bold 68px "Tiro Bangla", serif';
       ctx.fillStyle = '#112734';
       ctx.fillText(userName, width / 2, 530);
 
@@ -353,7 +353,7 @@ export function CertificateView({
       ctx.stroke();
 
       // Description text
-      ctx.font = '26px "Noto Serif Bengali", serif';
+      ctx.font = '26px "Tiro Bangla", serif';
       ctx.fillStyle = '#5a524d';
       ctx.fillText('নূর ফিকহ একাডেমি পরিচালিত নিম্নোক্ত উচ্চতর ফিকহি প্রশিক্ষণ কোর্স ও সকল মূল্যায়ন পরীক্ষা সফলভাবে সম্পন্ন করেছেন:', width / 2, 670);
 
@@ -366,13 +366,13 @@ export function CertificateView({
       ctx.strokeStyle = 'rgba(17, 39, 52, 0.15)';
       ctx.stroke();
 
-      ctx.font = 'bold 42px "Noto Serif Bengali", "Anek Bangla", serif';
+      ctx.font = 'bold 42px "Tiro Bangla", serif';
       ctx.fillStyle = '#112734';
       ctx.fillText(courseTitle, width / 2, 785);
 
       // Grade Badge
       if (grade) {
-        ctx.font = 'bold 28px "Noto Serif Bengali", serif';
+        ctx.font = 'bold 28px "Tiro Bangla", serif';
         ctx.fillStyle = '#92400e';
         ctx.fillText(`ফলাফল / মূল্যায়ন: ${grade}`, width / 2, 900);
       }
@@ -387,7 +387,7 @@ export function CertificateView({
 
       // Footer: Left Date & Cert Number
       ctx.textAlign = 'left';
-      ctx.font = 'bold 26px "Noto Serif Bengali", serif';
+      ctx.font = 'bold 26px "Tiro Bangla", serif';
       ctx.fillStyle = '#2c3e50';
       ctx.fillText(`ইস্যু তারিখ: ${issueDate}`, 150, height - 260);
 
@@ -417,7 +417,7 @@ export function CertificateView({
 
       // Footer: Right Signature
       ctx.textAlign = 'right';
-      ctx.font = 'italic bold 32px "Noto Serif Bengali", serif';
+      ctx.font = 'italic bold 32px "Tiro Bangla", serif';
       ctx.fillStyle = '#112734';
       ctx.fillText('Mufti Abdullah Al-Noor', width - 150, height - 260);
 
@@ -428,11 +428,11 @@ export function CertificateView({
       ctx.lineTo(width - 150, height - 245);
       ctx.stroke();
 
-      ctx.font = 'bold 24px "Noto Serif Bengali", serif';
+      ctx.font = 'bold 24px "Tiro Bangla", serif';
       ctx.fillStyle = '#2c3e50';
       ctx.fillText('প্রধান মুফতী ও পরিচালক', width - 150, height - 210);
 
-      ctx.font = '20px "Noto Serif Bengali", serif';
+      ctx.font = '20px "Tiro Bangla", serif';
       ctx.fillStyle = '#8a817c';
       ctx.fillText('নূর ফিকহ একাডেমি', width - 150, height - 175);
     }
@@ -917,9 +917,8 @@ export function CertificateView({
                     />
                   </div>
                 ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#17A2B8]/15 border border-[#17A2B8]/30 text-[#112734] text-[10px] sm:text-[11px] font-black uppercase tracking-widest">
-                    <Sparkles size={12} className="text-amber-500" />
-                    <span>{siteSettings.siteNameBn || 'নূর ফিকহ একাডেমি'} • {siteSettings.siteName || 'NOOR FIQH ACADEMY'}</span>
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center text-slate-950 font-black text-xl shadow mx-auto mb-1">
+                    <span className="text-arabic text-2xl">{siteSettings.logoSymbol || 'ن'}</span>
                   </div>
                 )}
 

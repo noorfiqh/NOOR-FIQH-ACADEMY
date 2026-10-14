@@ -142,8 +142,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   siteName: 'Noor Fiqh Academy',
   siteNameBn: 'নূর ফিকহ একাডেমি',
   tagline: 'জ্ঞান ও ফিকহের আলোয় জীবন পরিচালনা',
-  logoType: 'symbol',
-  logoImageUrl: '',
+  logoType: 'image',
+  logoImageUrl: 'https://lh3.googleusercontent.com/d/1ZN-_fVW63itAvZl_sP5WTc7fa_G4kNmd',
   logoSymbol: 'ن',
   logoSubtitle: 'NOOR FIQH ACADEMY',
   facebookUrl: 'https://www.facebook.com/profile.php?id=61591404045439',
@@ -151,7 +151,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   email: 'noorfiqhaca@gmail.com',
   phone: '+8801348161517',
   address: 'Global Online Islamic Campus & Research Center, Dhaka, Bangladesh',
-  heroTitleBn: 'সহিহ ইলম ও সমকালীন ফিকহের বিশুদ্ধ আলোকবর্তিকা',
+  heroTitleBn: 'নূর ফিকহ একাডেমি',
   heroSubtitleBn: 'দৈনন্দিন ইবাদত, ব্যবসা-বাণিজ্য, পরিবার ও আধুনিক জীবনের প্রতিটি ক্ষেত্রে কোরআন ও সুন্নাহর প্রামাণ্য দিকনির্দেশনা শিখুন অভিজ্ঞ মুফতী ও ফিকহ বিশেষজ্ঞদের সান্নিধ্যে।',
   primaryColor: '#064e3b',
   accentColor: '#d97706',
@@ -172,7 +172,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     buttonLink: '/courses'
   },
   coursesPage: {
-    badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+    badgeText: '',
     titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
     subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান। অভিজ্ঞ মুফতীগণের তত্ত্বাবধানে সহিহ ইলম অর্জন করুন।',
     heroImage: '',
@@ -186,7 +186,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     highlight3: 'ভেরিফায়েড প্রফেশনাল সনদপত্র'
   },
   booksPage: {
-    badgeText: 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি',
+    badgeText: '',
     titleBn: 'ফিকহ কিতাব ও গবেষণাপত্র',
     subtitleBn: 'দারুল ইফতা ও ফিকহ বোর্ড কর্তৃক রচিত প্রামাণ্য কিতাবের পিডিএফ ও হোম ডেলিভারি হার্ডকভার কপি সংগ্রহ করুন।',
     heroImage: '',
@@ -202,7 +202,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     featuredSubtitle: 'বিষয়ভিত্তিক বাছাইকৃত কিতাবসমূহ এবং গবেষণাপত্র'
   },
   fatwaPage: {
-    badgeText: 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY',
+    badgeText: '',
     titleBn: 'অনলাইন ইফতা ও ফতোয়া সেবা',
     subtitleBn: 'দৈনন্দিন আমল, সমকালীন আধুনিক চিকিৎসাবিজ্ঞান, লেনদেন ও পারিবারিক যেকোনো জটিল মাসআলার সমাধান নির্ভরযোগ্য ও প্রামাণ্য দলীলসহ জেনে নিন।',
     heroImage: '',
@@ -223,6 +223,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   },
   courseCategories: DEFAULT_COURSE_CATEGORIES,
   aboutPage: {
+    badgeText: '',
     titleBn: 'সহিহ সুন্নাহ ও নির্ভরযোগ্য ফিকহের আলোকবর্তিকা',
     subtitleBn: 'নূর ফিকহ একাডেমি অনলাইনে বিশুদ্ধ ইসলামী জ্ঞান বা \'ফরজে আইন ইলম\' অর্জনের একটি নির্ভরযোগ্য ও বিশ্বস্ত প্রতিষ্ঠান। বর্তমান ব্যস্ততার যুগে সর্বস্তরের মুসলিমদের জন্য ঘরে বসেেই শরীয়তের প্রয়োজনীয় জ্ঞান অর্জনের পথকে সুগম করার মহান ব্রত নিয়ে এই একাডেমির যাত্রা শুরু হয়েছে। প্রখ্যাত ইসলামী স্কলার মুফতী আম্মার বিন নূর-এর সুদক্ষ পরিচালনা ও প্রত্যক্ষ তত্ত্বাবধানে একাডেমিটি পরিচালিত হচ্ছে।\n\nআমরা বিশ্বাস করি, বিশুদ্ধ জ্ঞানই হলো আমলের পূর্বশর্ত। তাই কুরআন, সুন্নাহ এবং ফিকহী মাসায়েলের সঠিক ও নির্ভুল শিক্ষা অত্যন্ত সহজ ও সাবলীলভাবে সাধারণ মানুষের দোরগোড়ায় পৌঁছে দেওয়াই আমাদের মূল লক্ষ্য।',
     heroImageOpacity: 35,
@@ -1447,6 +1448,21 @@ export const AppStore = {
       !settings.phone
     ) {
       settings.phone = '+8801348161517';
+    }
+    if (!settings.heroTitleBn || settings.heroTitleBn === 'সহিহ ইলম ও সমকালীন ফিকহের বিশুদ্ধ আলোকবর্তিকা' || settings.heroTitleBn === 'নির্ভরযোগ্য ফিকহ চর্চায় এক অনন্য আধুনিক বিদ্যাপীঠ' || settings.heroTitleBn.includes('সহিহ ইলম ও সমকালীন ফিকহের')) {
+      settings.heroTitleBn = 'নূর ফিকহ একাডেমি';
+    }
+    if (settings.coursesPage && (settings.coursesPage.badgeText === 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ' || !settings.coursesPage.badgeText)) {
+      settings.coursesPage.badgeText = '';
+    }
+    if (settings.booksPage && (settings.booksPage.badgeText === 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি' || settings.booksPage.badgeText === 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ' || !settings.booksPage.badgeText)) {
+      settings.booksPage.badgeText = '';
+    }
+    if (settings.fatwaPage && (settings.fatwaPage.badgeText === 'দারুল ইফতা ও ফতোয়া বিভাগ • NOOR FIQH ACADEMY' || !settings.fatwaPage.badgeText)) {
+      settings.fatwaPage.badgeText = '';
+    }
+    if (settings.aboutPage && (settings.aboutPage.badgeText === 'নূর ফিকহ একাডেমি পরিচিতি • NOOR FIQH ACADEMY' || !settings.aboutPage.badgeText)) {
+      settings.aboutPage.badgeText = '';
     }
     settings.logoImageUrl = formatImageUrl(settings.logoImageUrl);
     settings.heroBgImage = formatImageUrl(settings.heroBgImage);

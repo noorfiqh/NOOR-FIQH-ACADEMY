@@ -29,17 +29,8 @@ interface BookDetailClientProps {
 export default function BookDetailClient({ id }: BookDetailClientProps) {
   const params = useParams();
   const rawId = id || (params?.id as string);
-  
-  const [activeBookId, setActiveBookId] = useState<string>(() => {
-    if (rawId && rawId !== '[id]' && rawId !== '%5Bid%5D' && rawId !== 'detail') return rawId;
-    if (typeof window !== 'undefined') {
-      const sId = new URLSearchParams(window.location.search).get('id');
-      if (sId) return sId;
-      const pId = window.location.pathname.replace(/\/+$/, '').split('/').pop() || '';
-      if (pId && pId !== 'detail' && pId !== 'books') return pId;
-    }
-    return '';
-  });
+  const initialId = (rawId && rawId !== '[id]' && rawId !== '%5Bid%5D' && rawId !== 'detail') ? rawId : '';
+  const [activeBookId, setActiveBookId] = useState<string>(initialId);
 
   useEffect(() => {
     if (!activeBookId && typeof window !== 'undefined') {

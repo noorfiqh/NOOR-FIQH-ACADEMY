@@ -71,7 +71,7 @@ export default function BooksPage() {
   }, []);
 
   const bp = siteSettings.booksPage || {
-    badgeText: 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি',
+    badgeText: '',
     titleBn: 'ফিকহ কিতাব ও গবেষণাপত্র',
     subtitleBn: 'দারুল ইফতা ও ফিকহ বোর্ড কর্তৃক রচিত প্রামাণ্য কিতাবের পিডিএফ ও হোম ডেলিভারি হার্ডকভার কপি সংগ্রহ করুন।',
     heroImage: '',
@@ -84,6 +84,8 @@ export default function BooksPage() {
     featuredTitle: 'সকল ফিকহ কিতাব ও প্রকাশনা তালিকা',
     featuredSubtitle: 'বিষয়ভিত্তিক বাছাইকৃত কিতাবসমূহ এবং গবেষণাপত্র'
   };
+
+  const bookBadgeText = (bp.badgeText === 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি' || bp.badgeText === 'নূর ফিকহ একাডেমি মাকতাবা ও প্রকাশনা বিভাগ') ? '' : (bp.badgeText || '');
 
   const categories = [
     { id: 'all', label: 'সকল কিতাব' },
@@ -141,10 +143,12 @@ export default function BooksPage() {
           {bp.heroImagePosition === 'background' && bp.showHeroImage !== false && bp.heroImage && isValidImageUrl(bp.heroImage) ? (
             /* Full Background Hero Layout */
             <div className="max-w-3xl space-y-4 text-left">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/20 text-amber-200 text-xs font-bold uppercase tracking-wider border border-amber-400/40 backdrop-blur-sm">
-                <Sparkles size={14} className="text-amber-400" />
-                <span>{bp.badgeText || 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি'}</span>
-              </div>
+              {bookBadgeText ? (
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-500/20 text-amber-200 text-xs font-bold uppercase tracking-wider border border-amber-400/40 backdrop-blur-sm">
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>{bookBadgeText}</span>
+                </div>
+              ) : null}
 
               <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight font-anek">
                 {bp.titleBn || 'ফিকহ কিতাব ও গবেষণাপত্র'}
@@ -182,10 +186,12 @@ export default function BooksPage() {
               
               {/* Text Area */}
               <div className={`space-y-4 ${bp.heroImagePosition === 'left' ? 'lg:col-span-7 lg:order-2' : 'lg:col-span-7'}`}>
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider border border-amber-400/30">
-                  <Library size={14} className="text-amber-400" />
-                  <span>{bp.badgeText || 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি'}</span>
-                </div>
+                {bookBadgeText ? (
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider border border-amber-400/30">
+                    <Library size={14} className="text-amber-400" />
+                    <span>{bookBadgeText}</span>
+                  </div>
+                ) : null}
 
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.2] font-anek">
                   {bp.titleBn || 'ফিকহ কিতাব ও গবেষণাপত্র'}
@@ -246,10 +252,12 @@ export default function BooksPage() {
             </div>
           ) : (
             <div className="text-center space-y-4 max-w-3xl mx-auto py-4">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider border border-amber-400/30">
-                <Library size={14} className="text-amber-400" />
-                <span>{bp.badgeText || 'নূর ফিকহ একাডেমি প্রকাশনা ও লাইব্রেরি'}</span>
-              </div>
+              {bookBadgeText ? (
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider border border-amber-400/30">
+                  <Library size={14} className="text-amber-400" />
+                  <span>{bookBadgeText}</span>
+                </div>
+              ) : null}
 
               <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight font-anek">
                 {bp.titleBn || 'ফিকহ কিতাব ও গবেষণাপত্র'}

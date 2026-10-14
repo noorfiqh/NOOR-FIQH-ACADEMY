@@ -65,7 +65,7 @@ export default function CoursesPage() {
   }, []);
 
   const coursesPageSettings: CoursesPageSettings = settings.coursesPage || {
-    badgeText: 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ',
+    badgeText: '',
     titleBn: 'নূর ফিকহ একাডেমি কোর্সসমূহ',
     subtitleBn: 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান। অভিজ্ঞ মুফতীগণের তত্ত্বাবধানে সহিহ ইলম অর্জন করুন।',
     heroImage: '',
@@ -77,7 +77,7 @@ export default function CoursesPage() {
     highlight3: 'ভেরিফায়েড প্রফেশনাল সনদপত্র'
   };
 
-  const badgeText = coursesPageSettings.badgeText || 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ';
+  const badgeText = (coursesPageSettings.badgeText === 'প্রামাণ্য ফিকহ পাঠ্যক্রম ক্যাটালগ') ? '' : (coursesPageSettings.badgeText || '');
   const titleBn = coursesPageSettings.titleBn || 'নূর ফিকহ একাডেমি কোর্সসমূহ';
   const subtitleBn = coursesPageSettings.subtitleBn || 'দৈনন্দিন ইবাদত থেকে শুরু করে সমকালীন আধুনিক আর্থিক ও পারিবারিক সমস্যার দলীলভিত্তিক সহজ সমাধান।';
   const heroImage = coursesPageSettings.heroImage || '';
@@ -143,10 +143,12 @@ export default function CoursesPage() {
           {heroImagePosition === 'background' && showHeroImage ? (
             /* Background Overlay Hero (Centered content within max-width) */
             <div className="max-w-3xl space-y-4 text-left">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/40">
-                <Sparkles size={14} className="text-amber-400" />
-                <span>{badgeText}</span>
-              </div>
+              {badgeText ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/40">
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>{badgeText}</span>
+                </div>
+              ) : null}
               <h1 className="text-3xl sm:text-5xl font-black font-anek tracking-tight leading-tight text-white">
                 {titleBn}
               </h1>
@@ -182,10 +184,12 @@ export default function CoursesPage() {
               
               {/* Text Side */}
               <div className={`space-y-4 ${heroImagePosition === 'left' ? 'lg:col-span-7 lg:order-2' : 'lg:col-span-7'}`}>
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
-                  <Sparkles size={14} className="text-amber-400" />
-                  <span>{badgeText}</span>
-                </div>
+                {badgeText ? (
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                    <Sparkles size={14} className="text-amber-400" />
+                    <span>{badgeText}</span>
+                  </div>
+                ) : null}
                 
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-[1.2] font-anek">
                   {titleBn}
@@ -249,10 +253,12 @@ export default function CoursesPage() {
           ) : (
             /* Centered Typography Hero (No Image) */
             <div className="text-center space-y-4 max-w-3xl mx-auto py-4">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
-                <Sparkles size={14} className="text-amber-400" />
-                <span>{badgeText}</span>
-              </div>
+              {badgeText ? (
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#17A2B8]/20 text-[#17A2B8] text-xs font-bold uppercase tracking-wider border border-[#17A2B8]/30">
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>{badgeText}</span>
+                </div>
+              ) : null}
               <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight font-anek">
                 {titleBn}
               </h1>
